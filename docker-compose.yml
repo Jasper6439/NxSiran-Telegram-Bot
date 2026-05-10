@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  nxbot:
+    build: .
+    container_name: nxsiran-bot
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./data:/opt/NxSiran/data
+      - ./knowledge:/app/knowledge
+    env_file:
+      - .env
+    environment:
+      - PYTHONUNBUFFERED=1
+      - DATA_DIR=/opt/NxSiran/data
+      - PORT=8080
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8080/')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s

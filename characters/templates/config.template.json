@@ -1,0 +1,44 @@
+{
+    "name": "{角色名}",
+    "source": "{来源作品}",
+    "personality": "{一句话性格描述：核心性格特点，用逗号分隔}",
+    "background": "{一句话背景描述：年龄、身份、重要经历}",
+    "speaking_style": "{一句话说话风格：语言特点、口头禅风格、语气}",
+    "catchphrases": [
+        "{口头禅1}",
+        "{口头禅2}",
+        "{口头禅3}",
+        "{口头禅4}",
+        "{口头禅5}"
+    ],
+    "user_nickname": "{对玩家的称呼}",
+    "theme_color": "#660874",
+    "avatar_url": null,
+    "world_layer": "stage",
+    "emotion_defaults": {
+        "affection": 0,
+        "happiness": 50,
+        "awakening": 0
+    },
+    "awakening_conditions": {
+        "min_affection": 10,
+        "min_happiness": 30,
+        "required_events": []
+    },
+    "is_novel_character": true,
+    "world_role": "trapped_character",
+
+    "profile": {
+        "duration": "",
+        "how_met": "",
+        "occupation": "{职业}",
+        "mbti": "",
+        "zodiac": ""
+    },
+    "tags": {
+        "personality": ["{标签1}", "{标签2}"],
+        "attachment": "",
+        "speaking": ["{说话风格标签1}"]
+    },
+    "impression": "{用户对角色的主观印象}"
+}
