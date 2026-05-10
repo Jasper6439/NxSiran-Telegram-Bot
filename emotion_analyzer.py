@@ -3,6 +3,7 @@
 分析对话内容，计算情感值变化量（好感度/幸福度/觉醒度）
 """
 import re
+import random
 import logging
 from typing import Dict
 
@@ -104,7 +105,6 @@ class EmotionAnalyzer:
             情感值变化 {affection: float, happiness: float, awakening: float}
         """
         # 合并用户和AI的消息进行分析
-        combined_text = f"{user_message} {ai_response}"
 
         affection_delta = self._calculate_affection_delta(
             user_message, ai_response, current_emotions.get('affection', 0)
@@ -156,7 +156,6 @@ class EmotionAnalyzer:
             delta *= 1.2  # 好感期，变化加速
 
         # 随机波动（±0.5）
-        import random
         delta += random.uniform(-0.5, 0.5)
 
         return max(-5.0, min(5.0, delta))
@@ -180,7 +179,6 @@ class EmotionAnalyzer:
         # 幸福度有自然衰减趋势
         delta -= 0.3
 
-        import random
         delta += random.uniform(-0.3, 0.3)
 
         return max(-3.0, min(3.0, delta))
@@ -215,7 +213,6 @@ class EmotionAnalyzer:
         if delta > 0 and keyword_count == 0 and phrase_count == 0:
             delta = 0
 
-        import random
         delta += random.uniform(-0.1, 0.1)
 
         return max(0.0, min(5.0, delta))

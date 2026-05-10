@@ -239,7 +239,7 @@ class ChatEngine:
             new_values[key] = new_values.get(key, 0) + delta
             # 范围限制
             if key == 'affection':
-                new_values[key] = max(-50, min(100, new_values[key]))
+                new_values[key] = max(0, min(100, new_values[key]))
             elif key == 'happiness':
                 new_values[key] = max(0, min(100, new_values[key]))
             else:
@@ -503,7 +503,7 @@ def get_chat_engine() -> ChatEngine:
     if _engine_instance is None:
         # 注入 Qdrant 记忆系统
         try:
-            from chromadb_memory import get_memory
+            from qdrant_memory import get_memory
             memory_mgr = get_memory()
         except Exception:
             memory_mgr = None

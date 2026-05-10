@@ -64,7 +64,7 @@ user_voice_enabled = {}  # {user_id: bool}
 from music_skill import music_skill
 
 # [Skill: Qdrant Cloud 记忆]
-from chromadb_memory import get_memory, add_memory, search_memories
+from qdrant_memory import get_memory, add_memory, search_memories
 
 # [Skill: 小说知识库]
 from novel_knowledge import get_knowledge, query_novel, init_novel_knowledge
@@ -6425,7 +6425,6 @@ def validate_api_token(request):
 # HTTP Bridge for SOLO Sandbox File Transfer
 # ============================================================
 import base64
-from datetime import datetime
 
 # 存储待处理的命令和文件
 bridge_pending_commands = []

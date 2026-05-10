@@ -632,7 +632,6 @@ async def api_trigger_heart_event(request):
             return web.json_response({'success': False, 'error': '事件不存在或已触发'})
         
         # 解析对话
-        import json
         dialogue = []
         try:
             dialogue = json.loads(event.get('dialogue', '[]'))
@@ -1594,7 +1593,7 @@ def register_game_routes(app):
     
     # 同步
     app.router.add_get("/api/game/events", api_get_game_events)
-    app.router.add_post("/api/game/sync", api_mark_synced)
+    app.router.add_post("/api/game/events/sync", api_mark_synced)
     
     # 情感值与觉醒系统（恋爱至上主义区域）
     app.router.add_get("/api/game/emotions", api_get_emotion_values)

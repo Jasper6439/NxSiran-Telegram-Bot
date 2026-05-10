@@ -1072,18 +1072,6 @@ class GameDatabase:
                 now
             ))
 
-    def get_chat_history(self, user_id: int, character_id: str = 'chayewoon', limit: int = 100) -> List[Dict]:
-        """获取对话历史（增强版，支持角色ID）"""
-        with self.get_connection() as conn:
-            cursor = conn.execute(
-                """SELECT role, content, timestamp FROM chat_messages
-                   WHERE user_id = ? AND character_id = ?
-                   ORDER BY timestamp DESC LIMIT ?""",
-                (user_id, character_id, limit)
-            )
-            rows = cursor.fetchall()
-            # 反转使最新消息在最后
-            return [{'role': r['role'], 'content': r['content']} for r in reversed(rows)]
 
 
 # 全局实例

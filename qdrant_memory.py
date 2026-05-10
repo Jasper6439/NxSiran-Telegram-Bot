@@ -78,8 +78,6 @@ class _EmbeddingClient:
             logger.error(f"[Qdrant] Embedding 失败: {e}")
             return [0.0] * VECTOR_DIMENSIONS
 
-    def embed_batch(self, texts: List[str]) -> List[List[float]]:
-        return [self.embed(t) for t in texts]
 
 
 _embedding_client = _EmbeddingClient()
@@ -108,7 +106,7 @@ class QdrantMemory:
             self.client = QdrantClient(url=QDRANT_URL, api_key=QDRANT_API_KEY)
 
             # 获取或创建集合（每个角色独立）
-            collection_name = f"{self.character_id}_memories"
+            collection_name = self._collection_name()
             try:
                 self.client.get_collection(collection_name)
             except Exception:
@@ -127,7 +125,7 @@ class QdrantMemory:
                 )
 
             self._initialized = True
-            count = self.client.get_collection(collection_name).points_count
+            count = self.client.get_collection(self._collection_name()).points_count
             logger.info(f"[Qdrant] 初始化成功，当前记忆数: {count}")
             return True
 
