@@ -63,7 +63,7 @@ user_voice_enabled = {}  # {user_id: bool}
 # [Skill: 音乐搜索与评价]
 from music_skill import music_skill
 
-# [Skill: ChromaDB 记忆]
+# [Skill: Qdrant Cloud 记忆]
 from chromadb_memory import get_memory, add_memory, search_memories
 
 # [Skill: 小说知识库]
@@ -6060,7 +6060,7 @@ SKILLS_REGISTRY = {
     "gemini-deep-research": {"name": "深度研究", "desc": "复杂研究任务", "enabled": True, "category": "工具"},
     "relay-for-telegram": {"name": "消息历史", "desc": "Telegram消息搜索", "enabled": True, "category": "工具"},
     "tts": {"name": "语音合成", "desc": "TTS语音回复(Edge/SoVITS/Fish)", "enabled": True, "category": "工具"},
-    "chromadb-memory": {"name": "ChromaDB记忆", "desc": "向量数据库记忆(语义搜索)", "enabled": True, "category": "记忆"},
+    "chromadb-memory": {"name": "Qdrant记忆", "desc": "Qdrant Cloud向量记忆(语义搜索)", "enabled": True, "category": "记忆"},
     "lightrag": {"name": "知识库", "desc": "原作小说知识查询", "enabled": True, "category": "知识"},
 }
 

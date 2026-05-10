@@ -501,7 +501,14 @@ def get_chat_engine() -> ChatEngine:
     """获取全局 ChatEngine 实例（懒加载）"""
     global _engine_instance
     if _engine_instance is None:
-        _engine_instance = ChatEngine()
+        # 注入 Qdrant 记忆系统
+        try:
+            from chromadb_memory import get_memory
+            memory_mgr = get_memory()
+        except Exception:
+            memory_mgr = None
+            logger.warning("记忆系统初始化失败，将以无记忆模式运行")
+        _engine_instance = ChatEngine(memory_manager=memory_mgr)
     return _engine_instance
 
 
