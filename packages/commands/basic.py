@@ -35,6 +35,7 @@ from image_gen import get_selfie_count, get_saved_selfies, send_selfie_to_chat
 from chat_history import get_history, chat_histories, save_chat_history
 from characters import get_current_character
 from tts_engine import TTSEngine
+from packages.commands.misc import auto_delete_messages
 
 tts = TTSEngine()
 

@@ -16,6 +16,7 @@ from stats import load_stats, get_selfie_count
 from anniversary import load_anniversaries, get_days_together
 from chat_history import get_history
 from emotion_analyzer import analyze_dialogue_patterns, get_relationship_advice, calculate_intimacy
+from packages.commands.misc import auto_delete_messages
 
 
 async def sticker_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
