@@ -14,7 +14,6 @@ from config import (
     AI_API_KEY,
     AI_MODELS,
     BOT_VERSION,
-    CORRECTIONS_FILE,
     GEMINI_API_KEY,
     RELAY_API_KEY,
     VERSION_FILE,
@@ -23,6 +22,7 @@ from config import (
     load_json,
     save_json,
 )
+from memory_legacy import CORRECTIONS_FILE, CORRECTION_KEYWORDS
 from stats import format_quota_report, load_quota_usage, save_quota_usage
 import stats
 from anniversary import load_anniversaries, get_upcoming_anniversary, add_anniversary, delete_anniversary
