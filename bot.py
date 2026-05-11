@@ -2649,7 +2649,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             learn_from_correction(user_text, last_bot_msg)
     
     # [Skill: 表情反应] 后台添加emoji反应
-    asyncio.create_task(add_reaction(update, emotion))
+    asyncio.create_task(add_reaction(update, emotion_text))
     
     # 检测特殊请求
     want_selfie = any(kw in user_text for kw in ["自拍", "照片", "看看你", "发张照", "想看你", "你的照片", "看看你长什么样"])
@@ -2669,7 +2669,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     update_stats_on_message(chat_id)
     
     # AI回复（带情绪上下文）
-    reply = await call_ai(user_text, history, emotion=emotion)
+    reply = await call_ai(user_text, history, emotion=emotion_text)
     
     # v0.3: 解析对话选项
     parsed = parse_dialogue_options(reply)

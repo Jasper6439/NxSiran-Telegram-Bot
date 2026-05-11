@@ -7,6 +7,7 @@ import os
 import re
 import json
 import logging
+import random
 from typing import Dict, List, Optional, Any
 
 import httpx
@@ -238,6 +239,14 @@ def _strip_thinking_content(content: str) -> str:
         '我需要按', '按照车如云', '按照', '好的，我', '好的，现在',
         '好的，用户', '根据之前的示例', '首先，回复', '当学长说',
         '学长说', '车如云可能', '车如云会', '参考之前的示例',
+        # English reasoning model patterns
+        'The user says', 'According to character', 'According to the character',
+        'Thus ', 'should respond', 'Possible:', 'Given the instruction',
+        'the user is', 'They should not', 'Perhaps:', 'Maybe:',
+        'But need to keep', 'Thus Cha', 'they\'d likely',
+        'the system says', 'the instruction:', 'they are currently',
+        'minimal words', 'under 20 chars', 'with ... and',
+        'Actually the user', 'meaning they',
     ]
     
     has_thinking = any(kw in content for kw in thinking_keywords)
@@ -286,6 +295,10 @@ def _strip_thinking_content(content: str) -> str:
             r'比如[：:]\s*[""]?(.+?)[""]?$',
             r'例如[：:]\s*[""]?(.+?)[""]?$',
             r'最合适(?:的回复)?[：:]\s*[""]?(.+?)[""]?$',
+            # English patterns
+            r'Perhaps[:\s]+(.+?)[\.\n]',
+            r'Possible[:\s]+(.+?)[\.\n]',
+            r'Maybe[:\s]+(.+?)[\.\n]',
         ]
         for pattern in reply_patterns:
             matches = re.findall(pattern, content, re.MULTILINE)
@@ -313,5 +326,10 @@ def _strip_thinking_content(content: str) -> str:
                 result = '\n'.join(candidate)
                 if len(result) <= 80:
                     return result
+        
+        # 策略G: 整个内容都是思考过程，没有最终回复，返回默认 fallback
+        # 防止整段 reasoning 被原样发给用户
+        fallbacks = ['...（沉默）', '...嗯。', '...我在。']
+        return random.choice(fallbacks)
     
     return content
