@@ -28,6 +28,11 @@
             }
         });
 
+        // v1.2c: Apply saved dark mode preference on load
+        if (loadSetting('dark_theme') === true) {
+            applyTheme(true);
+        }
+
         createSettingsPanel();
         console.log('[Settings] Initialized');
     }
@@ -190,7 +195,7 @@
 
     // ── Apply Theme ─────────────────────────────────────────────
     function applyTheme(isDark) {
-        // Placeholder: actual theme implementation can be added later
+        document.body.classList.toggle('dark-mode', isDark);
         document.body.classList.toggle('theme-dark', isDark);
         document.body.classList.toggle('theme-light', !isDark);
     }
@@ -242,6 +247,10 @@
     // ── Open Settings ───────────────────────────────────────────
     function openSettings() {
         if (!panelEl) return;
+
+        // v1.2a: Close other panels via panel manager
+        if (window.GamePanels) GamePanels.open('settings');
+
         isOpen = true;
         backdropEl.classList.add('settings-backdrop-visible');
         panelEl.classList.add('settings-panel-open');
@@ -250,6 +259,10 @@
     // ── Close Settings ──────────────────────────────────────────
     function closeSettings() {
         if (!panelEl) return;
+
+        // v1.2a: Unregister from panel manager
+        if (window.GamePanels) GamePanels.close('settings');
+
         isOpen = false;
         backdropEl.classList.remove('settings-backdrop-visible');
         panelEl.classList.remove('settings-panel-open');

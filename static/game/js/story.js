@@ -139,6 +139,9 @@
         _modalEl.innerHTML = html;
         _modalEl.style.display = 'block';
         _isActive = true;
+
+        // v1.2a: Register with panel manager
+        if (window.GamePanels) GamePanels.open('story');
     }
 
     /**
@@ -379,6 +382,9 @@
             GameAudio.playChoice();
         }
 
+        // v1.2e: Haptic feedback on choice selection
+        if (window.GameMiniApp) GameMiniApp.hapticFeedback('select');
+
         // Record choice
         if (!_progress.choices[_currentChapterId]) {
             _progress.choices[_currentChapterId] = {};
@@ -549,6 +555,9 @@
         _isActive = false;
         _currentChapterId = null;
         _currentSceneId = null;
+
+        // v1.2a: Unregister from panel manager
+        if (window.GamePanels) GamePanels.close('story');
 
         // v0.9: Switch BGM back to previous track when story closes
         if (window.GameAudio) {

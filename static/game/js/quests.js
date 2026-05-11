@@ -278,6 +278,9 @@
                     GameAudio.playLevelUp();
                 }
 
+                // v1.2e: Haptic feedback on task reward claim
+                if (window.GameMiniApp) GameMiniApp.hapticFeedback('success');
+
                 save();
                 if (_isOpen) renderPanel();
                 return true;
@@ -525,6 +528,10 @@
 
     function openPanel() {
         if (!_panelEl) createPanel();
+
+        // v1.2a: Close other panels via panel manager
+        if (window.GamePanels) GamePanels.open('quests');
+
         _isOpen = true;
         renderPanel();
         _panelEl.classList.add('open');
@@ -534,6 +541,8 @@
     }
 
     function closePanel() {
+        // v1.2a: Unregister from panel manager
+        if (window.GamePanels) GamePanels.close('quests');
         _isOpen = false;
         if (_panelEl) _panelEl.classList.remove('open');
         stopCountdown();

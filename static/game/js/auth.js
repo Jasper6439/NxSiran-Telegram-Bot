@@ -1,6 +1,10 @@
 /**
- * NxSiran Game - Authentication Module (v0.4)
+ * NxSiran Game - Authentication Module (v1.2f)
  * Login/Register overlay with Korean BL drama aesthetic
+ * - Proper backend API integration
+ * - Inline error messages (no alert())
+ * - Offline fallback support
+ * - Sync status indicator integration
  */
 (function () {
     'use strict';
@@ -13,9 +17,12 @@
         if (isLoggedIn()) {
             // Already logged in, hide login screen
             hideLoginScreen();
+            // Update sync status
+            if (window.updateSyncStatus) window.updateSyncStatus('synced');
         } else {
             // Not logged in, show login screen
             showLoginScreen();
+            if (window.updateSyncStatus) window.updateSyncStatus('none');
         }
     }
 
@@ -199,22 +206,42 @@
             loginBtn.textContent = '\u767B\u5F55\u4E2D...';
         }
 
+        // Update sync status to syncing
+        if (window.updateSyncStatus) window.updateSyncStatus('syncing');
+
         GameAPI.login(username, password).then(function (data) {
             if (data && data.token) {
                 GameAPI.setToken(data.token);
+                if (window.updateSyncStatus) window.updateSyncStatus('synced');
                 hideLoginScreen();
 
-                // Trigger game load
+                // Trigger game load (which will sync state from server)
                 if (window.loadGame) {
                     window.loadGame();
+                }
+
+                // Initialize sync module after successful login
+                if (window.GameSync) {
+                    GameSync.init();
                 }
             } else {
                 showError('\u767B\u5F55\u5931\u8D25\uFF0C\u672A\u83B7\u53D6\u5230 token');
                 resetButton(loginBtn, '\u767B\u5F55');
+                if (window.updateSyncStatus) window.updateSyncStatus('offline');
             }
         }).catch(function (err) {
-            showError('\u767B\u5F55\u5931\u8D25\uFF1A' + (err.message || '\u7528\u6237\u540D\u6216\u5BC6\u7801\u9519\u8BEF'));
+            var msg = err.message || '\u7528\u6237\u540D\u6216\u5BC6\u7801\u9519\u8BEF';
+            // Map common error messages to Chinese
+            if (msg.indexOf('Failed to fetch') !== -1 || msg.indexOf('网络') !== -1) {
+                msg = '\u7F51\u7EDC\u8FDE\u63A5\u5931\u8D25\uFF0C\u8BF7\u68C0\u67E5\u7F51\u7EDC\u540E\u91CD\u8BD5';
+            } else if (msg.indexOf('超时') !== -1) {
+                msg = '\u8BF7\u6C42\u8D85\u65F6\uFF0C\u8BF7\u7A0D\u540E\u518D\u8BD5';
+            } else if (msg.indexOf('用户名或密码') !== -1) {
+                msg = '\u7528\u6237\u540D\u6216\u5BC6\u7801\u9519\u8BEF';
+            }
+            showError('\u767B\u5F55\u5931\u8D25\uFF1A' + msg);
             resetButton(loginBtn, '\u767B\u5F55');
+            if (window.updateSyncStatus) window.updateSyncStatus('offline');
         });
     }
 
@@ -231,30 +258,56 @@
             registerBtn.textContent = '\u6CE8\u518C\u4E2D...';
         }
 
+        // Update sync status to syncing
+        if (window.updateSyncStatus) window.updateSyncStatus('syncing');
+
         GameAPI.register(username, password, chatId).then(function (data) {
             if (data && data.token) {
                 GameAPI.setToken(data.token);
+                if (window.updateSyncStatus) window.updateSyncStatus('synced');
                 hideLoginScreen();
 
-                // Trigger game load
+                // Trigger game load (which will sync state from server)
                 if (window.loadGame) {
                     window.loadGame();
+                }
+
+                // Initialize sync module after successful registration
+                if (window.GameSync) {
+                    GameSync.init();
                 }
             } else {
                 showError('\u6CE8\u518C\u5931\u8D25\uFF0C\u672A\u83B7\u53D6\u5230 token');
                 resetButton(registerBtn, '\u6CE8\u518C');
+                if (window.updateSyncStatus) window.updateSyncStatus('offline');
             }
         }).catch(function (err) {
-            showError('\u6CE8\u518C\u5931\u8D25\uFF1A' + (err.message || '\u8BF7\u68C0\u67E5\u4FE1\u606F\u662F\u5426\u6B63\u786E'));
+            var msg = err.message || '\u8BF7\u68C0\u67E5\u4FE1\u606F\u662F\u5426\u6B63\u786E';
+            // Map common error messages to Chinese
+            if (msg.indexOf('Failed to fetch') !== -1 || msg.indexOf('网络') !== -1) {
+                msg = '\u7F51\u7EDC\u8FDE\u63A5\u5931\u8D25\uFF0C\u8BF7\u68C0\u67E5\u7F51\u7EDC\u540E\u91CD\u8BD5';
+            } else if (msg.indexOf('超时') !== -1) {
+                msg = '\u8BF7\u6C42\u8D85\u65F6\uFF0C\u8BF7\u7A0D\u540E\u518D\u8BD5';
+            }
+            showError('\u6CE8\u518C\u5931\u8D25\uFF1A' + msg);
             resetButton(registerBtn, '\u6CE8\u518C');
+            if (window.updateSyncStatus) window.updateSyncStatus('offline');
         });
     }
 
     // ── Handle Logout ──────────────────────────────────────────
     function handleLogout() {
+        // Stop sync before logout
+        if (window.GameSync) {
+            GameSync.destroy();
+        }
+
         if (window.GameAPI) {
             GameAPI.logout();
         }
+
+        // Update sync status
+        if (window.updateSyncStatus) window.updateSyncStatus('none');
 
         // Show login screen
         showLoginScreen();

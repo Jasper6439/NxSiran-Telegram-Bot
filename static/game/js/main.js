@@ -1,9 +1,65 @@
 /**
- * NxSiran Game - Main Entry Point
+ * NxSiran Game - Main Entry Point (v1.2f)
  * Initializes all game modules for Love Supremacy Zone
  */
 (function () {
     'use strict';
+
+    // ── Sync Status Indicator (v1.2f) ──────────────────────────
+    function updateSyncStatus(status) {
+        var indicator = document.getElementById('sync-indicator');
+        if (!indicator) {
+            indicator = document.createElement('span');
+            indicator.id = 'sync-indicator';
+            indicator.style.cssText = 'width:8px;height:8px;border-radius:50%;display:inline-block;margin-left:8px;';
+            var hudRight = document.querySelector('.hud-right');
+            if (hudRight) hudRight.appendChild(indicator);
+        }
+        var colors = { synced: '#30D158', syncing: '#FF9F0A', offline: '#FF3B30', none: '#AEAEB2' };
+        indicator.style.backgroundColor = colors[status] || colors.none;
+    }
+    window.updateSyncStatus = updateSyncStatus;
+
+    // ── Panel Manager (v1.2a) ──────────────────────────────────
+    // Ensures only one panel is open at a time
+    window.GamePanels = {
+        _openPanels: new Set(),
+        _registry: {},
+
+        register: function (panelId, closeFn) {
+            this._registry[panelId] = closeFn;
+        },
+
+        open: function (panelId) {
+            // Close all other panels first
+            var self = this;
+            this._openPanels.forEach(function (openId) {
+                if (openId !== panelId && self._registry[openId]) {
+                    self._registry[openId]();
+                }
+            });
+            this._openPanels.clear();
+            this._openPanels.add(panelId);
+        },
+
+        close: function (panelId) {
+            this._openPanels.delete(panelId);
+        },
+
+        closeAll: function () {
+            var self = this;
+            this._openPanels.forEach(function (openId) {
+                if (self._registry[openId]) {
+                    self._registry[openId]();
+                }
+            });
+            this._openPanels.clear();
+        },
+
+        isOpen: function (panelId) {
+            return this._openPanels.has(panelId);
+        }
+    };
 
     // ── Constants ──────────────────────────────────────────────
     var PIXEL_SCALE = 2.5;
@@ -27,6 +83,9 @@
         world.style.height = WORLD_PX + 'px';
 
         // Initialize modules (order matters)
+
+        // Initialize Telegram MiniApp integration (v1.2e)
+        if (window.GameMiniApp) GameMiniApp.init();
 
         // Generate height map for 3D terrain
         var heightMap = GameTerrain.generateHeightMap(WORLD_SIZE, WORLD_SIZE, Math.random() * 10000);
@@ -145,7 +204,12 @@
         // Start game systems
         GameTime.init();
         GameWeather.init();
-        GameSync.init();
+
+        // Only init sync if user is already logged in
+        // (if not logged in, sync will be initialized after login in auth.js)
+        if (window.GameSync && window.GameAPI && GameAPI.isLoggedIn()) {
+            GameSync.init();
+        }
 
         // Random weather on load
         GameWeather.randomWeather();
@@ -307,21 +371,25 @@
         if (!loggedIn) {
             // Not logged in, use offline data only
             console.log('[Game] User not logged in, using offline data');
+            if (window.updateSyncStatus) window.updateSyncStatus('none');
             loadOfflineData();
             return;
         }
 
         if (window.GameAPI) {
+            if (window.updateSyncStatus) window.updateSyncStatus('syncing');
             GameAPI.getState().then(function (data) {
                 if (data) {
                     // Ensure worldview fields are present
                     var enhancedData = enhanceWorldviewData(data);
                     GameState.dispatch({ type: 'LOAD_STATE', payload: enhancedData });
+                    if (window.updateSyncStatus) window.updateSyncStatus('synced');
                 } else {
                     loadOfflineData();
                 }
             }).catch(function (err) {
                 console.warn('[Game] Failed to load from server, using offline data:', err);
+                if (window.updateSyncStatus) window.updateSyncStatus('offline');
                 loadOfflineData();
             });
         } else {

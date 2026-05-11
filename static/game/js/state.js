@@ -96,6 +96,8 @@
                     if (s.inventory[seedKey].quantity <= 0) delete s.inventory[seedKey];
                 }
                 s.pendingActions.push({ type: 'plant', x: action.x, y: action.y, cropType: action.cropType, ts: Date.now() });
+                // v1.2e: Haptic feedback on plant
+                if (window.GameMiniApp) GameMiniApp.hapticFeedback('light');
                 break;
             }
 
@@ -111,6 +113,8 @@
                 s.inventory[cropKey].quantity += 1;
                 delete s.crops[hKey];
                 s.pendingActions.push({ type: 'harvest', x: action.x, y: action.y, cropType: crop.type, ts: Date.now() });
+                // v1.2e: Haptic feedback on harvest
+                if (window.GameMiniApp) GameMiniApp.hapticFeedback('light');
                 break;
             }
 
@@ -120,6 +124,8 @@
                 if (!wCrop) break;
                 wCrop.waterLevel = Math.min(wCrop.waterLevel + 1, 3);
                 s.pendingActions.push({ type: 'water', x: action.x, y: action.y, ts: Date.now() });
+                // v1.2e: Haptic feedback on water
+                if (window.GameMiniApp) GameMiniApp.hapticFeedback('light');
                 break;
             }
 

@@ -1,32 +1,99 @@
 /**
- * NxSiran Game - API Wrapper
+ * NxSiran Game - API Wrapper (v1.2f)
  * Central API interface for game backend communication
  * Extended for Love Supremacy Zone worldview
+ * - 5 second timeout on all requests
+ * - 401 auto-logout and redirect to login
+ * - Network error graceful fallback
+ * - Sync status indicator integration
  */
 (function () {
     'use strict';
 
     var API_BASE = window.GAME_API_BASE || '';
+    var API_TIMEOUT = 5000; // 5 seconds
 
-    function request(method, path, data) {
+    /**
+     * Core request wrapper with timeout, error handling, and auth
+     * @param {string} method - HTTP method
+     * @param {string} path - API path
+     * @param {object} data - Request body (optional)
+     * @param {object} options - Extra options (skipAuth, skipTimeout)
+     * @returns {Promise} Response data or throws on error
+     */
+    function request(method, path, data, options) {
+        options = options || {};
         var opts = {
             method: method,
             headers: { 'Content-Type': 'application/json' }
         };
 
         // Attach Bearer token if available
-        var token = localStorage.getItem('game_token');
-        if (token) {
-            opts.headers['Authorization'] = 'Bearer ' + token;
+        if (!options.skipAuth) {
+            var token = localStorage.getItem('game_token');
+            if (token) {
+                opts.headers['Authorization'] = 'Bearer ' + token;
+            }
         }
 
         if (data) opts.body = JSON.stringify(data);
 
+        // Build fetch with AbortController for timeout
+        var controller = new AbortController();
+        var signal = controller.signal;
+        opts.signal = signal;
+
+        var timeoutId = null;
+        if (!options.skipTimeout) {
+            timeoutId = setTimeout(function () {
+                controller.abort();
+            }, API_TIMEOUT);
+        }
+
         return fetch(API_BASE + path, opts)
-            .then(function (res) { return res.json(); })
+            .then(function (res) {
+                if (timeoutId) clearTimeout(timeoutId);
+
+                // Handle 401 Unauthorized - clear token and show login
+                if (res.status === 401) {
+                    localStorage.removeItem('game_token');
+                    if (window.updateSyncStatus) window.updateSyncStatus('none');
+                    if (window.GameAuth) {
+                        GameAuth.showLoginScreen();
+                    }
+                    throw new Error('登录已过期，请重新登录');
+                }
+
+                // Handle other HTTP errors
+                if (res.status >= 500) {
+                    throw new Error('服务器错误，请稍后再试');
+                }
+
+                return res.json();
+            })
             .then(function (json) {
-                if (!json.success) throw new Error(json.error || 'API Error');
+                if (!json.success) {
+                    var errMsg = json.error || '请求失败';
+                    throw new Error(errMsg);
+                }
                 return json;
+            })
+            .catch(function (err) {
+                if (timeoutId) clearTimeout(timeoutId);
+
+                // AbortError means timeout
+                if (err.name === 'AbortError') {
+                    throw new Error('网络超时，请检查网络连接');
+                }
+
+                // TypeError usually means network error (offline)
+                if (err instanceof TypeError) {
+                    if (window.updateSyncStatus) window.updateSyncStatus('offline');
+                    throw new Error('网络连接失败，已切换到离线模式');
+                }
+
+                // Re-throw other errors (already have user-friendly messages)
+                throw err;
             });
     }
 
@@ -265,6 +332,9 @@
         logout: logout,
         getToken: getToken,
         setToken: setToken,
-        isLoggedIn: isLoggedIn
+        isLoggedIn: isLoggedIn,
+
+        // Utility (v1.2f)
+        request: request
     };
 })();

@@ -4,8 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>恋爱至上主义区域 - Love Supremacy Zone</title>
-    <link rel="stylesheet" href="/static/game/css/game.css">
+    <link rel="stylesheet" href="/static/game/css/game.css?v=12">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💕</text></svg>">
+    <link rel="manifest" href="/static/game/manifest.json">
+    <meta name="theme-color" content="#8B5CF6">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="恋爱区域">
 </head>
 <body>
 
@@ -14,7 +19,7 @@
     <h1>💕 恋爱至上主义区域</h1>
     <div class="loading-spinner"></div>
     <p style="margin-top: 16px; color: rgba(255,255,255,0.5); font-size: 13px;">穿越世界中...</p>
-    <p style="margin-top: 8px; color: rgba(255,255,255,0.3); font-size: 11px;">v1.0.0</p>
+    <p style="margin-top: 8px; color: rgba(255,255,255,0.3); font-size: 11px;">v1.2d-e</p>
 </div>
 
 <!-- ===== World Layer Indicator ===== -->
@@ -129,7 +134,7 @@
 <script src="/static/game/js/renderer_v2.js?v=6"></script>
 <script src="/static/game/js/viewport.js?v=6"></script>
 <script src="/static/game/js/actions.js?v=6"></script>
-<script src="/static/game/js/inventory.js?v=6"></script>
+<script src="/static/game/js/inventory.js?v=12"></script>
 <script src="/static/game/js/npc.js?v=6"></script>
 <script src="/static/game/js/dialogue.js?v=6"></script>
 <script src="/static/game/js/events.js?v=6"></script>
@@ -141,13 +146,21 @@
 <script src="/static/game/js/story_data.js?v=6"></script>
 <script src="/static/game/js/api.js?v=6"></script>
 <script src="/static/game/js/sync.js?v=6"></script>
-<script src="/static/game/js/story.js?v=6"></script>
-<script src="/static/game/js/quests.js?v=6"></script>
+<script src="/static/game/js/story.js?v=12"></script>
+<script src="/static/game/js/quests.js?v=12"></script>
 <script src="/static/game/js/events_seasonal.js?v=8"></script>
 <script src="/static/game/js/schedule.js?v=8"></script>
 <script src="/static/game/js/tutorial.js?v=10"></script>
-<script src="/static/game/js/settings.js?v=10"></script>
-<script src="/static/game/js/main.js?v=10"></script>
+<script src="/static/game/js/settings.js?v=12"></script>
+    <script src="/static/game/js/miniapp.js?v=12"></script>
+    <script src="/static/game/js/main.js?v=12"></script>
+
+<script>
+// Register Service Worker
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/static/game/sw.js').catch(() => {});
+}
+</script>
 
 </body>
 </html>

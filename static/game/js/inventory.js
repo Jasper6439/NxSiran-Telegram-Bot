@@ -135,6 +135,9 @@
     function openShop() {
         if (!_shopPanelEl) return;
 
+        // v1.2a: Close other panels via panel manager
+        if (window.GamePanels) GamePanels.open('shop');
+
         // v0.9: Switch BGM to shop track
         if (window.GameAudio) {
             GameAudio.playBGM('shop');
@@ -242,6 +245,8 @@
     }
 
     function closeShop() {
+        // v1.2a: Unregister from panel manager
+        if (window.GamePanels) GamePanels.close('shop');
         // v0.9: Switch BGM back to previous track
         if (window.GameAudio) {
             GameAudio.playPreviousBGM();
@@ -375,6 +380,10 @@
     // ── Inventory Panel (Enhanced with Tabs) ────────────────────
     function openInventory() {
         if (!_inventoryPanelEl) return;
+
+        // v1.2a: Close other panels via panel manager
+        if (window.GamePanels) GamePanels.open('inventory');
+
         var state = GameState.getState();
 
         var html = '<div class="panel-header"><h3>\uD83D\uDCBC \u6211\u7684\u80CC\u5305</h3><button class="panel-close" onclick="GameInventory.closeInventory()">\u2715</button></div>';
@@ -461,6 +470,8 @@
     }
 
     function closeInventory() {
+        // v1.2a: Unregister from panel manager
+        if (window.GamePanels) GamePanels.close('inventory');
         if (_inventoryPanelEl) _inventoryPanelEl.classList.remove('open');
     }
 
@@ -594,6 +605,9 @@
 
         // Show floating effect animation
         showGiftEffect(gift);
+
+        // v1.2e: Haptic feedback on gift give
+        if (window.GameMiniApp) GameMiniApp.hapticFeedback('success');
 
         // Show reaction dialogue
         var reactions = GIFT_REACTIONS[giftId];
