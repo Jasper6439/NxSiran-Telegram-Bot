@@ -84,10 +84,7 @@ user_voice_enabled = {}  # {user_id: bool}
 from music_skill import music_skill
 
 # [Skill: Qdrant Cloud 记忆]
-try:
-    from qdrant_memory import search_memories
-except ImportError:
-    search_memories = None
+from qdrant_memory import search_memories
 
 # [Skill: 小说知识库]
 from novel_knowledge import query_novel, init_novel_knowledge
@@ -4061,37 +4058,7 @@ async def api_switch_character(request):
 
 
 # 启动时加载 skills 持久化状态
-# [Skill: skills-manager] Skills 管理功能
-
-def _load_skills_state():
-    """Load skills persistent state from disk."""
-    try:
-        from config import SKILLS_REGISTRY, SKILLS_STATE_FILE, load_json
-        if os.path.exists(SKILLS_STATE_FILE):
-            state = load_json(SKILLS_STATE_FILE, {})
-            for sid, sdata in state.get('skills', {}).items():
-                if sid in SKILLS_REGISTRY:
-                    SKILLS_REGISTRY[sid].update(sdata)
-                else:
-                    SKILLS_REGISTRY[sid] = sdata
-    except Exception as e:
-        logging.error(f"[skills-manager] 加载 skills 状态失败: {e}")
-
-def _save_skills_state():
-    """Save skills persistent state to disk."""
-    try:
-        from config import SKILLS_REGISTRY, SKILLS_STATE_FILE, save_json
-        state = {'skills': {sid: dict(sdata) for sid, sdata in SKILLS_REGISTRY.items()}}
-        save_json(SKILLS_STATE_FILE, state)
-    except Exception as e:
-        logging.error(f"[skills-manager] 保存 skills 状态失败: {e}")
-
 _load_skills_state()
-
-def load_character_skill_overrides():
-    """加载角色技能覆盖配置"""
-    pass
-
 load_character_skill_overrides()
 
 # CORS 中间件 - 允许 Telegram Mini App 跨域访问
