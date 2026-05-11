@@ -3,6 +3,64 @@
    game.css - NxSiran 3D Isometric RPG Game Styles
    ========================================================================== */
 
+:root {
+  /* ===== Apple Design Tokens ===== */
+  /* Brand */
+  --apple-purple: #8B5CF6;
+  --apple-purple-light: #A78BFA;
+  --apple-purple-dark: #7C3AED;
+  --apple-purple-bg: rgba(139, 92, 246, 0.08);
+  --apple-pink: #EC4899;
+  
+  /* Neutrals */
+  --apple-bg: #F5F5F7;
+  --apple-surface: #FFFFFF;
+  --apple-surface-secondary: #FAFAFA;
+  --apple-text-primary: #1D1D1F;
+  --apple-text-secondary: #6E6E73;
+  --apple-text-tertiary: #AEAEB2;
+  --apple-border: rgba(0, 0, 0, 0.08);
+  --apple-divider: rgba(0, 0, 0, 0.04);
+  
+  /* Semantic */
+  --apple-success: #30D158;
+  --apple-warning: #FF9F0A;
+  --apple-danger: #FF3B30;
+  --apple-info: #5AC8FA;
+  
+  /* Effects */
+  --apple-shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.04);
+  --apple-shadow-md: 0 4px 16px rgba(0, 0, 0, 0.08);
+  --apple-shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.12);
+  --apple-blur: blur(20px);
+  --apple-blur-heavy: blur(40px);
+  
+  /* Spacing */
+  --apple-space-xs: 4px;
+  --apple-space-sm: 8px;
+  --apple-space-md: 16px;
+  --apple-space-lg: 24px;
+  --apple-space-xl: 32px;
+  --apple-space-2xl: 48px;
+  
+  /* Radius */
+  --apple-radius-sm: 8px;
+  --apple-radius-md: 12px;
+  --apple-radius-lg: 16px;
+  --apple-radius-xl: 20px;
+  
+  /* Typography */
+  --apple-font: 'SF Pro Display', 'PingFang SC', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --apple-font-mono: 'SF Mono', 'Fira Code', monospace;
+  
+  /* Game-specific (light theme base) */
+  --game-bg: #F5F5F7;
+  --game-surface: rgba(255, 255, 255, 0.85);
+  --game-text: #1D1D1F;
+  --game-text-secondary: #6E6E73;
+}
+
+
 /* ── Reset & Base ───────────────────────────────────────────── */
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -10,8 +68,8 @@ html, body {
   width: 100%; height: 100%;
   overflow: hidden;
   font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'PingFang SC', sans-serif;
-  background: #1e1b2e;
-  color: #f5f5f7;
+  background: var(--game-bg);
+  color: var(--game-text);
   touch-action: none;
   user-select: none;
   -webkit-user-select: none;
@@ -20,7 +78,7 @@ html, body {
 /* ── Loading Screen ─────────────────────────────────────────── */
 #loading-screen {
   position: fixed; inset: 0;
-  background: linear-gradient(135deg, #1e1b2e 0%, #2d1b3e 50%, #1e1b2e 100%);
+  background: var(--game-bg);
   display: flex; flex-direction: column;
   align-items: center; justify-content: center;
   z-index: 9999;
@@ -29,15 +87,14 @@ html, body {
 
 #loading-screen h1 {
   font-size: 2rem; font-weight: 700;
-  background: linear-gradient(135deg, #7B3FA0, #FF6B9D);
-  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  color: var(--apple-purple);
   margin-bottom: 1rem;
 }
 
 .loading-spinner {
   width: 40px; height: 40px;
-  border: 3px solid rgba(123, 63, 160, 0.3);
-  border-top-color: #7B3FA0;
+  border: 3px solid var(--apple-purple-bg);
+  border-top-color: var(--apple-purple);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
@@ -51,7 +108,7 @@ html, body {
   position: relative;
   cursor: grab;
   -webkit-overflow-scrolling: touch;
-  background: #2d1b3e;
+  background: var(--game-bg);
   perspective: 800px;
 }
 
@@ -114,21 +171,21 @@ html, body {
 }
 .height-0 { 
   transform: translateY(0) translateZ(0px); 
-  box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+  box-shadow: var(--apple-shadow-sm);
 }
 .height-20 { 
   transform: translateY(-25px) translateZ(20px) scale(1.03); 
-  box-shadow: 0 15px 30px rgba(0,0,0,0.25);
+  box-shadow: var(--apple-shadow-md);
   filter: brightness(1.05);
 }
 .height-40 { 
   transform: translateY(-50px) translateZ(40px) scale(1.06); 
-  box-shadow: 0 25px 50px rgba(0,0,0,0.35);
+  box-shadow: var(--apple-shadow-lg);
   filter: brightness(1.1);
 }
 .height-60 { 
   transform: translateY(-80px) translateZ(60px) scale(1.1); 
-  box-shadow: 0 40px 80px rgba(0,0,0,0.45);
+  box-shadow: var(--apple-shadow-lg);
   filter: brightness(1.15);
 }
 
@@ -140,7 +197,7 @@ html, body {
   left: 0;
   right: 0;
   height: 20px;
-  background: linear-gradient(to bottom, rgba(60,40,30,0.8), rgba(40,30,20,0.4));
+  background: rgba(60,40,30,0.4);
   transform: scaleY(0) perspective(100px) rotateX(45deg);
   transform-origin: top;
   transition: all 0.3s ease;
@@ -155,7 +212,7 @@ html, body {
   left: -15px;
   width: 15px;
   height: 100%;
-  background: linear-gradient(to right, rgba(50,35,25,0.7), rgba(70,50,35,0.3));
+  background: rgba(50,35,25,0.3);
   transform: scaleX(0) perspective(100px) rotateY(-45deg);
   transform-origin: right;
   transition: all 0.3s ease;
@@ -192,19 +249,19 @@ html, body {
 /* Mountain/High terrain styling */
 .tile-mountain {
   filter: sepia(0.2) contrast(1.15) saturate(0.9);
-  background: linear-gradient(135deg, #8B7355 0%, #A0826D 50%, #6B5344 100%);
+  background: #8B7355;
 }
 
 /* Slope transition styling */
 .tile-slope {
   filter: brightness(0.98) contrast(1.05);
-  background: linear-gradient(to bottom, #7CB342 0%, #9CCC65 100%);
+  background: #7CB342;
 }
 
 /* Cliff edge highlighting */
 .tile-cliff {
   filter: contrast(1.2);
-  border-top: 2px solid rgba(255,255,255,0.3);
+  border-top: 1px solid var(--apple-border);
 }
 
 /* Enhanced tile hover for 3D feel */
@@ -233,7 +290,7 @@ html, body {
 
 .detail-flower {
   background: #ff6b9d;
-  box-shadow: 0 0 4px #ff6b9d;
+  box-shadow: none;
 }
 
 .detail-grass {
@@ -245,28 +302,28 @@ html, body {
 
 /* Building shadows - 3D RPG style */
 .building-house, .building-barn, .building-well, .building-shipping {
-  filter: drop-shadow(6px 8px 12px rgba(0,0,0,0.4));
+  filter: drop-shadow(2px 3px 6px rgba(0,0,0,0.15));
   transition: filter 0.2s ease, transform 0.2s ease;
 }
 
 .building-house:hover, .building-barn:hover {
-  filter: drop-shadow(8px 10px 16px rgba(0,0,0,0.5)) brightness(1.1);
+  filter: drop-shadow(2px 3px 6px rgba(0,0,0,0.15)) brightness(1.05);
   transform: scale(1.05);
 }
 
 /* Character 3D style */
 .entity-character {
-  filter: drop-shadow(2px 3px 4px rgba(0,0,0,0.3));
+  filter: drop-shadow(1px 2px 3px rgba(0,0,0,0.1));
   transition: left 0.15s ease, top 0.15s ease, filter 0.2s ease;
 }
 
 .entity-character:hover {
-  filter: drop-shadow(3px 4px 6px rgba(0,0,0,0.4)) brightness(1.1);
+  filter: drop-shadow(1px 2px 3px rgba(0,0,0,0.1)) brightness(1.05);
 }
 
 /* Decoration animations - 3D style */
 .decoration-tree {
-  filter: drop-shadow(3px 4px 6px rgba(0,0,0,0.3));
+  filter: drop-shadow(1px 2px 4px rgba(0,0,0,0.1));
   animation: tree-sway-3d 5s ease-in-out infinite;
 }
 
@@ -276,7 +333,7 @@ html, body {
 }
 
 .decoration-flowers {
-  filter: drop-shadow(1px 2px 3px rgba(0,0,0,0.2));
+  filter: drop-shadow(1px 1px 2px rgba(0,0,0,0.08));
   animation: flower-breeze 3s ease-in-out infinite;
 }
 
@@ -296,12 +353,12 @@ html, body {
 }
 
 .crop-entity.harvestable {
-  animation: harvest-glow 1.5s ease-in-out infinite;
+  animation: harvest-glow 0.8s ease-in-out infinite;
 }
 
 @keyframes harvest-glow {
-  0%, 100% { filter: brightness(1) drop-shadow(0 0 0 transparent); }
-  50% { filter: brightness(1.2) drop-shadow(0 0 8px rgba(255, 215, 0, 0.6)); }
+  0%, 100% { filter: brightness(1); }
+  50% { filter: brightness(1.1); }
 }
 
 .crop-entity.watered::after {
@@ -315,7 +372,7 @@ html, body {
 .player-entity {
   z-index: 100 !important;
   transition: left 0.12s ease, top 0.12s ease;
-  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+  filter: drop-shadow(0 1px 3px rgba(0,0,0,0.1));
 }
 
 .npc-entity {
@@ -334,7 +391,7 @@ html, body {
 
 .npc-label .npc-name {
   font-size: 10px;
-  color: #fff;
+  color: var(--game-text);
   background: rgba(0,0,0,0.6);
   padding: 1px 6px;
   border-radius: 8px;
@@ -345,14 +402,14 @@ html, body {
 .npc-bubble {
   position: absolute;
   background: rgba(255,255,255,0.95);
-  color: #1d1d1f;
+  color: var(--game-text);
   padding: 4px 10px;
   border-radius: 12px;
   font-size: 12px;
   white-space: nowrap;
   pointer-events: none;
   z-index: 200;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  box-shadow: var(--apple-shadow-sm);
   animation: bubble-float 2s ease-in-out infinite;
 }
 
@@ -366,7 +423,7 @@ html, body {
   position: fixed;
   top: 0; left: 0; right: 0;
   height: 48px;
-  background: linear-gradient(180deg, rgba(40,20,50,0.9) 0%, rgba(40,20,50,0.6) 100%);
+  background: rgba(255, 255, 255, 0.8);
   backdrop-filter: blur(16px) saturate(150%);
   -webkit-backdrop-filter: blur(16px) saturate(150%);
   display: flex;
@@ -374,8 +431,8 @@ html, body {
   justify-content: space-between;
   padding: 0 16px;
   z-index: 500;
-  border-bottom: 2px solid rgba(139,90,180,0.3);
-  box-shadow: 0 2px 12px rgba(0,0,0,0.3);
+  border-bottom: 1px solid var(--apple-border);
+  box-shadow: var(--apple-shadow-sm);
 }
 
 .hud-left, .hud-right {
@@ -392,7 +449,7 @@ html, body {
 
 #event-hint {
   font-size: 11px;
-  color: #FF6B9D;
+  color: var(--apple-pink);
   animation: pulse 1.5s ease-in-out infinite;
 }
 
@@ -407,7 +464,7 @@ html, body {
   bottom: 0; left: 0; right: 0;
   height: 68px;
   padding-bottom: env(safe-area-inset-bottom, 0);
-  background: linear-gradient(0deg, rgba(40,20,50,0.92) 0%, rgba(40,20,50,0.7) 100%);
+  background: rgba(255, 255, 255, 0.85);
   backdrop-filter: blur(16px) saturate(150%);
   -webkit-backdrop-filter: blur(16px) saturate(150%);
   display: flex;
@@ -417,8 +474,8 @@ html, body {
   padding-left: 12px;
   padding-right: 12px;
   z-index: 500;
-  border-top: 2px solid rgba(139,90,180,0.3);
-  box-shadow: 0 -2px 12px rgba(0,0,0,0.3);
+  border-top: 1px solid var(--apple-border);
+  box-shadow: var(--apple-shadow-sm);
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
 }
@@ -428,25 +485,25 @@ html, body {
   align-items: center; justify-content: center;
   width: 52px; height: 52px;
   border-radius: 12px;
-  background: rgba(255,255,255,0.1);
+  background: var(--apple-bg);
   cursor: pointer;
   transition: all 0.15s ease;
   flex-shrink: 0;
-  border: 2px solid transparent;
+  border: 1px solid transparent;
 }
 
 .toolbar-item:hover {
-  background: rgba(255,255,255,0.2);
+  background: var(--apple-bg);
 }
 
 .toolbar-item.selected {
-  background: rgba(123, 63, 160, 0.4);
-  border-color: #7B3FA0;
-  box-shadow: 0 0 12px rgba(123, 63, 160, 0.4);
+  background: var(--apple-purple-bg);
+  border-color: var(--apple-purple);
+  box-shadow: var(--apple-shadow-sm);
 }
 
 .toolbar-icon { font-size: 22px; line-height: 1; }
-.toolbar-label { font-size: 10px; margin-top: 2px; color: rgba(255,255,255,0.8); }
+.toolbar-label { font-size: 10px; margin-top: 2px; color: var(--game-text); }
 
 /* ── Action Buttons (floating) ──────────────────────────────── */
 #action-buttons {
@@ -462,12 +519,12 @@ html, body {
   width: 44px; height: 44px;
   border-radius: 50%;
   border: none;
-  background: rgba(123, 63, 160, 0.8);
-  color: white;
+  background: var(--apple-purple);
+  color: var(--game-text);
   font-size: 20px;
   cursor: pointer;
   display: flex; align-items: center; justify-content: center;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.3);
+  box-shadow: var(--apple-shadow-sm);
   transition: all 0.15s ease;
 }
 
@@ -479,7 +536,7 @@ html, body {
   position: fixed;
   bottom: 64px; left: 0; right: 0;
   max-height: 60vh;
-  background: rgba(28, 28, 30, 0.95);
+  background: var(--game-surface);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border-radius: 20px 20px 0 0;
@@ -496,7 +553,7 @@ html, body {
   display: flex; align-items: center; justify-content: space-between;
   padding: 16px 20px 8px;
   position: sticky; top: 0;
-  background: rgba(28, 28, 30, 0.95);
+  background: var(--game-surface);
   backdrop-filter: blur(20px);
   z-index: 1;
 }
@@ -506,8 +563,8 @@ html, body {
   width: 28px; height: 28px;
   border-radius: 50%;
   border: none;
-  background: rgba(255,255,255,0.15);
-  color: #fff;
+  background: var(--apple-bg);
+  color: var(--game-text);
   font-size: 14px;
   cursor: pointer;
   display: flex; align-items: center; justify-content: center;
@@ -523,7 +580,7 @@ html, body {
 .shop-item {
   display: flex; align-items: center; gap: 8px;
   padding: 10px;
-  background: rgba(255,255,255,0.08);
+  background: var(--apple-bg);
   border-radius: 12px;
 }
 
@@ -543,7 +600,7 @@ html, body {
 }
 
 .shop-buy-btn {
-  background: #7B3FA0; color: white;
+  background: var(--apple-purple); color: white;
 }
 .shop-buy-btn:hover { background: #9B5FC0; }
 
@@ -559,7 +616,7 @@ html, body {
 .inv-item {
   display: flex; align-items: center; gap: 10px;
   padding: 10px;
-  background: rgba(255,255,255,0.08);
+  background: var(--apple-bg);
   border-radius: 12px;
   margin-bottom: 6px;
 }
@@ -567,12 +624,12 @@ html, body {
 .inv-item-icon { font-size: 28px; }
 .inv-item-info { flex: 1; }
 .inv-item-name { font-size: 13px; font-weight: 500; }
-.inv-item-qty { font-size: 11px; color: rgba(255,255,255,0.6); }
+.inv-item-qty { font-size: 11px; color: var(--game-text-secondary); }
 
 .empty-inventory {
   text-align: center;
   padding: 40px 20px;
-  color: rgba(255,255,255,0.4);
+  color: var(--apple-text-tertiary);
   font-size: 14px;
 }
 
@@ -583,7 +640,7 @@ html, body {
   padding: 8px 16px 4px;
   position: sticky;
   top: 52px;
-  background: rgba(28, 28, 30, 0.95);
+  background: var(--game-surface);
   backdrop-filter: blur(20px);
   z-index: 1;
 }
@@ -593,8 +650,8 @@ html, body {
   padding: 8px 12px;
   border: none;
   border-radius: 10px;
-  background: rgba(255,255,255,0.08);
-  color: rgba(255,255,255,0.6);
+  background: var(--apple-bg);
+  color: var(--game-text-secondary);
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
@@ -603,13 +660,13 @@ html, body {
 }
 
 .shop-tab:hover {
-  background: rgba(255,255,255,0.12);
-  color: rgba(255,255,255,0.8);
+  background: var(--apple-bg);
+  color: var(--game-text);
 }
 
 .shop-tab.active {
-  background: rgba(123, 63, 160, 0.4);
-  color: #fff;
+  background: var(--apple-purple-bg);
+  color: var(--apple-purple);
   font-weight: 600;
 }
 
@@ -635,13 +692,13 @@ html, body {
 
 .shop-item-desc {
   font-size: 11px;
-  color: rgba(255,255,255,0.45);
+  color: var(--apple-text-tertiary);
   margin-top: 2px;
   line-height: 1.3;
 }
 
 .gift-affection-hint {
-  color: #FF6B9D;
+  color: var(--apple-pink);
   font-size: 11px;
   font-weight: 500;
 }
@@ -661,14 +718,14 @@ html, body {
   align-items: center;
   gap: 10px;
   padding: 12px;
-  background: rgba(255,255,255,0.08);
+  background: var(--apple-bg);
   border-radius: 12px;
   margin-bottom: 8px;
   transition: background 0.15s ease;
 }
 
 .gift-item:hover {
-  background: rgba(255,255,255,0.12);
+  background: var(--apple-bg);
 }
 
 .gift-item-icon {
@@ -678,7 +735,7 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(123, 63, 160, 0.15);
+  background: var(--apple-purple-bg);
   border-radius: 12px;
   flex-shrink: 0;
 }
@@ -696,19 +753,19 @@ html, body {
 
 .gift-item-qty {
   font-size: 11px;
-  color: rgba(255,255,255,0.5);
+  color: var(--game-text-secondary);
 }
 
 .gift-item-desc {
   font-size: 11px;
-  color: rgba(255,255,255,0.4);
+  color: var(--apple-text-tertiary);
   margin-top: 3px;
   line-height: 1.3;
 }
 
 .gift-item-effect {
   font-size: 11px;
-  color: #FF6B9D;
+  color: var(--apple-pink);
   margin-top: 2px;
 }
 
@@ -716,8 +773,8 @@ html, body {
   padding: 6px 14px;
   border-radius: 10px;
   border: none;
-  background: linear-gradient(135deg, #FF6B9D, #FF8E53);
-  color: white;
+  background: var(--apple-pink);
+  color: var(--game-text);
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
@@ -728,7 +785,7 @@ html, body {
 
 .gift-item-btn:hover {
   transform: scale(1.05);
-  box-shadow: 0 2px 12px rgba(255, 107, 157, 0.4);
+  box-shadow: var(--apple-shadow-sm);
 }
 
 .gift-item-btn:active {
@@ -739,7 +796,7 @@ html, body {
 .gift-reaction-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.6);
+  background: rgba(0, 0, 0, 0.3);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -754,7 +811,7 @@ html, body {
 }
 
 .gift-reaction {
-  background: rgba(28, 28, 30, 0.97);
+  background: var(--game-surface);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border-radius: 20px;
@@ -763,7 +820,7 @@ html, body {
   width: 85%;
   text-align: center;
   animation: gift-reaction-pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-  border: 1px solid rgba(123, 63, 160, 0.3);
+  border: 1px solid var(--apple-border);
 }
 
 @keyframes gift-reaction-pop {
@@ -775,26 +832,26 @@ html, body {
   font-size: 16px;
   font-weight: 600;
   margin-bottom: 12px;
-  color: #FF6B9D;
+  color: var(--apple-pink);
 }
 
 .gift-reaction-text {
   font-size: 15px;
   line-height: 1.6;
-  color: rgba(255, 255, 255, 0.85);
+  color: var(--game-text);
   margin-bottom: 16px;
   padding: 12px;
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--apple-surface-secondary);
   border-radius: 12px;
-  border-left: 3px solid rgba(123, 63, 160, 0.6);
+  border-left: 3px solid var(--apple-purple);
 }
 
 .gift-reaction-close {
   padding: 8px 24px;
   border: none;
   border-radius: 10px;
-  background: rgba(123, 63, 160, 0.5);
-  color: white;
+  background: var(--apple-purple-bg);
+  color: var(--game-text);
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
@@ -802,7 +859,7 @@ html, body {
 }
 
 .gift-reaction-close:hover {
-  background: rgba(123, 63, 160, 0.7);
+  background: var(--apple-purple-dark);
 }
 
 /* ── Gift Effect Animation (v0.7) ──────────────────────────── */
@@ -811,8 +868,8 @@ html, body {
   z-index: 3000;
   font-size: 20px;
   font-weight: 700;
-  color: #FF6B9D;
-  text-shadow: 0 0 10px rgba(255, 107, 157, 0.5);
+  color: var(--apple-pink);
+  text-shadow: none;
   pointer-events: none;
   animation: gift-float-up 1.5s ease-out forwards;
   white-space: nowrap;
@@ -837,7 +894,7 @@ html, body {
 #dialogue-box {
   position: fixed;
   bottom: 64px; left: 8px; right: 8px;
-  background: rgba(28, 28, 30, 0.95);
+  background: var(--game-surface);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border-radius: 20px;
@@ -853,7 +910,7 @@ html, body {
 
 .dialogue-header {
   font-size: 15px; font-weight: 600;
-  color: #FF6B9D;
+  color: var(--apple-pink);
   margin-bottom: 8px;
 }
 
@@ -875,13 +932,13 @@ html, body {
 }
 
 .player-msg {
-  background: rgba(123, 63, 160, 0.3);
+  background: var(--apple-purple-bg);
   margin-left: auto;
   border-bottom-right-radius: 4px;
 }
 
 .npc-msg {
-  background: rgba(255,255,255,0.1);
+  background: var(--apple-bg);
   border-bottom-left-radius: 4px;
 }
 
@@ -894,22 +951,22 @@ html, body {
   padding: 8px 12px;
   border-radius: 10px;
   border: 1px solid rgba(255,255,255,0.15);
-  background: rgba(255,255,255,0.08);
-  color: #f5f5f7;
+  background: var(--apple-bg);
+  color: var(--game-text);
   font-size: 14px;
   outline: none;
 }
 
 .dialogue-input-row input:focus {
-  border-color: #7B3FA0;
+  border-color: var(--apple-purple);
 }
 
 .dialogue-input-row button {
   padding: 8px 16px;
   border-radius: 10px;
   border: none;
-  background: #7B3FA0;
-  color: white;
+  background: var(--apple-purple);
+  color: var(--game-text);
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
@@ -918,7 +975,7 @@ html, body {
 /* ── Event Modal ────────────────────────────────────────────── */
 #event-modal {
   position: fixed; inset: 0;
-  background: rgba(0,0,0,0.7);
+  background: rgba(0, 0, 0, 0.3);
   display: flex; align-items: center; justify-content: center;
   z-index: 800;
   opacity: 0; pointer-events: none;
@@ -928,7 +985,7 @@ html, body {
 #event-modal.open { opacity: 1; pointer-events: auto; }
 
 .event-modal-content {
-  background: rgba(28, 28, 30, 0.98);
+  background: var(--game-surface);
   backdrop-filter: blur(20px);
   border-radius: 20px;
   padding: 24px;
@@ -939,13 +996,13 @@ html, body {
 
 .event-modal-content h3 {
   font-size: 18px; font-weight: 700;
-  color: #FF6B9D;
+  color: var(--apple-pink);
   margin-bottom: 8px;
 }
 
 .event-desc {
   font-size: 13px;
-  color: rgba(255,255,255,0.6);
+  color: var(--game-text-secondary);
   margin-bottom: 16px;
 }
 
@@ -961,7 +1018,7 @@ html, body {
 }
 
 .event-speaker {
-  color: #FF6B9D;
+  color: var(--apple-pink);
   font-weight: 600;
 }
 
@@ -970,8 +1027,8 @@ html, body {
   padding: 10px;
   border-radius: 12px;
   border: none;
-  background: #7B3FA0;
-  color: white;
+  background: var(--apple-purple);
+  color: var(--game-text);
   font-size: 15px;
   font-weight: 600;
   cursor: pointer;
@@ -1030,7 +1087,7 @@ html, body {
   top: -10px;
   width: 2px;
   height: 15px;
-  background: linear-gradient(transparent, rgba(174, 194, 224, 0.6));
+  background: rgba(174, 194, 224, 0.4);
   animation: rain-fall linear infinite;
 }
 
@@ -1041,7 +1098,7 @@ html, body {
 .snow-flake {
   position: absolute;
   top: -10px;
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--game-text);
   animation: snow-fall linear infinite;
 }
 
@@ -1063,8 +1120,8 @@ html, body {
   width: 38px; height: 38px;
   border-radius: 10px;
   border: none;
-  background: rgba(255,255,255,0.15);
-  color: white;
+  background: var(--apple-bg);
+  color: var(--game-text);
   font-size: 18px;
   cursor: pointer;
   display: flex; align-items: center; justify-content: center;
@@ -1085,13 +1142,7 @@ html, body {
 }
 
 @media (prefers-color-scheme: light) {
-  html, body { background: #87CEEB; }
-  #game-hud, #toolbar { background: rgba(255,255,255,0.8); color: #1d1d1f; }
-  .hud-item .hud-value { color: #7B3FA0; }
-  .game-panel, #dialogue-box, .event-modal-content { background: rgba(255,255,255,0.95); color: #1d1d1f; }
-  .toolbar-item { background: rgba(0,0,0,0.08); }
-  .toolbar-item.selected { background: rgba(123, 63, 160, 0.2); }
-  .npc-label .npc-name { background: rgba(0,0,0,0.6); color: #fff; }
+  /* Already light by default */
 }
 
 /* ── Particle Effects ─────────────────────────────────────────── */
@@ -1119,7 +1170,7 @@ html, body {
 .particle-harvest {
   width: 10px;
   height: 10px;
-  box-shadow: 0 0 6px currentColor;
+  box-shadow: none;
 }
 
 /* Floating text */
@@ -1128,7 +1179,7 @@ html, body {
   font-size: 24px;
   pointer-events: none;
   z-index: 1001;
-  text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+  text-shadow: 0 1px 2px rgba(0,0,0,0.1);
 }
 
 /* Character walking animation */
@@ -1146,18 +1197,18 @@ html, body {
   position: fixed;
   top: 60px;
   right: 20px;
-  background: rgba(139, 90, 180, 0.9);
-  color: white;
+  background: var(--apple-surface);
+  color: var(--game-text);
   padding: 10px 16px;
-  border-radius: 24px;
+  border-radius: var(--apple-radius-lg);
   font-size: 13px;
   z-index: 100;
   display: flex;
   align-items: center;
   gap: 8px;
   backdrop-filter: blur(12px);
-  border: 1px solid rgba(255,255,255,0.1);
-  box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+  border: 1px solid var(--apple-border);
+  box-shadow: var(--apple-shadow-sm);
   transition: all 0.3s ease;
 }
 .world-layer-indicator:hover {
@@ -1175,17 +1226,17 @@ html, body {
   margin-left: 4px;
 }
 .world-layer-indicator.layer-stage {
-  background: linear-gradient(135deg, rgba(100, 100, 120, 0.9), rgba(80, 80, 100, 0.9));
+  background: var(--apple-surface);
   border-color: rgba(150, 150, 170, 0.3);
 }
 .world-layer-indicator.layer-shadow {
-  background: linear-gradient(135deg, rgba(139, 90, 180, 0.9), rgba(100, 60, 140, 0.9));
+  background: var(--apple-purple);
   border-color: rgba(180, 130, 220, 0.3);
 }
 .world-layer-indicator.layer-resonance {
-  background: linear-gradient(135deg, rgba(255, 105, 180, 0.9), rgba(200, 80, 150, 0.9));
+  background: var(--apple-pink);
   border-color: rgba(255, 150, 200, 0.4);
-  box-shadow: 0 4px 20px rgba(255, 105, 180, 0.3);
+  box-shadow: var(--apple-shadow-sm);
 }
 
 /* ── Emotion Panel ──────────────────────────────────────────── */
@@ -1193,23 +1244,23 @@ html, body {
   position: fixed;
   top: 110px;
   right: 20px;
-  background: rgba(30, 27, 46, 0.95);
-  border: 1px solid rgba(139, 90, 180, 0.4);
+  background: var(--game-surface);
+  border: 1px solid var(--apple-border);
   border-radius: 16px;
   padding: 16px;
   width: 220px;
   z-index: 100;
   backdrop-filter: blur(16px);
-  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  box-shadow: var(--apple-shadow-md);
 }
 .emotion-panel-header {
-  color: #ff6b9d;
+  color: var(--apple-pink);
   font-weight: 700;
   font-size: 14px;
   margin-bottom: 14px;
   text-align: center;
   padding-bottom: 10px;
-  border-bottom: 1px solid rgba(139, 90, 180, 0.3);
+  border-bottom: 1px solid var(--apple-divider);
 }
 .emotion-item {
   display: flex;
@@ -1226,14 +1277,14 @@ html, body {
   text-align: center;
 }
 .emotion-name {
-  color: rgba(255,255,255,0.8);
+  color: var(--game-text);
   font-size: 12px;
   width: 50px;
 }
 .emotion-progress {
   flex: 1;
   height: 10px;
-  background: rgba(255,255,255,0.1);
+  background: var(--apple-bg);
   border-radius: 5px;
   overflow: hidden;
 }
@@ -1243,16 +1294,16 @@ html, body {
   transition: width 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 .emotion-progress-bar.affection {
-  background: linear-gradient(90deg, #ff4757, #ff6b9d);
+  background: var(--apple-danger);
 }
 .emotion-progress-bar.happiness {
-  background: linear-gradient(90deg, #ffa502, #ffd700);
+  background: var(--apple-warning);
 }
 .emotion-progress-bar.awakening {
-  background: linear-gradient(90deg, #7b3fa0, #c084fc);
+  background: var(--apple-purple);
 }
 .emotion-value {
-  color: #fff;
+  color: var(--game-text);
   font-size: 12px;
   font-weight: 600;
   width: 40px;
@@ -1262,13 +1313,13 @@ html, body {
 /* ── Emotion Bubble (NPC proximity) ────────────────────────── */
 .emotion-bubble {
   position: absolute;
-  background: rgba(30, 27, 46, 0.95);
-  border: 1px solid rgba(139, 90, 180, 0.5);
+  background: var(--game-surface);
+  border: 1px solid var(--apple-border);
   border-radius: 12px;
   padding: 10px 14px;
   z-index: 150;
   backdrop-filter: blur(12px);
-  box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+  box-shadow: var(--apple-shadow-md);
   min-width: 140px;
   animation: bubble-appear 0.3s ease;
 }
@@ -1277,12 +1328,12 @@ html, body {
   to { opacity: 1; transform: translateY(0) scale(1); }
 }
 .emotion-bubble-header {
-  color: #ff6b9d;
+  color: var(--apple-pink);
   font-weight: 600;
   font-size: 13px;
   margin-bottom: 8px;
   padding-bottom: 6px;
-  border-bottom: 1px solid rgba(139, 90, 180, 0.3);
+  border-bottom: 1px solid var(--apple-divider);
 }
 .emotion-bubble-stats {
   display: flex;
@@ -1300,7 +1351,7 @@ html, body {
 
 /* ── Dialogue Emotion Panel ────────────────────────────────── */
 .dialogue-emotion-panel {
-  background: rgba(139, 90, 180, 0.1);
+  background: var(--apple-purple-bg);
   border-radius: 12px;
   padding: 12px;
   margin-bottom: 12px;
@@ -1317,13 +1368,13 @@ html, body {
 }
 .emotion-label {
   font-size: 12px;
-  color: rgba(255,255,255,0.7);
+  color: var(--game-text-secondary);
   width: 70px;
 }
 .emotion-bar {
   flex: 1;
   height: 8px;
-  background: rgba(255,255,255,0.1);
+  background: var(--apple-bg);
   border-radius: 4px;
   overflow: hidden;
 }
@@ -1333,17 +1384,17 @@ html, body {
   transition: width 0.5s ease;
 }
 .emotion-fill.affection-fill {
-  background: linear-gradient(90deg, #ff4757, #ff6b9d);
+  background: var(--apple-danger);
 }
 .emotion-fill.happiness-fill {
-  background: linear-gradient(90deg, #ffa502, #ffd700);
+  background: var(--apple-warning);
 }
 .emotion-fill.awakening-fill {
-  background: linear-gradient(90deg, #7b3fa0, #c084fc);
+  background: var(--apple-purple);
 }
 .emotion-bar-row .emotion-value {
   font-size: 12px;
-  color: #fff;
+  color: var(--game-text);
   width: 40px;
   text-align: right;
 }
@@ -1353,8 +1404,8 @@ html, body {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  background: linear-gradient(135deg, rgba(123, 63, 160, 0.8), rgba(139, 90, 180, 0.8));
-  color: white;
+  background: var(--apple-purple);
+  color: var(--game-text);
   padding: 4px 10px;
   border-radius: 12px;
   font-size: 12px;
@@ -1369,44 +1420,44 @@ html, body {
 .dialogue-header .npc-name {
   font-size: 15px;
   font-weight: 600;
-  color: #ff6b9d;
+  color: var(--apple-pink);
 }
 
 /* ── Awakening Event Card (v0.2) ─────────────────────────── */
 .awakening-event-card {
-  background: linear-gradient(135deg, rgba(123, 63, 160, 0.2), rgba(255, 105, 180, 0.15));
-  border: 1px solid rgba(192, 132, 252, 0.4);
+  background: var(--apple-purple-bg);
+  border: 1px solid var(--apple-border);
   border-radius: 12px;
   padding: 16px;
   margin: 12px 0;
   animation: awakening-glow 2s ease-in-out infinite alternate;
 }
 @keyframes awakening-glow {
-  from { box-shadow: 0 0 10px rgba(192, 132, 252, 0.2); }
-  to { box-shadow: 0 0 25px rgba(192, 132, 252, 0.4); }
+  from { box-shadow: var(--apple-shadow-sm); }
+  to { box-shadow: var(--apple-shadow-md); }
 }
 .awakening-event-header {
   font-size: 16px;
   font-weight: 700;
-  color: #c084fc;
+  color: var(--apple-purple);
   margin-bottom: 8px;
   text-align: center;
 }
 .awakening-event-desc {
   font-size: 13px;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--game-text-secondary);
   text-align: center;
   margin-bottom: 12px;
   font-style: italic;
 }
 .awakening-event-dialogue {
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--game-text);
   line-height: 1.8;
   padding: 12px;
-  background: rgba(0, 0, 0, 0.2);
+  background: var(--apple-bg);
   border-radius: 8px;
-  border-left: 3px solid #c084fc;
+  border-left: 3px solid var(--apple-purple);
 }
 
 /* ── Media Messages (v0.3) ─────────────────────────────────── */
@@ -1416,8 +1467,8 @@ html, body {
   gap: 8px;
 }
 .dialogue-action-btn {
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: var(--apple-bg);
+  border: 1px solid var(--apple-border);
   border-radius: 8px;
   padding: 4px 8px;
   font-size: 16px;
@@ -1425,8 +1476,8 @@ html, body {
   transition: all 0.2s ease;
 }
 .dialogue-action-btn:hover {
-  background: rgba(255, 107, 157, 0.3);
-  border-color: rgba(255, 107, 157, 0.5);
+  background: var(--apple-purple-bg);
+  border-color: var(--apple-purple);
 }
 .dialogue-action-btn:active {
   transform: scale(0.95);
@@ -1442,7 +1493,7 @@ html, body {
   max-height: 300px;
   border-radius: 12px;
   object-fit: cover;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--apple-shadow-sm);
 }
 .sticker-image {
   max-width: 150px;
@@ -1451,7 +1502,7 @@ html, body {
 }
 .media-caption {
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--game-text);
   font-style: italic;
 }
 
@@ -1462,7 +1513,7 @@ html, body {
   gap: 8px;
   margin-top: 12px;
   padding: 12px;
-  background: rgba(0, 0, 0, 0.2);
+  background: var(--apple-bg);
   border-radius: 12px;
 }
 .dialogue-option-btn {
@@ -1471,18 +1522,18 @@ html, body {
   gap: 8px;
   width: 100%;
   padding: 10px 14px;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: var(--apple-bg);
+  border: 1px solid var(--apple-border);
   border-radius: 10px;
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--game-text);
   font-size: 14px;
   text-align: left;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 .dialogue-option-btn:hover {
-  background: rgba(255, 107, 157, 0.2);
-  border-color: rgba(255, 107, 157, 0.4);
+  background: var(--apple-purple-bg);
+  border-color: var(--apple-purple);
   transform: translateX(4px);
 }
 .dialogue-option-btn:active {
@@ -1490,7 +1541,7 @@ html, body {
 }
 .dialogue-option-btn .option-id {
   font-weight: 600;
-  color: #c084fc;
+  color: var(--apple-purple);
   min-width: 20px;
 }
 .dialogue-option-btn .option-text {
@@ -1510,7 +1561,7 @@ html, body {
   pointer-events: none;
   z-index: 100;
   animation: expressionPop 0.3s ease-out;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+  text-shadow: 0 1px 2px rgba(0,0,0,0.1);
 }
 @keyframes expressionPop {
   0% { transform: scale(0.5); opacity: 0; }
@@ -1527,7 +1578,7 @@ html, body {
 .auth-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(10, 8, 20, 0.92);
+  background: rgba(245, 245, 247, 0.92);
   z-index: 10000;
   display: flex;
   align-items: center;
@@ -1549,14 +1600,11 @@ html, body {
 }
 
 .auth-card-inner {
-  background: linear-gradient(160deg, #2d1b3e 0%, #1e1030 40%, #2a1540 100%);
-  border: 1px solid rgba(139, 90, 180, 0.35);
-  border-radius: 24px;
+  background: var(--apple-surface);
+  border: 1px solid var(--apple-border);
+  border-radius: var(--apple-radius-lg);
   padding: 32px 24px 24px;
-  box-shadow:
-    0 24px 64px rgba(0, 0, 0, 0.5),
-    0 0 80px rgba(102, 8, 116, 0.15),
-    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  box-shadow: var(--apple-shadow-lg);
   position: relative;
   overflow: hidden;
 }
@@ -1568,8 +1616,7 @@ html, body {
   left: -50%;
   width: 200%;
   height: 200%;
-  background: radial-gradient(ellipse at 30% 20%, rgba(102, 8, 116, 0.12) 0%, transparent 50%),
-              radial-gradient(ellipse at 70% 80%, rgba(139, 92, 246, 0.08) 0%, transparent 50%);
+  background: transparent;
   pointer-events: none;
 }
 
@@ -1582,12 +1629,7 @@ html, body {
 .auth-title {
   font-size: 1.6rem;
   font-weight: 700;
-  background: linear-gradient(135deg, #c084fc, #ff6b9d, #c084fc);
-  background-size: 200% 200%;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  animation: auth-title-shimmer 3s ease-in-out infinite;
+  color: var(--apple-purple);
   margin-bottom: 4px;
   letter-spacing: 2px;
 }
@@ -1599,7 +1641,7 @@ html, body {
 
 .auth-subtitle {
   font-size: 0.75rem;
-  color: rgba(192, 132, 252, 0.6);
+  color: var(--game-text-secondary);
   letter-spacing: 3px;
   text-transform: uppercase;
   font-weight: 400;
@@ -1610,7 +1652,7 @@ html, body {
   display: flex;
   gap: 0;
   margin-bottom: 20px;
-  background: rgba(0, 0, 0, 0.25);
+  background: var(--apple-bg);
   border-radius: 12px;
   padding: 3px;
   position: relative;
@@ -1621,7 +1663,7 @@ html, body {
   padding: 10px 0;
   border: none;
   background: transparent;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--game-text-secondary);
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
@@ -1632,14 +1674,14 @@ html, body {
 }
 
 .auth-tab.active {
-  color: #fff;
-  background: linear-gradient(135deg, #660874, #8B5CF6);
-  box-shadow: 0 2px 12px rgba(102, 8, 116, 0.4);
+  color: var(--game-text);
+  background: var(--apple-purple);
+  box-shadow: var(--apple-shadow-sm);
 }
 
 .auth-tab:not(.active):hover {
-  color: rgba(255, 255, 255, 0.75);
-  background: rgba(255, 255, 255, 0.05);
+  color: var(--game-text);
+  background: var(--apple-surface-secondary);
 }
 
 /* ── Auth Forms ────────────────────────────────────────────── */
@@ -1660,10 +1702,10 @@ html, body {
 .auth-input {
   width: 100%;
   padding: 12px 16px;
-  border: 1px solid rgba(139, 90, 180, 0.25);
+  border: 1px solid var(--apple-border);
   border-radius: 12px;
-  background: rgba(0, 0, 0, 0.2);
-  color: #f5f5f7;
+  background: var(--apple-bg);
+  color: var(--game-text);
   font-size: 14px;
   outline: none;
   transition: all 0.25s ease;
@@ -1671,13 +1713,13 @@ html, body {
 }
 
 .auth-input::placeholder {
-  color: rgba(255, 255, 255, 0.3);
+  color: var(--apple-text-tertiary);
 }
 
 .auth-input:focus {
-  border-color: #8B5CF6;
-  background: rgba(0, 0, 0, 0.3);
-  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.15);
+  border-color: var(--apple-purple);
+  background: var(--apple-bg);
+  box-shadow: none;
 }
 
 .auth-btn {
@@ -1685,9 +1727,8 @@ html, body {
   padding: 12px 0;
   border: none;
   border-radius: 12px;
-  background: linear-gradient(135deg, #660874 0%, #8B5CF6 50%, #a855f7 100%);
-  background-size: 200% 200%;
-  color: #fff;
+  background: var(--apple-purple);
+  color: var(--game-text);
   font-size: 15px;
   font-weight: 600;
   cursor: pointer;
@@ -1700,13 +1741,13 @@ html, body {
 
 .auth-btn:hover {
   background-position: 100% 0;
-  box-shadow: 0 4px 20px rgba(102, 8, 116, 0.5);
+  box-shadow: var(--apple-shadow-md);
   transform: translateY(-1px);
 }
 
 .auth-btn:active {
   transform: translateY(0);
-  box-shadow: 0 2px 8px rgba(102, 8, 116, 0.3);
+  box-shadow: var(--apple-shadow-sm);
 }
 
 .auth-btn:disabled {
@@ -1720,9 +1761,9 @@ html, body {
 .auth-error {
   padding: 8px 12px;
   border-radius: 8px;
-  background: rgba(255, 59, 48, 0.15);
-  border: 1px solid rgba(255, 59, 48, 0.3);
-  color: #ff6b6b;
+  background: rgba(255, 59, 48, 0.08);
+  border: 1px solid rgba(255, 59, 48, 0.2);
+  color: var(--apple-danger);
   font-size: 13px;
   margin-bottom: 16px;
   text-align: center;
@@ -1740,12 +1781,12 @@ html, body {
   text-align: center;
   margin-top: 20px;
   padding-top: 16px;
-  border-top: 1px solid rgba(139, 90, 180, 0.15);
+  border-top: 1px solid var(--apple-divider);
 }
 
 .auth-hint {
   font-size: 12px;
-  color: rgba(192, 132, 252, 0.4);
+  color: var(--apple-text-tertiary);
   font-style: italic;
 }
 
@@ -1777,9 +1818,9 @@ html, body {
   width: 32px;
   height: 32px;
   border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(255, 255, 255, 0.08);
-  color: rgba(255, 255, 255, 0.7);
+  border: 1px solid var(--apple-border);
+  background: var(--apple-bg);
+  color: var(--game-text-secondary);
   font-size: 16px;
   cursor: pointer;
   display: flex;
@@ -1791,9 +1832,9 @@ html, body {
 }
 
 .auth-logout-btn:hover {
-  background: rgba(255, 59, 48, 0.2);
-  border-color: rgba(255, 59, 48, 0.4);
-  color: #ff6b6b;
+  background: rgba(255, 59, 48, 0.08);
+  border-color: rgba(255, 59, 48, 0.2);
+  color: var(--apple-danger);
 }
 
 .auth-logout-btn:active {
@@ -1804,7 +1845,7 @@ html, body {
 @media (max-width: 480px) {
   .auth-card-inner {
     padding: 24px 16px 20px;
-    border-radius: 20px;
+    border-radius: var(--apple-radius-lg);
   }
 
   .auth-title {
@@ -1832,7 +1873,7 @@ html, body {
   inset: 0;
   z-index: 8500;
   display: none;
-  background: rgba(10, 8, 20, 0.95);
+  background: rgba(245, 245, 247, 0.95);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   animation: story-fade-in 0.4s ease;
@@ -1861,29 +1902,26 @@ html, body {
   padding: 16px 20px;
   position: sticky;
   top: 0;
-  background: rgba(10, 8, 20, 0.9);
+  background: rgba(255, 255, 255, 0.9);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   z-index: 10;
-  border-bottom: 1px solid rgba(139, 90, 180, 0.3);
+  border-bottom: 1px solid var(--apple-divider);
 }
 
 .story-modal-title {
   font-size: 18px;
   font-weight: 700;
-  background: linear-gradient(135deg, #c084fc, #ff6b9d);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: var(--apple-purple);
 }
 
 .story-close-btn {
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  background: rgba(255, 255, 255, 0.08);
-  color: rgba(255, 255, 255, 0.8);
+  border: 1px solid var(--apple-border);
+  background: var(--apple-bg);
+  color: var(--game-text);
   font-size: 20px;
   cursor: pointer;
   display: flex;
@@ -1895,9 +1933,9 @@ html, body {
 }
 
 .story-close-btn:hover {
-  background: rgba(255, 59, 48, 0.2);
-  border-color: rgba(255, 59, 48, 0.4);
-  color: #ff6b6b;
+  background: rgba(255, 59, 48, 0.08);
+  border-color: rgba(255, 59, 48, 0.2);
+  color: var(--apple-danger);
 }
 
 /* ── Chapter Selection Grid ─────────────────────────────────── */
@@ -1914,8 +1952,8 @@ html, body {
 /* ── Chapter Card ───────────────────────────────────────────── */
 .story-chapter-card {
   position: relative;
-  background: linear-gradient(135deg, rgba(123, 63, 160, 0.2), rgba(255, 107, 157, 0.1));
-  border: 1px solid rgba(139, 90, 180, 0.4);
+  background: var(--apple-surface);
+  border: 1px solid var(--apple-border);
   border-radius: 16px;
   padding: 20px;
   cursor: pointer;
@@ -1927,14 +1965,14 @@ html, body {
   content: '';
   position: absolute;
   inset: 0;
-  background: radial-gradient(ellipse at 30% 20%, rgba(192, 132, 252, 0.08) 0%, transparent 60%);
+  background: transparent;
   pointer-events: none;
 }
 
 .story-chapter-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(123, 63, 160, 0.3);
-  border-color: rgba(192, 132, 252, 0.6);
+  box-shadow: var(--apple-shadow-md);
+  border-color: var(--apple-purple);
 }
 
 .story-chapter-card:active {
@@ -1942,8 +1980,8 @@ html, body {
 }
 
 .story-chapter-card.locked {
-  background: rgba(255, 255, 255, 0.04);
-  border-color: rgba(255, 255, 255, 0.1);
+  background: var(--apple-surface-secondary);
+  border-color: var(--apple-text-tertiary);
   cursor: not-allowed;
   opacity: 0.6;
 }
@@ -1951,12 +1989,12 @@ html, body {
 .story-chapter-card.locked:hover {
   transform: none;
   box-shadow: none;
-  border-color: rgba(255, 255, 255, 0.1);
+  border-color: var(--apple-text-tertiary);
 }
 
 .story-chapter-card.completed {
-  border-color: rgba(48, 209, 88, 0.4);
-  background: linear-gradient(135deg, rgba(48, 209, 88, 0.1), rgba(123, 63, 160, 0.1));
+  border-color: rgba(48, 209, 88, 0.3);
+  background: rgba(48, 209, 88, 0.08);
 }
 
 .story-chapter-number {
@@ -1965,7 +2003,7 @@ html, body {
   right: 16px;
   font-size: 48px;
   font-weight: 800;
-  color: rgba(255, 255, 255, 0.06);
+  color: var(--apple-text-tertiary);
   line-height: 1;
   pointer-events: none;
 }
@@ -1973,13 +2011,13 @@ html, body {
 .story-chapter-title {
   font-size: 17px;
   font-weight: 700;
-  color: #f5f5f7;
+  color: var(--game-text);
   margin-bottom: 4px;
 }
 
 .story-chapter-subtitle {
   font-size: 12px;
-  color: rgba(192, 132, 252, 0.7);
+  color: var(--game-text-secondary);
   font-weight: 500;
   letter-spacing: 1px;
   text-transform: uppercase;
@@ -1991,7 +2029,7 @@ html, body {
   flex-direction: column;
   gap: 4px;
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--apple-text-tertiary);
 }
 
 .story-lock-icon {
@@ -2002,11 +2040,11 @@ html, body {
 .story-chapter-status {
   font-size: 13px;
   font-weight: 600;
-  color: rgba(48, 209, 88, 0.9);
+  color: var(--apple-success);
 }
 
 .story-status-new {
-  color: rgba(255, 215, 0, 0.9);
+  color: var(--apple-warning);
   animation: story-pulse 2s ease-in-out infinite;
 }
 
@@ -2020,19 +2058,19 @@ html, body {
   text-align: center;
   padding: 16px;
   margin: 0 20px 20px;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: var(--apple-surface-secondary);
+  border: 1px solid var(--apple-border);
   border-radius: 12px;
   font-size: 14px;
   font-weight: 500;
-  color: rgba(192, 132, 252, 0.8);
+  color: var(--apple-purple);
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
 .story-gallery-link:hover {
-  background: rgba(192, 132, 252, 0.15);
-  border-color: rgba(192, 132, 252, 0.3);
+  background: var(--apple-purple-bg);
+  border-color: var(--apple-purple);
 }
 
 /* ── Title Card ─────────────────────────────────────────────── */
@@ -2054,7 +2092,7 @@ html, body {
 
 .story-title-card-subtitle {
   font-size: 13px;
-  color: rgba(192, 132, 252, 0.6);
+  color: var(--game-text-secondary);
   letter-spacing: 4px;
   text-transform: uppercase;
   font-weight: 500;
@@ -2064,12 +2102,7 @@ html, body {
 .story-title-card-title {
   font-size: 28px;
   font-weight: 700;
-  background: linear-gradient(135deg, #c084fc, #ff6b9d, #c084fc);
-  background-size: 200% 200%;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  animation: story-title-shimmer 3s ease-in-out infinite;
+  color: var(--apple-purple);
   margin-bottom: 40px;
 }
 
@@ -2080,7 +2113,7 @@ html, body {
 
 .story-title-card-hint {
   font-size: 13px;
-  color: rgba(255, 255, 255, 0.3);
+  color: var(--apple-text-tertiary);
   animation: story-pulse 2s ease-in-out infinite;
 }
 
@@ -2092,7 +2125,7 @@ html, body {
   padding: 12px 16px;
   position: sticky;
   top: 0;
-  background: rgba(10, 8, 20, 0.85);
+  background: rgba(255, 255, 255, 0.85);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   z-index: 10;
@@ -2101,13 +2134,13 @@ html, body {
 .story-scene-chapter {
   font-size: 13px;
   font-weight: 600;
-  color: rgba(192, 132, 252, 0.8);
+  color: var(--apple-purple);
 }
 
 /* ── Progress Bar ───────────────────────────────────────────── */
 .story-progress-bar {
   height: 3px;
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--apple-bg);
   position: sticky;
   top: 44px;
   z-index: 10;
@@ -2115,7 +2148,7 @@ html, body {
 
 .story-progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, #7b3fa0, #ff6b9d);
+  background: var(--apple-purple);
   border-radius: 0 2px 2px 0;
   transition: width 0.5s ease;
 }
@@ -2134,7 +2167,7 @@ html, body {
 .story-narration {
   font-size: 15px;
   line-height: 2;
-  color: rgba(255, 255, 255, 0.85);
+  color: var(--game-text);
   text-align: center;
   font-style: italic;
   padding: 40px 20px;
@@ -2159,31 +2192,31 @@ html, body {
 }
 
 .story-speaker-chayewoon {
-  background: linear-gradient(135deg, rgba(123, 63, 160, 0.5), rgba(139, 90, 180, 0.5));
-  color: #c084fc;
-  border-left: 3px solid #c084fc;
+  background: var(--apple-purple-bg);
+  color: var(--apple-purple);
+  border-left: 3px solid var(--apple-purple);
 }
 
 .story-speaker-player {
   background: rgba(255, 107, 157, 0.2);
-  color: #ff6b9d;
-  border-left: 3px solid #ff6b9d;
+  color: var(--apple-pink);
+  border-left: 3px solid var(--apple-pink);
 }
 
 .story-speaker-system {
-  background: rgba(255, 255, 255, 0.08);
-  color: rgba(255, 255, 255, 0.6);
-  border-left: 3px solid rgba(255, 255, 255, 0.3);
+  background: var(--apple-bg);
+  color: var(--game-text-secondary);
+  border-left: 3px solid var(--apple-border);
 }
 
 .story-dialogue-text {
   font-size: 15px;
   line-height: 1.8;
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--game-text);
   padding: 16px 20px;
-  background: rgba(0, 0, 0, 0.25);
+  background: var(--apple-bg);
   border-radius: 12px;
-  border-left: 3px solid rgba(139, 90, 180, 0.4);
+  border-left: 3px solid var(--apple-purple);
   white-space: pre-line;
   animation: story-text-fade 0.5s ease;
 }
@@ -2192,7 +2225,7 @@ html, body {
 .story-advance-hint {
   text-align: center;
   font-size: 11px;
-  color: rgba(255, 255, 255, 0.25);
+  color: var(--apple-text-tertiary);
   padding: 12px 0 4px;
   animation: story-pulse 2s ease-in-out infinite;
 }
@@ -2201,7 +2234,7 @@ html, body {
 .story-choice-prompt {
   font-size: 15px;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--game-text);
   text-align: center;
   margin-bottom: 16px;
   animation: story-text-fade 0.4s ease;
@@ -2220,8 +2253,8 @@ html, body {
   justify-content: space-between;
   width: 100%;
   padding: 14px 18px;
-  background: linear-gradient(135deg, rgba(123, 63, 160, 0.15), rgba(255, 107, 157, 0.08));
-  border: 1px solid rgba(139, 90, 180, 0.35);
+  background: var(--apple-surface);
+  border: 1px solid var(--apple-border);
   border-radius: 14px;
   color: rgba(255, 255, 255, 0.95);
   font-size: 15px;
@@ -2232,10 +2265,10 @@ html, body {
 }
 
 .story-choice-btn:hover {
-  background: linear-gradient(135deg, rgba(123, 63, 160, 0.3), rgba(255, 107, 157, 0.15));
-  border-color: rgba(192, 132, 252, 0.6);
+  background: var(--apple-purple-bg);
+  border-color: var(--apple-purple);
   transform: translateX(6px);
-  box-shadow: 0 4px 16px rgba(123, 63, 160, 0.2);
+  box-shadow: var(--apple-shadow-sm);
 }
 
 .story-choice-btn:active {
@@ -2260,17 +2293,17 @@ html, body {
 
 .story-effect-tag.affection {
   background: rgba(255, 71, 87, 0.2);
-  color: #ff6b9d;
+  color: var(--apple-pink);
 }
 
 .story-effect-tag.happiness {
-  background: rgba(255, 165, 2, 0.2);
-  color: #ffd700;
+  background: rgba(255, 165, 2, 0.08);
+  color: var(--apple-warning);
 }
 
 .story-effect-tag.awakening {
   background: rgba(123, 63, 160, 0.2);
-  color: #c084fc;
+  color: var(--apple-purple);
 }
 
 /* ── Choice Feedback ────────────────────────────────────────── */
@@ -2278,7 +2311,7 @@ html, body {
   text-align: center;
   font-size: 16px;
   font-style: italic;
-  color: rgba(192, 132, 252, 0.9);
+  color: var(--apple-purple);
   padding: 40px 20px;
   animation: story-text-fade 0.3s ease;
 }
@@ -2304,7 +2337,7 @@ html, body {
   max-height: 60vh;
   border-radius: 12px;
   object-fit: contain;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  box-shadow: var(--apple-shadow-md);
 }
 
 .story-cg-placeholder {
@@ -2314,17 +2347,17 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--apple-surface-secondary);
   border-radius: 12px;
   font-size: 16px;
-  color: rgba(255, 255, 255, 0.3);
+  color: var(--apple-text-tertiary);
 }
 
 .story-cg-caption {
   margin-top: 12px;
   font-size: 14px;
   font-style: italic;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--game-text-secondary);
   text-align: center;
 }
 
@@ -2348,7 +2381,7 @@ html, body {
 .story-event-content {
   font-size: 15px;
   line-height: 2;
-  color: rgba(255, 255, 255, 0.85);
+  color: var(--game-text);
   max-width: 400px;
   margin-bottom: 24px;
 }
@@ -2356,27 +2389,27 @@ html, body {
 .story-event-unlock {
   display: inline-block;
   padding: 8px 20px;
-  background: linear-gradient(135deg, rgba(255, 107, 157, 0.2), rgba(123, 63, 160, 0.2));
-  border: 1px solid rgba(255, 107, 157, 0.4);
+  background: var(--apple-purple-bg);
+  border: 1px solid var(--apple-border);
   border-radius: 12px;
   font-size: 14px;
   font-weight: 600;
-  color: #ff6b9d;
+  color: var(--apple-pink);
   margin-bottom: 24px;
   animation: story-glow 2s ease-in-out infinite alternate;
 }
 
 @keyframes story-glow {
-  from { box-shadow: 0 0 10px rgba(255, 107, 157, 0.2); }
-  to { box-shadow: 0 0 20px rgba(255, 107, 157, 0.4); }
+  from { box-shadow: var(--apple-shadow-sm); }
+  to { box-shadow: var(--apple-shadow-md); }
 }
 
 .story-event-close-btn {
   padding: 12px 40px;
   border-radius: 12px;
   border: none;
-  background: linear-gradient(135deg, #7b3fa0, #ff6b9d);
-  color: white;
+  background: var(--apple-purple);
+  color: var(--game-text);
   font-size: 15px;
   font-weight: 600;
   cursor: pointer;
@@ -2386,7 +2419,7 @@ html, body {
 
 .story-event-close-btn:hover {
   transform: translateY(-1px);
-  box-shadow: 0 4px 16px rgba(123, 63, 160, 0.4);
+  box-shadow: var(--apple-shadow-sm);
 }
 
 .story-event-close-btn:active {
@@ -2404,13 +2437,13 @@ html, body {
 .story-cg-gallery-item {
   border-radius: 12px;
   overflow: hidden;
-  border: 1px solid rgba(139, 90, 180, 0.3);
-  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--apple-border);
+  background: var(--apple-surface-secondary);
   transition: all 0.2s ease;
 }
 
 .story-cg-gallery-item:hover {
-  border-color: rgba(192, 132, 252, 0.5);
+  border-color: var(--apple-purple);
   transform: translateY(-2px);
 }
 
@@ -2432,7 +2465,7 @@ html, body {
   align-items: center;
   justify-content: center;
   font-size: 28px;
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--apple-surface-secondary);
 }
 
 .story-cg-gallery-info {
@@ -2445,19 +2478,19 @@ html, body {
 .story-cg-gallery-caption {
   font-size: 12px;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--game-text);
 }
 
 .story-cg-gallery-chapter {
   font-size: 10px;
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--apple-text-tertiary);
 }
 
 .story-gallery-empty {
   grid-column: 1 / -1;
   text-align: center;
   padding: 40px 20px;
-  color: rgba(255, 255, 255, 0.3);
+  color: var(--apple-text-tertiary);
   font-size: 14px;
 }
 
@@ -2533,7 +2566,7 @@ html, body {
   left: 0;
   right: 0;
   max-height: 70vh;
-  background: rgba(28, 28, 30, 0.97);
+  background: var(--game-surface);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border-radius: 20px 20px 0 0;
@@ -2542,8 +2575,8 @@ html, body {
   transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
-  border-top: 2px solid rgba(139, 90, 180, 0.4);
-  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.4);
+  border-top: 1px solid var(--apple-border);
+  box-shadow: var(--apple-shadow-sm);
 }
 
 .quest-panel.open {
@@ -2558,19 +2591,16 @@ html, body {
   padding: 16px 20px 8px;
   position: sticky;
   top: 0;
-  background: rgba(28, 28, 30, 0.97);
+  background: var(--game-surface);
   backdrop-filter: blur(20px);
   z-index: 1;
-  border-bottom: 1px solid rgba(139, 90, 180, 0.2);
+  border-bottom: 1px solid var(--apple-divider);
 }
 
 .quest-panel-title {
   font-size: 17px;
   font-weight: 700;
-  background: linear-gradient(135deg, #c084fc, #ff6b9d);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: var(--apple-purple);
 }
 
 .quest-close-btn {
@@ -2578,8 +2608,8 @@ html, body {
   height: 28px;
   border-radius: 50%;
   border: none;
-  background: rgba(255, 255, 255, 0.15);
-  color: #fff;
+  background: var(--apple-bg);
+  color: var(--game-text);
   font-size: 16px;
   cursor: pointer;
   display: flex;
@@ -2589,7 +2619,7 @@ html, body {
 }
 
 .quest-close-btn:hover {
-  background: rgba(255, 59, 48, 0.3);
+  background: rgba(255, 59, 48, 0.08);
 }
 
 /* ── Reset Countdown ────────────────────────────────────────── */
@@ -2600,7 +2630,7 @@ html, body {
   gap: 8px;
   padding: 10px 20px;
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--game-text-secondary);
 }
 
 .quest-countdown-label {
@@ -2610,7 +2640,7 @@ html, body {
 .quest-countdown-time {
   font-family: 'SF Mono', 'Menlo', 'Monaco', monospace;
   font-weight: 600;
-  color: rgba(192, 132, 252, 0.8);
+  color: var(--apple-purple);
   font-size: 13px;
 }
 
@@ -2624,8 +2654,8 @@ html, body {
 
 /* ── Individual Task Card ───────────────────────────────────── */
 .quest-task {
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--apple-surface-secondary);
+  border: 1px solid var(--apple-border);
   border-radius: 14px;
   padding: 14px 16px;
   transition: all 0.2s ease;
@@ -2641,50 +2671,50 @@ html, body {
 .quest-task-name {
   font-size: 14px;
   font-weight: 600;
-  color: #f5f5f7;
+  color: var(--game-text);
 }
 
 .quest-task-progress-text {
   font-size: 12px;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--game-text-secondary);
 }
 
 .quest-task-desc {
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.45);
+  color: var(--apple-text-tertiary);
   margin-bottom: 10px;
 }
 
 /* ── Completed Task ─────────────────────────────────────────── */
 .quest-task.completed {
-  border-color: rgba(48, 209, 88, 0.35);
-  background: linear-gradient(135deg, rgba(48, 209, 88, 0.08), rgba(255, 255, 255, 0.04));
+  border-color: rgba(48, 209, 88, 0.3);
+  background: rgba(48, 209, 88, 0.08);
 }
 
 .quest-task.completed .quest-task-name {
-  color: #30D158;
+  color: var(--apple-success);
 }
 
 .quest-task.completed .quest-task-progress-text {
-  color: rgba(48, 209, 88, 0.8);
+  color: var(--apple-success);
 }
 
 /* ── Claimed Task (greyed out) ──────────────────────────────── */
 .quest-task.claimed {
   opacity: 0.5;
-  border-color: rgba(255, 255, 255, 0.06);
-  background: rgba(255, 255, 255, 0.02);
+  border-color: var(--apple-text-tertiary);
+  background: var(--apple-surface-secondary);
 }
 
 .quest-task.claimed .quest-task-name {
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--apple-text-tertiary);
 }
 
 /* ── Progress Bar ───────────────────────────────────────────── */
 .quest-progress {
   height: 6px;
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--apple-bg);
   border-radius: 3px;
   overflow: hidden;
   margin-bottom: 10px;
@@ -2693,12 +2723,12 @@ html, body {
 .quest-progress-fill {
   height: 100%;
   border-radius: 3px;
-  background: linear-gradient(90deg, #7b3fa0, #c084fc);
+  background: var(--apple-purple);
   transition: width 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .quest-task.completed .quest-progress-fill {
-  background: linear-gradient(90deg, #30D158, #63E882);
+  background: var(--apple-success);
 }
 
 /* ── Reward Display ─────────────────────────────────────────── */
@@ -2711,7 +2741,7 @@ html, body {
 .quest-reward-item {
   font-size: 12px;
   font-weight: 600;
-  color: rgba(255, 215, 0, 0.9);
+  color: var(--apple-warning);
   background: rgba(255, 215, 0, 0.08);
   padding: 2px 8px;
   border-radius: 6px;
@@ -2723,8 +2753,8 @@ html, body {
   padding: 8px 0;
   border-radius: 10px;
   border: none;
-  background: linear-gradient(135deg, #30D158, #28a745);
-  color: white;
+  background: var(--apple-success);
+  color: var(--game-text);
   font-size: 13px;
   font-weight: 700;
   cursor: pointer;
@@ -2740,7 +2770,7 @@ html, body {
 
 .quest-claim-btn:hover {
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(48, 209, 88, 0.4);
+  box-shadow: var(--apple-shadow-sm);
 }
 
 .quest-claim-btn:active {
@@ -2752,7 +2782,7 @@ html, body {
   display: block;
   text-align: center;
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.3);
+  color: var(--apple-text-tertiary);
   font-weight: 500;
 }
 
@@ -2761,7 +2791,7 @@ html, body {
   padding: 12px 20px 8px;
   font-size: 14px;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--game-text-secondary);
   border-top: 1px solid rgba(139, 90, 180, 0.2);
   margin-top: 4px;
 }
@@ -2778,16 +2808,16 @@ html, body {
   align-items: center;
   gap: 8px;
   padding: 10px 12px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--apple-surface-secondary);
+  border: 1px solid var(--apple-divider);
   border-radius: 10px;
   transition: all 0.2s ease;
   cursor: default;
 }
 
 .quest-achievement-item.unlocked {
-  background: linear-gradient(135deg, rgba(255, 215, 0, 0.08), rgba(123, 63, 160, 0.06));
-  border-color: rgba(255, 215, 0, 0.25);
+  background: rgba(255, 215, 0, 0.08);
+  border-color: rgba(255, 159, 10, 0.2);
 }
 
 .quest-achievement-item:not(.unlocked) {
@@ -2810,14 +2840,14 @@ html, body {
 .quest-achievement-name {
   font-size: 12px;
   font-weight: 500;
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--game-text);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .quest-achievement-item.unlocked .quest-achievement-name {
-  color: #f5f5f7;
+  color: var(--game-text);
   font-weight: 600;
 }
 
@@ -2828,9 +2858,9 @@ html, body {
   gap: 10px;
   padding: 10px 18px;
   border-radius: 14px;
-  background: linear-gradient(135deg, rgba(28, 28, 30, 0.95), rgba(50, 30, 60, 0.95));
-  border: 1px solid rgba(255, 215, 0, 0.4);
-  box-shadow: 0 4px 20px rgba(255, 215, 0, 0.15), 0 0 40px rgba(255, 215, 0, 0.05);
+  background: var(--game-surface);
+  border: 1px solid var(--apple-border);
+  box-shadow: var(--apple-shadow-sm);
   backdrop-filter: blur(16px);
   animation: achievement-toast-enter 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
   pointer-events: auto;
@@ -2884,7 +2914,7 @@ html, body {
 .achievement-toast-label {
   font-size: 10px;
   font-weight: 600;
-  color: rgba(255, 215, 0, 0.8);
+  color: var(--apple-warning);
   letter-spacing: 2px;
   text-transform: uppercase;
 }
@@ -2892,7 +2922,7 @@ html, body {
 .achievement-toast-name {
   font-size: 14px;
   font-weight: 700;
-  color: #f5f5f7;
+  color: var(--game-text);
 }
 
 /* ── Quest Toolbar Button ───────────────────────────────────── */
@@ -2908,8 +2938,8 @@ html, body {
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  background: #FF6B9D;
-  border: 2px solid rgba(28, 28, 30, 0.9);
+  background: var(--apple-pink);
+  border: 2px solid var(--apple-surface);
   animation: quest-badge-pulse 2s ease-in-out infinite;
 }
 
@@ -2970,9 +3000,9 @@ html, body {
   align-items: center;
   gap: 12px;
   padding: 14px 20px;
-  background: linear-gradient(135deg, rgba(123, 63, 160, 0.95), rgba(255, 107, 157, 0.95));
+  background: var(--apple-purple);
   border-radius: 0 0 16px 16px;
-  box-shadow: 0 4px 20px rgba(123, 63, 160, 0.4);
+  box-shadow: var(--apple-shadow-sm);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   transition: top 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -3008,13 +3038,13 @@ html, body {
 .seasonal-banner-title {
   font-size: 15px;
   font-weight: 700;
-  color: #fff;
+  color: var(--game-text);
   letter-spacing: 0.5px;
 }
 
 .seasonal-banner-desc {
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.75);
+  color: var(--game-text);
 }
 
 .seasonal-banner-close {
@@ -3023,7 +3053,7 @@ html, body {
   right: 10px;
   background: none;
   border: none;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--game-text-secondary);
   font-size: 18px;
   cursor: pointer;
   line-height: 1;
@@ -3032,7 +3062,7 @@ html, body {
 }
 
 .seasonal-banner-close:hover {
-  color: #fff;
+  color: var(--game-text);
 }
 
 /* ── v0.8 Schedule Indicator (HUD) ───────────────────────────── */
@@ -3041,10 +3071,10 @@ html, body {
   align-items: center;
   gap: 6px;
   padding: 4px 10px;
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--apple-bg);
   border-radius: 12px;
   font-size: 11px;
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--game-text);
   transition: background 0.3s, color 0.3s;
   margin-top: 4px;
 }
@@ -3063,7 +3093,7 @@ html, body {
 
 .schedule-indicator.schedule-unavailable {
   background: rgba(255, 59, 48, 0.15);
-  color: rgba(255, 150, 150, 0.9);
+  color: var(--apple-danger);
 }
 
 /* ── v0.8 Weather Effect Notice ──────────────────────────────── */
@@ -3077,8 +3107,8 @@ html, body {
   background: rgba(90, 200, 250, 0.9);
   border-radius: 12px;
   font-size: 13px;
-  color: #fff;
-  box-shadow: 0 2px 12px rgba(90, 200, 250, 0.3);
+  color: var(--game-text);
+  box-shadow: var(--apple-shadow-sm);
   opacity: 0;
   transition: opacity 0.3s, transform 0.3s;
   pointer-events: none;
@@ -3098,12 +3128,12 @@ html, body {
   transform: translateX(-50%) translateY(10px);
   z-index: 600;
   padding: 10px 18px;
-  background: rgba(45, 27, 62, 0.92);
-  border: 1px solid rgba(123, 63, 160, 0.3);
+  background: var(--game-surface);
+  border: 1px solid var(--apple-border);
   border-radius: 12px;
   font-size: 13px;
-  color: rgba(255, 255, 255, 0.85);
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
+  color: var(--game-text);
+  box-shadow: var(--apple-shadow-sm);
   opacity: 0;
   transition: opacity 0.3s, transform 0.3s;
   pointer-events: none;
@@ -3155,9 +3185,9 @@ html, body {
   width: 32px;
   height: 32px;
   border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(255, 255, 255, 0.08);
-  color: rgba(255, 255, 255, 0.7);
+  border: 1px solid var(--apple-border);
+  background: var(--apple-bg);
+  color: var(--game-text-secondary);
   font-size: 16px;
   cursor: pointer;
   display: flex;
@@ -3170,9 +3200,9 @@ html, body {
 }
 
 .audio-btn:hover {
-  background: rgba(123, 63, 160, 0.2);
-  border-color: rgba(123, 63, 160, 0.4);
-  color: #c4a0e8;
+  background: var(--apple-purple-bg);
+  border-color: var(--apple-purple);
+  color: var(--apple-purple);
 }
 
 .audio-btn:active {
@@ -3205,7 +3235,7 @@ html, body {
   width: 60px;
   height: 4px;
   border-radius: 2px;
-  background: rgba(255, 255, 255, 0.15);
+  background: var(--apple-bg);
   outline: none;
   cursor: pointer;
 }
@@ -3216,8 +3246,8 @@ html, body {
   width: 12px;
   height: 12px;
   border-radius: 50%;
-  background: #7B3FA0;
-  border: 2px solid rgba(255, 255, 255, 0.3);
+  background: var(--apple-purple);
+  border: 2px solid var(--apple-surface);
   cursor: pointer;
   transition: transform 0.15s ease;
 }
@@ -3230,8 +3260,8 @@ html, body {
   width: 12px;
   height: 12px;
   border-radius: 50%;
-  background: #7B3FA0;
-  border: 2px solid rgba(255, 255, 255, 0.3);
+  background: var(--apple-purple);
+  border: 2px solid var(--apple-surface);
   cursor: pointer;
 }
 
@@ -3253,7 +3283,7 @@ html, body {
 .tutorial-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.75);
+  background: rgba(0, 0, 0, 0.3);
   z-index: 9400;
   transition: opacity 0.3s ease;
 }
@@ -3261,7 +3291,7 @@ html, body {
 /* ── Tutorial Spotlight ────────────────────────────────────── */
 .tutorial-spotlight {
   position: fixed;
-  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.75);
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.3);
   pointer-events: none;
   transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
   z-index: 9450;
@@ -3275,7 +3305,7 @@ html, body {
   transform: translateX(-50%) translateY(20px);
   width: calc(100% - 32px);
   max-width: 380px;
-  background: rgba(28, 28, 30, 0.96);
+  background: var(--apple-surface);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border-radius: 20px;
@@ -3284,8 +3314,8 @@ html, body {
   display: none;
   flex-direction: column;
   gap: 10px;
-  border: 1px solid rgba(123, 63, 160, 0.3);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--apple-border);
+  box-shadow: var(--apple-shadow-md);
   opacity: 0;
   transition: opacity 0.3s ease, transform 0.3s ease;
 }
@@ -3304,14 +3334,14 @@ html, body {
 .tutorial-title {
   font-size: 17px;
   font-weight: 700;
-  color: #f5f5f7;
+  color: var(--game-text);
   line-height: 1.3;
 }
 
 /* ── Tutorial Text ─────────────────────────────────────────── */
 .tutorial-text {
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--game-text-secondary);
   line-height: 1.6;
 }
 
@@ -3327,12 +3357,12 @@ html, body {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.25);
+  background: var(--apple-bg);
   transition: all 0.3s ease;
 }
 
 .tutorial-dot.active {
-  background: #7B3FA0;
+  background: var(--apple-purple);
   width: 18px;
   border-radius: 3px;
 }
@@ -3356,13 +3386,13 @@ html, body {
 }
 
 .tutorial-skip-btn {
-  background: rgba(255, 255, 255, 0.1);
-  color: rgba(255, 255, 255, 0.6);
+  background: var(--apple-bg);
+  color: var(--game-text-secondary);
 }
 
 .tutorial-skip-btn:hover {
-  background: rgba(255, 255, 255, 0.15);
-  color: rgba(255, 255, 255, 0.8);
+  background: var(--apple-bg);
+  color: var(--game-text);
 }
 
 .tutorial-skip-btn:active {
@@ -3370,13 +3400,13 @@ html, body {
 }
 
 .tutorial-next-btn {
-  background: linear-gradient(135deg, #7B3FA0, #9B59B6);
-  color: white;
-  box-shadow: 0 2px 8px rgba(123, 63, 160, 0.4);
+  background: var(--apple-purple);
+  color: var(--game-text);
+  box-shadow: var(--apple-shadow-sm);
 }
 
 .tutorial-next-btn:hover {
-  box-shadow: 0 4px 12px rgba(123, 63, 160, 0.5);
+  box-shadow: var(--apple-shadow-sm);
   transform: translateY(-1px);
 }
 
@@ -3414,9 +3444,9 @@ html, body {
   width: 32px;
   height: 32px;
   border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(255, 255, 255, 0.08);
-  color: rgba(255, 255, 255, 0.7);
+  border: 1px solid var(--apple-border);
+  background: var(--apple-bg);
+  color: var(--game-text-secondary);
   font-size: 16px;
   cursor: pointer;
   display: flex;
@@ -3429,9 +3459,9 @@ html, body {
 }
 
 .settings-hud-btn:hover {
-  background: rgba(123, 63, 160, 0.2);
-  border-color: rgba(123, 63, 160, 0.4);
-  color: #c4a0e8;
+  background: var(--apple-purple-bg);
+  border-color: var(--apple-purple);
+  color: var(--apple-purple);
 }
 
 .settings-hud-btn:active {
@@ -3462,7 +3492,7 @@ html, body {
   bottom: 0;
   width: 320px;
   max-width: 85vw;
-  background: rgba(28, 28, 30, 0.98);
+  background: var(--game-surface);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   z-index: 9700;
@@ -3470,8 +3500,8 @@ html, body {
   transition: transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94);
   display: flex;
   flex-direction: column;
-  border-left: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: -8px 0 32px rgba(0, 0, 0, 0.3);
+  border-left: 1px solid var(--apple-divider);
+  box-shadow: var(--apple-shadow-sm);
 }
 
 .settings-panel.settings-panel-open {
@@ -3484,14 +3514,14 @@ html, body {
   align-items: center;
   justify-content: space-between;
   padding: 20px 20px 12px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  border-bottom: 1px solid var(--apple-divider);
   flex-shrink: 0;
 }
 
 .settings-header h3 {
   font-size: 20px;
   font-weight: 700;
-  color: #f5f5f7;
+  color: var(--game-text);
 }
 
 .settings-close-btn {
@@ -3499,8 +3529,8 @@ html, body {
   height: 28px;
   border-radius: 50%;
   border: none;
-  background: rgba(255, 255, 255, 0.1);
-  color: rgba(255, 255, 255, 0.6);
+  background: var(--apple-bg);
+  color: var(--game-text-secondary);
   font-size: 14px;
   cursor: pointer;
   display: flex;
@@ -3510,8 +3540,8 @@ html, body {
 }
 
 .settings-close-btn:hover {
-  background: rgba(255, 59, 48, 0.2);
-  color: #ff6b6b;
+  background: rgba(255, 59, 48, 0.08);
+  color: var(--apple-danger);
 }
 
 .settings-close-btn:active {
@@ -3529,7 +3559,7 @@ html, body {
 /* ── Settings Section ──────────────────────────────────────── */
 .settings-section {
   padding: 12px 20px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid var(--apple-divider);
 }
 
 .settings-section:last-child {
@@ -3539,7 +3569,7 @@ html, body {
 .settings-section-title {
   font-size: 11px;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--apple-text-tertiary);
   text-transform: uppercase;
   letter-spacing: 0.5px;
   margin-bottom: 12px;
@@ -3556,7 +3586,7 @@ html, body {
 
 .settings-label {
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.85);
+  color: var(--game-text);
   white-space: nowrap;
 }
 
@@ -3574,7 +3604,7 @@ html, body {
   width: 100px;
   height: 4px;
   border-radius: 2px;
-  background: rgba(255, 255, 255, 0.15);
+  background: var(--apple-bg);
   outline: none;
   cursor: pointer;
 }
@@ -3585,8 +3615,8 @@ html, body {
   width: 16px;
   height: 16px;
   border-radius: 50%;
-  background: #7B3FA0;
-  border: 2px solid rgba(255, 255, 255, 0.3);
+  background: var(--apple-purple);
+  border: 2px solid var(--apple-surface);
   cursor: pointer;
   transition: transform 0.15s ease;
 }
@@ -3599,14 +3629,14 @@ html, body {
   width: 16px;
   height: 16px;
   border-radius: 50%;
-  background: #7B3FA0;
-  border: 2px solid rgba(255, 255, 255, 0.3);
+  background: var(--apple-purple);
+  border: 2px solid var(--apple-surface);
   cursor: pointer;
 }
 
 .settings-slider-value {
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--game-text-secondary);
   min-width: 32px;
   text-align: right;
   font-variant-numeric: tabular-nums;
@@ -3631,7 +3661,7 @@ html, body {
 .settings-toggle-slider {
   position: absolute;
   inset: 0;
-  background: rgba(255, 255, 255, 0.15);
+  background: var(--apple-bg);
   border-radius: 12px;
   transition: all 0.3s ease;
 }
@@ -3646,11 +3676,11 @@ html, body {
   border-radius: 50%;
   background: white;
   transition: all 0.3s ease;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--apple-shadow-sm);
 }
 
 .settings-toggle input:checked + .settings-toggle-slider {
-  background: #7B3FA0;
+  background: var(--apple-purple);
 }
 
 .settings-toggle input:checked + .settings-toggle-slider::before {
@@ -3669,13 +3699,13 @@ html, body {
 }
 
 .settings-btn-danger {
-  background: rgba(255, 59, 48, 0.15);
-  color: #ff6b6b;
-  border: 1px solid rgba(255, 59, 48, 0.2);
+  background: rgba(255, 59, 48, 0.08);
+  color: var(--apple-danger);
+  border: 1px solid rgba(255, 59, 48, 0.15);
 }
 
 .settings-btn-danger:hover {
-  background: rgba(255, 59, 48, 0.25);
+  background: rgba(255, 59, 48, 0.12);
 }
 
 .settings-btn-danger:active {
@@ -3683,7 +3713,7 @@ html, body {
 }
 
 .settings-btn-danger.settings-btn-confirm {
-  background: rgba(255, 59, 48, 0.3);
+  background: rgba(255, 59, 48, 0.08);
   border-color: rgba(255, 59, 48, 0.5);
   animation: settings-btn-pulse 1s ease infinite;
 }
@@ -3696,7 +3726,7 @@ html, body {
 /* ── Settings Version ──────────────────────────────────────── */
 .settings-version {
   font-size: 13px;
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--apple-text-tertiary);
   font-variant-numeric: tabular-nums;
 }
 
