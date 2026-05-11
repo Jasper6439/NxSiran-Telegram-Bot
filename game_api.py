@@ -302,6 +302,8 @@ async def api_get_character_location(request):
         if err:
             return err
         
+        from bot import get_current_character
+
         # 获取当前角色
         character = get_current_character()
         character_id = character.config.id if character else 'chayewoon'
@@ -334,6 +336,8 @@ async def api_get_relationship(request):
         if err:
             return err
         
+        from bot import get_current_character
+
         if not user_id:
             return web.json_response({'success': False, 'error': '未登录'})
         
@@ -458,6 +462,8 @@ async def api_gift_character(request):
         if err:
             return err
         
+        from bot import get_current_character
+
         data = await request.json()
         item_type = data.get('item_type', 'crop')
         item_id = data.get('item_id', '')
@@ -549,6 +555,8 @@ async def api_check_heart_events(request):
         if err:
             return err
         
+        from bot import get_current_character
+
         character = get_current_character()
         character_id = character.config.id if character else 'chayewoon'
         
@@ -822,11 +830,11 @@ async def api_get_full_game_state(request):
         user_id, err = await authenticate_request(request)
         if err:
             return err
-        
+        from bot import get_current_character
 
         db = get_db()
         
-        # 确保用户存在并获取农场
+        # 获取农场
         db.get_or_create_user(user_id, f"game_{user_id}")
         farm = db.get_or_create_farm(user_id)
         
@@ -1075,6 +1083,8 @@ async def api_get_emotion_values(request):
         if err:
             return err
         
+        from bot import get_current_character
+
         character = get_current_character()
         character_id = character.config.id if character else 'chayewoon'
         
@@ -1099,6 +1109,8 @@ async def api_check_awakening(request):
         if err:
             return err
         
+        from bot import get_current_character
+
         character = get_current_character()
         character_id = character.config.id if character else 'chayewoon'
         
@@ -1126,6 +1138,8 @@ async def api_trigger_awakening(request):
         if err:
             return err
         
+        from bot import get_current_character
+
         data = await request.json()
         event_name = data.get('event_name', 'default_awakening')
         
