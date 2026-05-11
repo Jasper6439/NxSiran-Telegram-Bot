@@ -13,7 +13,10 @@ import urllib.parse
 from datetime import datetime
 from aiohttp import web
 from database import get_db
-from config import get_default_tz
+from config import get_default_tz, load_config
+from auth import validate_session_token, validate_api_token
+from characters import get_current_character
+from prompts import SELFIE_PROMPTS, STICKER_PROMPTS, SCENE_PROMPTS
 
 logger = logging.getLogger(__name__)
 
@@ -28,8 +31,6 @@ async def authenticate_request(request) -> tuple:
     Returns:
         (internal_user_id, error_response) - 成功时返回数据库内部 users.id，失败时 error_response 有效
     """
-    from bot import validate_session_token, validate_api_token, load_config
-    
     telegram_id = validate_session_token(request)
     if not telegram_id:
         telegram_id = validate_api_token(request)
@@ -302,7 +303,6 @@ async def api_get_character_location(request):
         if err:
             return err
         
-        from bot import get_current_character
 
         # 获取当前角色
         character = get_current_character()
@@ -336,7 +336,6 @@ async def api_get_relationship(request):
         if err:
             return err
         
-        from bot import get_current_character
 
         if not user_id:
             return web.json_response({'success': False, 'error': '未登录'})
@@ -462,7 +461,6 @@ async def api_gift_character(request):
         if err:
             return err
         
-        from bot import get_current_character
 
         data = await request.json()
         item_type = data.get('item_type', 'crop')
@@ -555,7 +553,6 @@ async def api_check_heart_events(request):
         if err:
             return err
         
-        from bot import get_current_character
 
         character = get_current_character()
         character_id = character.config.id if character else 'chayewoon'
@@ -830,7 +827,6 @@ async def api_get_full_game_state(request):
         user_id, err = await authenticate_request(request)
         if err:
             return err
-        from bot import get_current_character
 
         db = get_db()
         
@@ -1083,7 +1079,6 @@ async def api_get_emotion_values(request):
         if err:
             return err
         
-        from bot import get_current_character
 
         character = get_current_character()
         character_id = character.config.id if character else 'chayewoon'
@@ -1109,7 +1104,6 @@ async def api_check_awakening(request):
         if err:
             return err
         
-        from bot import get_current_character
 
         character = get_current_character()
         character_id = character.config.id if character else 'chayewoon'
@@ -1138,7 +1132,6 @@ async def api_trigger_awakening(request):
         if err:
             return err
         
-        from bot import get_current_character
 
         data = await request.json()
         event_name = data.get('event_name', 'default_awakening')
@@ -1224,80 +1217,7 @@ async def api_get_world_state(request):
 # 多媒体生成 API（v0.3）
 # ============================================================
 
-# 自拍 Prompt（从 bot.py 复制，韩国 BL 美学风格）
-SELFIE_PROMPTS = [
-    "Young East Asian man slim athletic build, short dark hair clean cut, wearing oversized black jacket over white t-shirt, standing on city street at night, neon signs and street lights in background, cool blue-amber color grading, shallow depth of field, 35mm lens feel, realistic casual photo style, slight film grain, contemplative restrained expression not looking at camera, cinematic 4K",
-    "Young East Asian man athletic runner build, short dark messy hair slightly sweaty, wearing track jacket and shorts, leaning against railing on city bridge at night, city lights reflecting on river below, high contrast night photography, cool blue-teal color grading, shallow depth of field, 50mm lens, realistic documentary style, calm composed expression, cinematic 4K",
-    "Young East Asian man slim build, short textured dark hair, wearing loose denim jacket black t-shirt silver chain necklace, mirror selfie in dimly lit room, warm amber indoor lighting, shallow depth of field, realistic casual photo, slight grain texture, restrained half-smile, 35mm lens perspective, cinematic 4K",
-    "Young East Asian man 186cm slim athletic, short dark hair with volume on top, wearing oversized olive green jacket white shirt, walking on street with backpack, golden hour sunlight, blue sky with scattered clouds, warm natural color grading, shallow depth of field, 35mm lens documentary feel, relaxed composed expression, realistic casual photography, cinematic 4K",
-    "Young East Asian man athletic build, short dark hair, wearing black hoodie and loose jeans, sitting in cafe by window, afternoon sunlight through glass, warm highlights on face, soft natural color grading, shallow depth of field, contemplative calm expression looking away, realistic lifestyle photo, 50mm lens, cinematic 4K",
-    "Korean BL drama still frame, young Korean man 18yo 186cm slim athletic, oval face soft contours, large almond eyes, black tousled medium hair with fringe, clear porcelain skin, wearing Korean white school uniform shirt loose tie, leaning against hallway wall, soft warm color grading, shallow depth of field, romantic melancholic youth drama atmosphere, Korean BL cinematography style, photorealistic 8K",
-]
-
-# 表情包 Prompt
-STICKER_PROMPTS = {
-    "害羞": [
-        "Korean BL drama close-up emoji sticker, young Korean man 18yo, covering face with one hand peeking through fingers, visible blush on cheeks, black tousled hair, soft warm color grading, simple clean background, cute chibi style, Korean BL aesthetic, flat illustration",
-        "Korean BL drama emoji sticker, young Korean man blushing heavily, looking down shyly, hand covering mouth, nose scrunch, warm pink tones, simple background, cute sticker art style, Korean BL aesthetic",
-    ],
-    "生气": [
-        "Korean BL drama emoji sticker, young Korean man 18yo angry expression, furrowed brows, cold glare, arms crossed, slightly pouting, cool blue-grey tones, simple background, cute sticker art style, Korean BL aesthetic",
-        "Korean BL drama emoji sticker, young Korean man looking away annoyed, sharp eyes, slight frown, cold atmosphere, desaturated tones, simple background, cute sticker art style",
-    ],
-    "开心": [
-        "Korean BL drama emoji sticker, young Korean man 18yo rare genuine smile, eyes curved into crescents, soft warm lighting, happy expression, warm golden tones, simple background, cute sticker art style, Korean BL aesthetic",
-        "Korean BL drama emoji sticker, young Korean man small shy smile, looking at viewer, gentle eyes, warm atmosphere, soft pastel tones, simple background, cute sticker art style",
-    ],
-    "难过": [
-        "Korean BL drama emoji sticker, young Korean man 18yo sad expression, teary eyes looking down, solitary figure, melancholic atmosphere, cool blue-grey tones, simple background, cute sticker art style, Korean BL aesthetic",
-        "Korean BL drama emoji sticker, young Korean man covering eyes with arm, crying silently, lonely atmosphere, muted desaturated tones, simple background, cute sticker art style",
-    ],
-    "想你": [
-        "Korean BL drama emoji sticker, young Korean man 18yo looking at phone screen longingly, lying on bed, dim room, phone glow on face, warm intimate tones, simple background, cute sticker art style, Korean BL aesthetic",
-        "Korean BL drama emoji sticker, young Korean man staring out window at night, city lights reflection in eyes, contemplative lonely expression, cool blue-warm tones, simple background, cute sticker art style",
-    ],
-    "吃醋": [
-        "Korean BL drama emoji sticker, young Korean man 18yo jealous expression, sharp side glance, slightly pouting lips, arms crossed, tense atmosphere, warm-cool contrast tones, simple background, cute sticker art style, Korean BL aesthetic",
-        "Korean BL drama emoji sticker, young Korean man glaring with narrowed eyes, cold expression but hurt underneath, slight frown, dramatic lighting, simple background, cute sticker art style",
-    ],
-    "撒娇": [
-        "Korean BL drama emoji sticker, young Korean man 18yo puppy eyes expression, slightly pouting, head tilted, cute pleading look, warm pink tones, simple background, cute chibi sticker art style, Korean BL aesthetic",
-        "Korean BL drama emoji sticker, young Korean man tugging sleeve shyly, looking up with big eyes, slight blush, soft warm tones, simple background, cute sticker art style",
-    ],
-    "默认": [
-        "Korean BL drama emoji sticker, young Korean man 18yo neutral calm expression, slight contemplative look, simple background, cute sticker art style, Korean BL aesthetic",
-    ],
-}
-
-# 场景 Prompt
-SCENE_PROMPTS = {
-    "天台": [
-        "Korean high school rooftop at sunset, concrete floor with metal railings, city skyline in background, golden hour lighting, warm orange and pink sky, a backpack and water bottle left on the bench, realistic casual photo style, soft warm color grading, shallow depth of field, 35mm lens, cinematic 4K",
-        "Korean school rooftop at night, city lights twinkling below, cool blue moonlight, a single figure's shadow cast on concrete, quiet contemplative atmosphere, high contrast night photography, cool blue-teal color grading, shallow depth of field, 50mm lens, cinematic 4K",
-    ],
-    "房间": [
-        "Small cozy Korean student room, single bed with simple white sheets, small desk with textbooks and lamp, morning sunlight through small window, realistic lifestyle photo, soft warm indoor lighting, shallow depth of field, 35mm lens, intimate personal atmosphere, cinematic 4K",
-        "Korean student's rooftop room at night, small space with mattress on floor, phone screen glowing, city lights visible through opening, warm amber color grading, shallow depth of field, realistic casual photo, slight film grain, cinematic 4K",
-    ],
-    "学校": [
-        "Korean high school hallway during golden hour, long corridor with lockers, warm sunlight streaming through windows, leading lines composition, realistic documentary style, warm golden color grading, shallow depth of field, 35mm lens, nostalgic youth atmosphere, cinematic 4K",
-        "Korean high school classroom, empty desks and chairs, afternoon sunlight through large windows, dust particles in light beams, realistic casual style, soft warm color grading, shallow depth of field, 50mm lens, cinematic 4K",
-    ],
-    "田径场": [
-        "Korean high school running track, red rubber surface with white lane markings, green field in center, golden hour sunlight, water bottle on the track, realistic sports photography, warm athletic color grading, shallow depth of field, 50mm lens, cinematic 4K wide angle",
-        "Korean school athletic field at dawn, morning mist, dew on grass, track surface glistening, sunrise colors in sky, realistic documentary style, soft cool-warm gradient color grading, shallow depth of field, cinematic 4K",
-    ],
-    "街道": [
-        "Korean city street at dusk, neon signs and shop lights, small shops and convenience store, warm light from windows, quiet residential neighborhood, realistic street photography, warm amber-blue color grading, shallow depth of field, 35mm lens, cinematic blue hour atmosphere, cinematic 4K",
-        "Korean city street near high school, afternoon sunlight, small cafes and bakeries, realistic casual street photography, soft warm color grading, shallow depth of field, 35mm lens documentary feel, cinematic 4K",
-    ],
-    "咖啡厅": [
-        "Cozy Korean cafe interior, warm wooden furniture, afternoon sunlight through large windows, latte art on table, realistic lifestyle photography, soft warm indoor color grading, shallow depth of field, 50mm lens, cinematic 4K",
-    ],
-    "日落": [
-        "Korean city skyline at sunset, golden hour, warm orange and pink sky, silhouettes of buildings, romantic atmosphere, realistic photography, cinematic 4K",
-    ],
-}
+# Prompt 数据从 prompts.py 导入
 
 
 def _generate_image_url(prompt: str, width: int = 768, height: int = 1024) -> str:

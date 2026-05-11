@@ -703,9 +703,11 @@ def get_color_palette_for_scene(scene: str) -> str:
 
 def analyze_dialogue_patterns(chat_id: int) -> dict:
     """分析对话模式"""
-    # 延迟导入避免循环依赖
-    from bot import get_history, detect_emotion, load_stats, calculate_intimacy, save_json
-    from config import DATA_DIR
+    # 从独立模块导入
+    from chat_history import get_history
+    from emotion import detect_emotion, calculate_intimacy
+    from stats import load_stats
+    from config import DATA_DIR, save_json
     import os
 
     ANALYSIS_FILE = os.path.join(DATA_DIR, "dialogue_analysis.json")

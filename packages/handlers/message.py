@@ -26,6 +26,7 @@ from characters import get_current_character
 from music_skill import music_skill
 from novel_knowledge import query_novel
 from qdrant_memory import search_memories
+from packages.commands.extra import _pending_analyze_img, _pending_ocr
 
 tts = TTSEngine()
 

@@ -335,8 +335,8 @@ async def analyze_image_with_gemini(image_data: str, prompt: str) -> str:
         return None
 
     try:
-        # 延迟导入避免循环依赖
-        from bot import call_gemini
+        # 从 misc 模块导入 call_gemini
+        from packages.commands.misc import call_gemini
         result = await call_gemini(prompt, image_data=image_data, model="gemini-2.5-flash")
         return result
     except Exception as e:
@@ -367,8 +367,8 @@ async def ocr_document(image_data: str) -> str:
 5. 只输出提取的文字，不要添加任何解释或说明"""
 
     try:
-        # 延迟导入避免循环依赖
-        from bot import call_gemini
+        # 从 misc 模块导入 call_gemini
+        from packages.commands.misc import call_gemini
         result = await call_gemini(ocr_prompt, image_data=image_data, model="gemini-2.5-flash")
         return result
     except Exception as e:

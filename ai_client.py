@@ -14,20 +14,11 @@ import httpx
 
 logger = logging.getLogger(__name__)
 
-# ── AI API 配置 ──────────────────────────────────────────────
-AI_API_BASE = os.environ.get("AI_API_BASE", "https://openrouter.ai/api/v1")
-AI_API_KEY = os.environ.get("AI_API_KEY", "")
-AI_MODEL = os.environ.get("AI_MODEL", "minimax/minimax-m2.5:free")
+# 从 config 模块导入配置（统一管理）
+from config import AI_API_BASE, AI_API_KEY, AI_MODEL, AI_MODELS
 
-# ── 统一的模型列表（合并两处，去重） ──────────────────────────
-FALLBACK_MODELS: List[str] = [
-    "minimax/minimax-m2.5:free",
-    "google/gemma-4-31b-it:free",
-    "tencent/hy3-preview:free",
-    "nvidia/nemotron-3-super-120b-a12b:free",
-    "aion-labs/aion-rp-llama-3.1-8b:free",
-    "openrouter/free",
-]
+# ── 统一的模型列表（从 config 导入） ──────────────────────────
+FALLBACK_MODELS: List[str] = AI_MODELS
 
 # ── 默认参数 ─────────────────────────────────────────────────
 DEFAULT_TEMPERATURE = 0.85
@@ -42,6 +33,7 @@ def _load_api_config() -> tuple:
     Returns:
         (api_key, api_base) 元组
     """
+    # 优先使用 config 模块的值（已从环境变量和 config.json 加载）
     api_key = AI_API_KEY
     api_base = AI_API_BASE
 

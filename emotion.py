@@ -143,8 +143,8 @@ async def check_proactive_actions(app):
                     # 30% 概率发送主动消息
                     if random.random() < 0.30:
                         msg = random.choice(PROACTIVE_MISS_MESSAGES)
-                        # 延迟导入避免循环依赖
-                        from bot import send_active_message
+                        # 从 handlers 模块导入
+                        from packages.handlers.message import send_active_message
                         await send_active_message(app, msg)
                         logging.info("[主动行为] 用户超过24小时未活跃，发送主动消息")
                     # 发送后重置计时，避免重复发送
@@ -153,7 +153,7 @@ async def check_proactive_actions(app):
             # 每天晚上 10 点（22:00-22:05）有机会发晚安消息
             if now.hour == 22 and 0 <= now.minute <= 5 and random.random() < 0.15:
                 msg = random.choice(PROACTIVE_GOODNIGHT_MESSAGES)
-                from bot import send_active_message
+                from packages.handlers.message import send_active_message
                 await send_active_message(app, msg)
                 logging.info("[主动行为] 发送晚安消息")
 

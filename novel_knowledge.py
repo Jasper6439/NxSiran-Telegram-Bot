@@ -35,7 +35,7 @@ class NovelKnowledge:
     
     def _get_llm_model_func(self):
         """获取 LLM 模型函数"""
-        from bot import AI_API_BASE, AI_API_KEY, AI_MODELS
+        from config import AI_API_BASE, AI_API_KEY, AI_MODELS
         
         async def llm_model_func(prompt, system_prompt="", history_messages=[], **kwargs) -> str:
             """调用 OpenRouter API"""
