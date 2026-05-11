@@ -366,6 +366,100 @@ async def web_server():
     # Game API routes
     from game_api import register_game_routes
     register_game_routes(app)
+    # HTTP Bridge for SOLO sandbox file transfer
+    setup_bridge_routes(app)
+
+    # GitHub Webhook 自动部署
+    GITHUB_WEBHOOK_SECRET = os.environ.get("GITHUB_WEBHOOK_SECRET", "")
+
+    async def github_webhook(request):
+        """接收 GitHub push 事件，自动部署"""
+        try:
+            import hmac
+            import hashlib
+
+            # 验证签名（如果配置了 secret）
+            if GITHUB_WEBHOOK_SECRET:
+                signature = request.headers.get('X-Hub-Signature-256', '')
+                body = await request.read()
+                expected = 'sha256=' + hmac.new(
+                    GITHUB_WEBHOOK_SECRET.encode(), body, hashlib.sha256
+                ).hexdigest()
+                if not hmac.compare_digest(signature, expected):
+                    return web.json_response({'error': 'Invalid signature'}, status=403)
+            else:
+                body = await request.read()
+
+            data = json.loads(body)
+            event = request.headers.get('X-GitHub-Event', '')
+
+            # 只处理 push 事件
+            if event != 'push':
+                return web.json_response({'status': 'ignored', 'event': event})
+
+            repo = data.get('repository', {}).get('full_name', '')
+            ref = data.get('ref', '')
+            commits = data.get('commits', [])
+
+            logging.info(f"[Webhook] GitHub push: {repo} {ref} ({len(commits)} commits)")
+
+            # 异步执行部署（不阻塞 webhook 响应）
+            import asyncio
+            asyncio.create_task(_auto_deploy(repo, ref, commits))
+
+            return web.json_response({'status': 'deploying', 'repo': repo, 'commits': len(commits)})
+
+        except Exception as e:
+            logging.error(f"[Webhook] Error: {e}")
+            return web.json_response({'error': str(e)}, status=500)
+
+    async def _auto_deploy(repo, ref, commits):
+        """后台执行自动部署"""
+        try:
+            import subprocess
+
+            # 只部署 master 分支
+            if ref != 'refs/heads/master':
+                logging.info(f"[Webhook] Skipping non-master push: {ref}")
+                return
+
+            logging.info(f"[Webhook] Starting auto-deploy...")
+
+            # 获取项目目录
+            project_dir = os.path.dirname(os.path.abspath(__file__))
+
+            # git pull
+            result = subprocess.run(
+                ['git', 'pull', 'origin', 'master'],
+                cwd=project_dir, capture_output=True, text=True, timeout=60
+            )
+            logging.info(f"[Webhook] git pull: {result.stdout.strip()} {result.stderr.strip()}")
+
+            if result.returncode != 0:
+                logging.error(f"[Webhook] git pull failed: {result.stderr}")
+                return
+
+            # 检查是否有 docker-compose
+            compose_file = os.path.join(project_dir, 'docker-compose.yml')
+            if os.path.exists(compose_file):
+                logging.info("[Webhook] Restarting Docker containers...")
+                result = subprocess.run(
+                    ['docker', 'compose', 'down'],
+                    cwd=project_dir, capture_output=True, text=True, timeout=60
+                )
+                result = subprocess.run(
+                    ['docker', 'compose', 'up', '-d', '--build'],
+                    cwd=project_dir, capture_output=True, text=True, timeout=300
+                )
+                logging.info(f"[Webhook] Docker restart: {result.stdout.strip()}")
+
+            logging.info(f"[Webhook] Deploy complete!")
+
+        except Exception as e:
+            logging.error(f"[Webhook] Deploy failed: {e}")
+
+    app.router.add_post('/webhook/github', github_webhook)
+    logging.info("[Webhook] GitHub auto-deploy route registered: POST /webhook/github")
 
     runner = web.AppRunner(app)
     await runner.setup()
