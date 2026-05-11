@@ -28,6 +28,7 @@ v3.0 功能：
 """
 
 import asyncio
+import json
 import logging
 import random
 import os
@@ -123,6 +124,7 @@ from packages.web.routes import register_routes
 # ============================================================
 
 from packages.bridge.routes import register_bridge_routes
+from packages.bridge.vm_bridge import setup_bridge_routes
 
 # ============================================================
 # Package imports - Video import

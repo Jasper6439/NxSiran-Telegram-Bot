@@ -22,10 +22,11 @@ from telegram.ext import ContextTypes
 from config import (
     YOUR_CHAT_ID, MEMORY_FILE, HISTORY_FILE, ANNIVERSARY_FILE,
     STATS_FILE, SEMANTIC_MEMORY_FILE, DATA_DIR, LOG_DIR,
+    load_json, save_json, get_user_selfie_dir,
 )
 from prompts import SELFIE_CAPTIONS
 from memory_legacy import (
-    load_json, save_json, get_user_memory_file,
+    get_user_memory_file,
     categorize_memory, delete_semantic_memory, search_semantic_memory,
 )
 from stats import load_stats
@@ -38,6 +39,11 @@ from tts_engine import TTSEngine
 from packages.commands.misc import auto_delete_messages
 
 tts = TTSEngine()
+
+# Lazy import for bot.call_ai (high-level AI function with character/memory/emotion integration)
+def _get_call_ai():
+    from bot import call_ai
+    return call_ai
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -113,7 +119,7 @@ async def selfie_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
         char_id = char.config.id if char else None
     saved = get_saved_selfies(chat_id)
     if saved:
-        caption = await call_ai("学长让我发一张自拍给他，用一句话害羞地回应，不超过15个字")
+        caption = await _get_call_ai()("学长让我发一张自拍给他，用一句话害羞地回应，不超过15个字")
     else:
         caption = random.choice(SELFIE_CAPTIONS)
     await send_selfie_to_chat(update.get_bot(), chat_id, caption)

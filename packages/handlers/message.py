@@ -18,6 +18,7 @@ from prompts import AUTO_STICKER_TRIGGERS, detect_sticker_mood, detect_music_req
 from memory_legacy import *
 from stats import *
 from emotion import *
+import emotion  # needed for emotion._last_user_active_time
 from chat_history import *
 from image_gen import *
 from tts_engine import TTSEngine
