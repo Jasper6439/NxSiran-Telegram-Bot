@@ -77,7 +77,8 @@
             renderMessages(data.messages || []);
             lastMessageCount = data.total_count || 0;
         }).catch(function(err) {
-            showError('加载消息失败');
+            var msg = (err && err.message) ? err.message : '加载消息失败';
+            showError(msg);
         });
     }
 
@@ -126,9 +127,10 @@
                 // AI is thinking, start polling for reply
                 pollForReply();
             }
-        }).catch(function() {
+        }).catch(function(err) {
             hideTypingIndicator();
-            showError('发送失败');
+            var msg = (err && err.message) ? err.message : '发送失败';
+            showError(msg);
         });
     }
 
