@@ -272,97 +272,13 @@ async def api_stats(request):
 # ============================================================
 
 async def serve_miniapp(request):
-    """提供Telegram Mini App HTML（新版模块化）"""
-    try:
-        # 优先使用配置的 public_url，否则从请求中获取
-        config = load_config()
-        public_url = config.get('public_url', '').strip()
-
-        if public_url:
-            api_base = public_url.rstrip('/')
-            logging.info(f"[MiniApp] 使用配置的 public_url: {api_base}")
-        else:
-            # 自动检测当前 URL
-            host = request.host
-            scheme = request.scheme
-            # 如果是 Cloudflare Tunnel，使用 https
-            if 'trycloudflare.com' in host or 'ngrok' in host:
-                scheme = 'https'
-            api_base = f"{scheme}://{host}"
-            logging.info(f"[MiniApp] 自动检测 API_BASE: {api_base}")
-
-        # Use workspace root for template paths
-        workspace_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-        template_path = os.path.join(workspace_root, 'static', 'miniapp', 'index.html')
-
-        with open(template_path, 'r', encoding='utf-8') as f:
-            html = f.read()
-
-        # 注入 API_BASE（替换占位符）
-        html = html.replace('__API_BASE__', api_base)
-
-        logging.info(f"[MiniApp] 服务新版 Mini App, API_BASE: {api_base}")
-        return web.Response(text=html, content_type='text/html')
-    except FileNotFoundError:
-        logging.warning("[MiniApp] 新版文件未找到，回退到旧版")
-        # 回退到旧版
-        try:
-            workspace_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-            template_path = os.path.join(workspace_root, 'templates', 'miniapp.html')
-            with open(template_path, 'r', encoding='utf-8') as f:
-                html = f.read()
-            config = load_config()
-            public_url = config.get('public_url', '').strip()
-            if public_url:
-                api_base = public_url.rstrip('/')
-            else:
-                host = request.host
-                scheme = request.scheme
-                if 'trycloudflare.com' in host or 'ngrok' in host:
-                    scheme = 'https'
-                api_base = f"{scheme}://{host}"
-            html = html.replace(
-                'const API_BASE = window.location.origin;',
-                f'const API_BASE = "{api_base}";'
-            )
-            return web.Response(text=html, content_type='text/html')
-        except FileNotFoundError:
-            return web.Response(text="Mini App文件未找到", status=404)
+    """Mini App 已融合到主页，重定向到首页"""
+    raise web.HTTPFound('/')
 
 
 async def serve_game(request):
-    """提供独立游戏网站 HTML"""
-    try:
-        # 检测 API_BASE
-        config = load_config()
-        public_url = config.get('public_url', '').strip()
-
-        if public_url:
-            api_base = public_url.rstrip('/')
-        else:
-            host = request.host
-            scheme = request.scheme
-            if 'trycloudflare.com' in host or 'ngrok' in host:
-                scheme = 'https'
-            api_base = f"{scheme}://{host}"
-
-        # Use workspace root for template paths
-        workspace_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-        template_path = os.path.join(workspace_root, 'static', 'game', 'index.html')
-
-        with open(template_path, 'r', encoding='utf-8') as f:
-            html = f.read()
-
-        # 注入 API_BASE
-        html = html.replace('__API_BASE__', api_base)
-
-        logging.info(f"[Game] 服务游戏网站, API_BASE: {api_base}")
-        return web.Response(text=html, content_type='text/html')
-    except FileNotFoundError:
-        return web.Response(text="游戏文件未找到", status=404)
-    except Exception as e:
-        logging.error(f"[Game] 服务游戏网站失败: {e}")
-        return web.Response(text=f"游戏加载失败: {e}", status=500)
+    """游戏已融合到主页，重定向到首页游戏页面"""
+    raise web.HTTPFound('/')
 
 
 async def api_upload_selfies(request):

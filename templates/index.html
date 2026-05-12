@@ -2,1129 +2,1374 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>车如云 - 恋爱至上主义区域</title>
+
+    <!-- 外部样式表 -->
     <link rel="stylesheet" href="/static/miniapp/css/variables.css">
+    <link rel="stylesheet" href="/static/miniapp/css/base.css">
+    <link rel="stylesheet" href="/static/miniapp/css/components.css">
+    <link rel="stylesheet" href="/static/miniapp/css/pages.css">
+    <link rel="stylesheet" href="/static/miniapp/css/dark.css">
+
     <style>
-        /* ====== 设计令牌 ====== */
-        :root {
-            --purple: #7B3FA0;
-            --purple-rgb: 123, 63, 160;
-            --purple-light: #9B5FC0;
-            --bg: #F5F5F7;
-            --card: #FFFFFF;
-            --card-alt: #F9F9FB;
-            --text-primary: #1D1D1F;
-            --text-secondary: #6E6E73;
-            --text-muted: #AEAEB2;
-            --white: #FFFFFF;
-            --danger: #FF3B30;
-            --success: #34C759;
-            --warning: #FF9500;
+        /* ================================================================
+           Layout: Sidebar + Main Content
+           ================================================================ */
 
-            /* Apple 风格阴影 */
-            --shadow-sm: 0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.06);
-            --shadow-md: 0 2px 12px rgba(0,0,0,0.08);
-            --shadow-lg: 0 8px 30px rgba(0,0,0,0.12);
-            --shadow-card: 0 2px 12px rgba(0,0,0,0.08);
-            --shadow-float: 0 8px 24px rgba(0,0,0,0.12);
-
-            /* Apple 风格圆角 */
-            --radius-sm: 8px;
-            --radius-md: 12px;
-            --radius-lg: 16px;
-            --radius-xl: 20px;
-
-            /* Apple 风格过渡 */
-            --ease-default: cubic-bezier(0.25, 0.1, 0.25, 1);
-            --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
-        }
-
-        /* ====== 暗色模式 ====== */
-        @media (prefers-color-scheme: dark) {
-            :root {
-                --purple: #BF6FE0;
-                --purple-rgb: 191, 111, 224;
-                --purple-light: #D49AEF;
-                --bg: #000000;
-                --card: #1C1C1E;
-                --card-alt: #2C2C2E;
-                --text-primary: #F5F5F7;
-                --text-secondary: #98989D;
-                --text-muted: #636366;
-                --white: #FFFFFF;
-                --danger: #FF453A;
-                --success: #30D158;
-                --warning: #FF9F0A;
-
-                --shadow-sm: 0 1px 3px rgba(0,0,0,0.2), 0 1px 2px rgba(0,0,0,0.3);
-                --shadow-md: 0 2px 12px rgba(0,0,0,0.3);
-                --shadow-lg: 0 8px 30px rgba(0,0,0,0.4);
-                --shadow-card: 0 2px 12px rgba(0,0,0,0.3);
-                --shadow-float: 0 8px 24px rgba(0,0,0,0.4);
-            }
-        }
-
-        /* ====== 基础重置 ====== */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'PingFang SC', 'Helvetica Neue', sans-serif;
-            background: var(--bg);
+        /* -- App Shell -- */
+        .app-shell {
+            display: none;
             min-height: 100vh;
-            color: var(--text-primary);
-            overflow-x: hidden;
-            -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
+            min-height: 100dvh;
+        }
+        .app-shell.active {
+            display: flex;
         }
 
-        /* ====== 背景装饰 ====== */
-        body::before {
-            content: '';
-            position: fixed;
-            top: -120px;
-            right: -120px;
-            width: 400px;
-            height: 400px;
-            background: radial-gradient(circle, rgba(123,63,160,0.06) 0%, transparent 70%);
-            border-radius: 50%;
-            pointer-events: none;
-            z-index: 0;
-        }
-
-        body::after {
-            content: '';
-            position: fixed;
-            bottom: -100px;
-            left: -100px;
-            width: 350px;
-            height: 350px;
-            background: radial-gradient(circle, rgba(123,63,160,0.04) 0%, transparent 70%);
-            border-radius: 50%;
-            pointer-events: none;
-            z-index: 0;
-        }
-
-        /* ====== 登录界面 ====== */
-        .login-container {
+        /* -- Sidebar -- */
+        .sidebar {
             position: fixed;
             top: 0;
             left: 0;
-            right: 0;
             bottom: 0;
-            background: var(--bg);
+            width: 240px;
+            background: var(--card-bg);
+            border-right: 1px solid var(--border-color);
             display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
-            padding: 20px;
+            flex-direction: column;
+            z-index: var(--z-nav);
+            transition: transform var(--duration-normal) var(--ease);
         }
 
-        .login-container.hidden {
-            display: none;
+        .sidebar-header {
+            padding: var(--space-5) var(--space-5) var(--space-4);
+            border-bottom: 1px solid var(--border-color);
         }
 
-        .login-card {
-            background: var(--card);
-            border-radius: var(--radius-xl);
-            box-shadow: var(--shadow-lg);
-            padding: 40px 32px;
-            width: 100%;
-            max-width: 400px;
-            animation: slideUp 0.4s var(--ease-spring);
-        }
-
-        @keyframes slideUp {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .login-header {
-            text-align: center;
-            margin-bottom: 32px;
-        }
-
-        .login-header h1 {
-            font-size: 1.6rem;
-            font-weight: 700;
+        .sidebar-logo {
+            font-size: var(--font-size-lg);
+            font-weight: var(--font-weight-bold);
             background: linear-gradient(135deg, var(--purple), var(--purple-light));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
-            margin-bottom: 8px;
+            letter-spacing: -0.02em;
         }
 
-        .login-header .subtitle {
-            font-size: 0.9rem;
+        .sidebar-subtitle {
+            font-size: var(--font-size-xs);
+            color: var(--text-tertiary);
+            margin-top: var(--space-1);
+        }
+
+        .sidebar-nav {
+            flex: 1;
+            padding: var(--space-3) var(--space-2);
+            overflow-y: auto;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: var(--space-3);
+            padding: var(--space-3) var(--space-4);
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            user-select: none;
+            transition: background-color var(--duration-fast) var(--ease),
+                        transform var(--duration-fast) var(--ease);
+            font-size: var(--font-size-base);
+            font-weight: var(--font-weight-medium);
             color: var(--text-secondary);
-            font-weight: 500;
+            position: relative;
+            margin-bottom: 2px;
+        }
+
+        .nav-item:hover {
+            background-color: var(--purple-bg-tint);
+            color: var(--text-primary);
+        }
+
+        .nav-item:active {
+            transform: scale(0.98);
+        }
+
+        .nav-item.active {
+            background-color: var(--purple-bg-tint);
+            color: var(--purple);
+            font-weight: var(--font-weight-semibold);
+        }
+
+        .nav-item.active::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 3px;
+            height: 20px;
+            background: var(--purple);
+            border-radius: 0 3px 3px 0;
+        }
+
+        .nav-item-icon {
+            font-size: 20px;
+            width: 28px;
+            text-align: center;
+            flex-shrink: 0;
+        }
+
+        .nav-item-label {
+            flex: 1;
+            white-space: nowrap;
+        }
+
+        .sidebar-footer {
+            padding: var(--space-4) var(--space-5);
+            border-top: 1px solid var(--border-color);
+            font-size: var(--font-size-xs);
+            color: var(--text-tertiary);
+        }
+
+        /* -- Sidebar Overlay (mobile) -- */
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.4);
+            z-index: calc(var(--z-nav) - 1);
+            opacity: 0;
+            transition: opacity var(--duration-normal) var(--ease);
+        }
+        .sidebar-overlay.visible {
+            opacity: 1;
+        }
+
+        /* -- Main Area -- */
+        .main-area {
+            flex: 1;
+            margin-left: 240px;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            min-height: 100dvh;
+        }
+
+        /* -- Top Navbar -- */
+        .top-navbar {
+            position: sticky;
+            top: 0;
+            z-index: var(--z-header);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: var(--nav-bar-height);
+            padding: 0 var(--space-5);
+            padding-top: env(safe-area-inset-top);
+            background: var(--glass-bg);
+            -webkit-backdrop-filter: var(--glass-blur);
+            backdrop-filter: var(--glass-blur);
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        .top-navbar-left {
+            display: flex;
+            align-items: center;
+            gap: var(--space-3);
+        }
+
+        .hamburger-btn {
+            display: none;
+            width: 36px;
+            height: 36px;
+            align-items: center;
+            justify-content: center;
+            border-radius: var(--radius-md);
+            background: none;
+            color: var(--text-primary);
+            font-size: 20px;
+            cursor: pointer;
+            transition: background-color var(--duration-fast) var(--ease);
+        }
+        .hamburger-btn:hover {
+            background-color: var(--purple-bg-tint);
+        }
+
+        .top-navbar-title {
+            font-size: var(--font-size-md);
+            font-weight: var(--font-weight-semibold);
+            color: var(--text-primary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .top-navbar-right {
+            display: flex;
+            align-items: center;
+            gap: var(--space-3);
+        }
+
+        .top-navbar-user {
+            font-size: var(--font-size-sm);
+            font-weight: var(--font-weight-medium);
+            color: var(--text-secondary);
+            max-width: 120px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .top-navbar-logout {
+            padding: var(--space-1) var(--space-3);
+            border-radius: var(--radius-sm);
+            background: none;
+            color: var(--text-secondary);
+            font-size: var(--font-size-sm);
+            font-weight: var(--font-weight-medium);
+            cursor: pointer;
+            transition: background-color var(--duration-fast) var(--ease),
+                        color var(--duration-fast) var(--ease);
+        }
+        .top-navbar-logout:hover {
+            background-color: var(--error-bg);
+            color: var(--error);
+        }
+
+        /* -- Content Area -- */
+        .content-area {
+            flex: 1;
+            overflow-y: auto;
+            padding: var(--space-5);
+        }
+
+        /* -- Page Containers -- */
+        .page {
+            display: none;
+            animation: pageFadeIn var(--duration-normal) var(--ease) forwards;
+        }
+        .page.active {
+            display: block;
+        }
+
+        @keyframes pageFadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ================================================================
+           Login Screen (Apple-style centered card)
+           ================================================================ */
+        .login-screen {
+            position: fixed;
+            inset: 0;
+            background: var(--bg-primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: var(--space-5);
+        }
+        .login-screen.hidden {
+            display: none;
+        }
+
+        .login-card {
+            background: var(--card-bg);
+            border-radius: var(--radius-2xl);
+            box-shadow: var(--shadow-lg);
+            padding: var(--space-8) var(--space-6);
+            width: 100%;
+            max-width: 400px;
+            animation: loginSlideUp 0.5s var(--spring);
+        }
+
+        @keyframes loginSlideUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        .login-card-header {
+            text-align: center;
+            margin-bottom: var(--space-6);
+        }
+
+        .login-card-logo {
+            width: 64px;
+            height: 64px;
+            border-radius: var(--radius-xl);
+            background: linear-gradient(135deg, var(--purple), var(--purple-light));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            color: #FFFFFF;
+            margin: 0 auto var(--space-4);
+            box-shadow: var(--shadow-purple);
+        }
+
+        .login-card-title {
+            font-size: var(--font-size-xl);
+            font-weight: var(--font-weight-bold);
+            background: linear-gradient(135deg, var(--purple), var(--purple-light));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: var(--space-1);
+        }
+
+        .login-card-subtitle {
+            font-size: var(--font-size-sm);
+            color: var(--text-secondary);
         }
 
         .login-tabs {
             display: flex;
             gap: 6px;
-            background: rgba(123,63,160,0.06);
+            background: var(--purple-bg-tint);
             border-radius: var(--radius-md);
-            padding: 4px;
-            margin-bottom: 24px;
-        }
-
-        @media (prefers-color-scheme: dark) {
-            .login-tabs {
-                background: rgba(191,111,224,0.12);
-            }
+            padding: 3px;
+            margin-bottom: var(--space-6);
         }
 
         .login-tab {
             flex: 1;
-            padding: 10px 20px;
+            padding: var(--space-2) var(--space-4);
             background: transparent;
             border: none;
             color: var(--text-secondary);
-            border-radius: 10px;
+            border-radius: var(--radius-sm);
             cursor: pointer;
-            font-size: 0.95rem;
-            font-weight: 500;
-            transition: all 0.3s var(--ease-default);
-            user-select: none;
+            font-size: var(--font-size-base);
+            font-weight: var(--font-weight-medium);
+            transition: all var(--duration-fast) var(--ease);
             font-family: inherit;
         }
-
-        .login-tab:hover {
-            color: var(--purple);
-        }
-
+        .login-tab:hover { color: var(--purple); }
         .login-tab.active {
-            background: var(--white);
+            background: var(--card-bg);
             color: var(--purple);
             box-shadow: var(--shadow-sm);
-            font-weight: 600;
-        }
-
-        @media (prefers-color-scheme: dark) {
-            .login-tab.active {
-                background: var(--card-alt);
-            }
+            font-weight: var(--font-weight-semibold);
         }
 
         .login-form {
             display: flex;
             flex-direction: column;
-            gap: 16px;
+            gap: var(--space-4);
         }
 
-        .form-group {
+        .login-form .form-group {
             display: flex;
             flex-direction: column;
-            gap: 6px;
+            gap: var(--space-1);
         }
 
-        .form-group label {
-            font-size: 0.85rem;
+        .login-form .form-label {
+            font-size: var(--font-size-sm);
+            font-weight: var(--font-weight-medium);
             color: var(--text-secondary);
-            font-weight: 500;
-            margin-left: 4px;
+            margin-left: var(--space-1);
         }
 
-        .form-input {
-            padding: 14px 18px;
-            background: var(--bg);
-            border: none;
-            border-radius: var(--radius-md);
-            font-size: 1rem;
+        .login-form .form-input {
+            width: 100%;
+            height: var(--input-height);
+            padding: 0 var(--space-4);
+            font-size: var(--font-size-base);
             color: var(--text-primary);
+            background-color: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
             outline: none;
-            transition: all 0.3s var(--ease-default);
+            transition: border-color var(--duration-fast) var(--ease),
+                        box-shadow var(--duration-fast) var(--ease);
             font-family: inherit;
         }
-
-        .form-input::placeholder {
-            color: var(--text-muted);
+        .login-form .form-input::placeholder {
+            color: var(--text-tertiary);
+        }
+        .login-form .form-input:focus {
+            border-color: var(--purple);
+            box-shadow: 0 0 0 3px rgba(var(--purple-rgb), 0.2);
         }
 
-        .form-input:focus {
-            box-shadow: 0 0 0 3px rgba(123,63,160,0.15);
-            background: var(--white);
-        }
-
-        @media (prefers-color-scheme: dark) {
-            .form-input:focus {
-                background: var(--card-alt);
-            }
-        }
-
-        .login-btn {
-            padding: 14px 24px;
-            background: linear-gradient(135deg, var(--purple), var(--purple-light));
-            border: none;
-            border-radius: var(--radius-md);
-            color: var(--white);
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            box-shadow: 0 4px 16px rgba(123,63,160,0.3);
-            transition: all 0.25s var(--ease-default);
-            user-select: none;
-            font-family: inherit;
-            margin-top: 8px;
-        }
-
-        .login-btn:hover {
-            box-shadow: 0 6px 20px rgba(123,63,160,0.4);
-            transform: translateY(-1px);
-        }
-
-        .login-btn:active {
-            box-shadow: 0 2px 8px rgba(123,63,160,0.2);
-            transform: scale(0.98);
-        }
-
-        .login-btn:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-            transform: none;
-        }
-
-        .error-message {
-            padding: 12px 16px;
-            background: rgba(255,59,48,0.08);
-            border-radius: var(--radius-md);
-            color: var(--danger);
-            font-size: 0.9rem;
-            text-align: center;
-            display: none;
-            animation: shake 0.4s var(--ease-default);
-        }
-
-        .error-message.show {
-            display: block;
-        }
-
-        @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            25% { transform: translateX(-8px); }
-            75% { transform: translateX(8px); }
-        }
-
-        .login-footer {
-            text-align: center;
-            margin-top: 24px;
-            color: var(--text-muted);
-            font-size: 0.85rem;
-        }
-
-        /* ====== 主应用界面 ====== */
-        .app-container {
-            display: none;
-        }
-
-        .app-container.active {
-            display: block;
-        }
-
-        /* ====== 导航栏 ====== */
-        .navbar {
-            background: rgba(255,255,255,0.72);
-            backdrop-filter: blur(20px) saturate(180%);
-            -webkit-backdrop-filter: blur(20px) saturate(180%);
-            padding: 16px 24px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            box-shadow: 0 0.5px 0 rgba(0,0,0,0.08);
-            border-radius: 0;
-            position: sticky;
-            top: 0;
-            z-index: 100;
-        }
-
-        @media (prefers-color-scheme: dark) {
-            .navbar {
-                background: rgba(28,28,30,0.72);
-                box-shadow: 0 0.5px 0 rgba(255,255,255,0.08);
-            }
-        }
-
-        .navbar h1 {
-            font-size: 1.4rem;
-            font-weight: 700;
-            background: linear-gradient(135deg, var(--purple), var(--purple-light));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            letter-spacing: 0.5px;
-        }
-
-        .navbar h1 .dot {
-            -webkit-text-fill-color: var(--purple-light);
-        }
-
-        .nav-tabs {
-            display: flex;
-            gap: 6px;
-            background: rgba(123,63,160,0.06);
-            border-radius: var(--radius-md);
-            padding: 3px;
-        }
-
-        @media (prefers-color-scheme: dark) {
-            .nav-tabs {
-                background: rgba(191,111,224,0.12);
-            }
-        }
-
-        .nav-tab {
-            padding: 8px 22px;
-            background: transparent;
-            border: none;
-            color: var(--text-secondary);
-            border-radius: 10px;
-            cursor: pointer;
-            font-size: 0.95rem;
-            font-weight: 500;
-            box-shadow: none;
-            transition: all 0.3s var(--ease-default);
-            user-select: none;
-        }
-
-        .nav-tab:hover {
-            color: var(--purple);
-            background: rgba(123,63,160,0.06);
-        }
-
-        .nav-tab.active {
-            background: var(--white);
-            color: var(--purple);
-            box-shadow: var(--shadow-sm);
-            font-weight: 600;
-        }
-
-        @media (prefers-color-scheme: dark) {
-            .nav-tab.active {
-                background: var(--card);
-                color: var(--purple);
-            }
-        }
-
-        .nav-tab.active:hover {
-            box-shadow: var(--shadow-sm);
-        }
-
-        .logout-btn {
-            padding: 8px 16px;
-            background: transparent;
-            border: 1px solid rgba(123,63,160,0.3);
-            border-radius: var(--radius-md);
-            color: var(--purple);
-            font-size: 0.85rem;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.25s var(--ease-default);
-            margin-left: 12px;
-            font-family: inherit;
-        }
-
-        .logout-btn:hover {
-            background: rgba(123,63,160,0.08);
-        }
-
-        /* ====== 主容器 ====== */
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 24px 16px;
+        .password-wrapper {
             position: relative;
-            z-index: 1;
+        }
+        .password-wrapper .form-input {
+            padding-right: 44px;
+        }
+        .password-toggle {
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: var(--space-1) var(--space-2);
+            color: var(--text-tertiary);
+            font-size: 16px;
+            line-height: 1;
         }
 
-        /* ====== 聊天界面 ====== */
-        .chat-container {
-            display: none;
+        .login-form .form-error {
+            font-size: var(--font-size-xs);
+            color: var(--error);
+            min-height: 16px;
+            text-align: center;
         }
 
-        .chat-container.active {
-            display: block;
+        .login-form .form-hint {
+            font-size: var(--font-size-xs);
+            color: var(--text-tertiary);
+            margin-top: 2px;
         }
 
-        .chat-box {
-            background: var(--card);
+        .login-form .form-hint a {
+            color: var(--purple);
+        }
+
+        .login-form .login-btn {
+            width: 100%;
+            margin-top: var(--space-1);
+        }
+
+        .login-card-footer {
+            text-align: center;
+            margin-top: var(--space-6);
+            font-size: var(--font-size-xs);
+            color: var(--text-tertiary);
+        }
+
+        /* ================================================================
+           Page: Home
+           ================================================================ */
+        .page-home .welcome-card {
+            background: linear-gradient(135deg, var(--purple) 0%, var(--purple-light) 100%);
             border-radius: var(--radius-xl);
-            box-shadow: var(--shadow-card);
-            overflow: hidden;
-            max-width: 800px;
-            margin: 0 auto;
+            padding: var(--space-6);
+            color: #FFFFFF;
+            margin-bottom: var(--space-5);
+            box-shadow: var(--shadow-purple);
+        }
+        .page-home .welcome-greeting {
+            font-size: var(--font-size-sm);
+            font-weight: var(--font-weight-medium);
+            opacity: 0.85;
+            margin-bottom: var(--space-1);
+        }
+        .page-home .welcome-name {
+            font-size: var(--font-size-lg);
+            font-weight: var(--font-weight-bold);
+            margin-bottom: var(--space-2);
+        }
+        .page-home .welcome-message {
+            font-size: var(--font-size-sm);
+            opacity: 0.8;
+            line-height: var(--line-height-relaxed);
         }
 
-        .chat-header {
-            background: linear-gradient(135deg, var(--purple), var(--purple-light));
-            padding: 20px 24px;
-            color: var(--white);
+        .page-home .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: var(--space-3);
+            margin-bottom: var(--space-5);
+        }
+
+        .page-home .quick-actions {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: var(--space-3);
+            margin-bottom: var(--space-5);
+        }
+
+        .page-home .quick-action-btn {
             display: flex;
+            flex-direction: column;
             align-items: center;
-            gap: 16px;
+            gap: var(--space-2);
+            padding: var(--space-5) var(--space-3);
+            background: var(--card-bg);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-sm);
+            cursor: pointer;
+            transition: transform var(--duration-fast) var(--spring),
+                        box-shadow var(--duration-fast) var(--ease);
+            user-select: none;
         }
-
-        .chat-avatar {
-            width: 52px;
-            height: 52px;
-            border-radius: 50%;
-            background: rgba(255,255,255,0.2);
+        .page-home .quick-action-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+        .page-home .quick-action-btn:active {
+            transform: scale(0.97);
+        }
+        .page-home .quick-action-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: var(--radius-lg);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.5rem;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            font-size: 22px;
+        }
+        .page-home .quick-action-icon.purple { background: linear-gradient(135deg, var(--purple), var(--purple-light)); }
+        .page-home .quick-action-icon.blue { background: linear-gradient(135deg, #007AFF, #5AC8FA); }
+        .page-home .quick-action-icon.green { background: linear-gradient(135deg, #30D158, #63E6BE); }
+        .page-home .quick-action-icon.orange { background: linear-gradient(135deg, #FF9500, #FFCC02); }
+        .page-home .quick-action-label {
+            font-size: var(--font-size-sm);
+            font-weight: var(--font-weight-medium);
+            color: var(--text-secondary);
+        }
+
+        /* ================================================================
+           Page: Chat
+           ================================================================ */
+        .page-chat .chat-box {
+            background: var(--card-bg);
+            border-radius: var(--radius-xl);
+            box-shadow: var(--shadow-md);
+            overflow: hidden;
+            max-width: 800px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            height: calc(100vh - var(--nav-bar-height) - var(--space-5) * 2 - env(safe-area-inset-top));
+            min-height: 400px;
+        }
+
+        .page-chat .chat-header {
+            background: linear-gradient(135deg, var(--purple), var(--purple-light));
+            padding: var(--space-4) var(--space-5);
+            color: #FFFFFF;
+            display: flex;
+            align-items: center;
+            gap: var(--space-4);
             flex-shrink: 0;
         }
 
-        .chat-header-info h2 {
-            font-size: 1.2rem;
-            font-weight: 600;
+        .page-chat .chat-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+            flex-shrink: 0;
         }
 
-        .chat-header-info p {
-            font-size: 0.85rem;
+        .page-chat .chat-header-info h2 {
+            font-size: var(--font-size-md);
+            font-weight: var(--font-weight-semibold);
+            color: #FFFFFF;
+        }
+
+        .page-chat .chat-header-info p {
+            font-size: var(--font-size-sm);
             opacity: 0.85;
+            color: #FFFFFF;
         }
 
-        .chat-messages {
-            height: 500px;
+        .page-chat .chat-messages {
+            flex: 1;
             overflow-y: auto;
-            padding: 20px;
-            background: var(--bg);
+            padding: var(--space-5);
+            background: var(--bg-primary);
         }
 
-        .chat-messages::-webkit-scrollbar {
-            width: 6px;
-        }
-
-        .chat-messages::-webkit-scrollbar-track {
-            background: transparent;
-        }
-
-        .chat-messages::-webkit-scrollbar-thumb {
-            background: rgba(123,63,160,0.15);
-            border-radius: 3px;
-        }
-
-        .chat-messages::-webkit-scrollbar-thumb:hover {
-            background: rgba(123,63,160,0.25);
-        }
-
-        .message {
-            margin-bottom: 16px;
+        .page-chat .message {
+            margin-bottom: var(--space-4);
             display: flex;
             flex-direction: column;
         }
+        .page-chat .message.user { align-items: flex-end; }
+        .page-chat .message.bot { align-items: flex-start; }
 
-        .message.user {
-            align-items: flex-end;
-        }
-
-        .message.bot {
-            align-items: flex-start;
-        }
-
-        .message-bubble {
+        .page-chat .message-bubble {
             max-width: 70%;
-            padding: 12px 18px;
+            padding: var(--space-3) var(--space-4);
             border-radius: 20px;
-            font-size: 0.95rem;
-            line-height: 1.6;
+            font-size: var(--font-size-base);
+            line-height: var(--line-height-relaxed);
             word-wrap: break-word;
-            transition: transform 0.2s var(--ease-default);
         }
-
-        .message.user .message-bubble {
+        .page-chat .message.user .message-bubble {
             background: linear-gradient(135deg, var(--purple), var(--purple-light));
-            color: var(--white);
+            color: #FFFFFF;
             border-bottom-right-radius: 6px;
-            box-shadow: 0 2px 8px rgba(123,63,160,0.2);
+            box-shadow: 0 2px 8px rgba(var(--purple-rgb), 0.2);
         }
-
-        .message.bot .message-bubble {
-            background: var(--card);
+        .page-chat .message.bot .message-bubble {
+            background: var(--card-bg);
             color: var(--text-primary);
             border-bottom-left-radius: 6px;
             box-shadow: var(--shadow-sm);
         }
 
-        .message-time {
-            font-size: 0.75rem;
-            color: var(--text-muted);
-            margin-top: 6px;
-            padding: 0 4px;
+        .page-chat .message-time {
+            font-size: var(--font-size-xs);
+            color: var(--text-tertiary);
+            margin-top: var(--space-1);
+            padding: 0 var(--space-1);
         }
 
-        .chat-input-area {
-            padding: 16px 20px;
-            background: var(--card);
-            display: flex;
-            gap: 12px;
-            border-top: 1px solid rgba(0,0,0,0.04);
-        }
-
-        @media (prefers-color-scheme: dark) {
-            .chat-input-area {
-                border-top: 1px solid rgba(255,255,255,0.06);
-            }
-        }
-
-        .chat-input {
-            flex: 1;
-            padding: 12px 20px;
-            background: var(--bg);
-            border: none;
-            border-radius: var(--radius-md);
-            font-size: 1rem;
-            color: var(--text-primary);
-            outline: none;
-            box-shadow: none;
-            transition: all 0.3s var(--ease-default);
-            font-family: inherit;
-        }
-
-        .chat-input::placeholder {
-            color: var(--text-muted);
-        }
-
-        .chat-input:focus {
-            box-shadow: 0 0 0 3px rgba(123,63,160,0.15);
-            background: var(--white);
-        }
-
-        @media (prefers-color-scheme: dark) {
-            .chat-input:focus {
-                background: var(--card-alt);
-            }
-        }
-
-        .send-btn {
-            padding: 12px 28px;
-            background: linear-gradient(135deg, var(--purple), var(--purple-light));
-            border: none;
-            border-radius: var(--radius-md);
-            color: var(--white);
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            box-shadow: 0 2px 8px rgba(123,63,160,0.25);
-            transition: all 0.25s var(--ease-default);
-            user-select: none;
-            font-family: inherit;
-        }
-
-        .send-btn:hover {
-            box-shadow: 0 4px 16px rgba(123,63,160,0.35);
-            transform: translateY(-1px);
-        }
-
-        .send-btn:active {
-            box-shadow: 0 1px 4px rgba(123,63,160,0.2);
-            transform: scale(0.97);
-        }
-
-        /* ====== 打字指示器 ====== */
-        .typing-indicator {
+        .page-chat .typing-indicator {
             display: none;
-            padding: 10px 20px;
+            padding: var(--space-2) var(--space-5);
         }
-
-        .typing-indicator span {
+        .page-chat .typing-indicator span {
             display: inline-block;
-            width: 10px;
-            height: 10px;
+            width: 8px;
+            height: 8px;
             background: var(--purple-light);
             border-radius: 50%;
-            margin: 0 3px;
-            animation: typing 1.4s infinite;
+            margin: 0 2px;
+            animation: typingBounce 1.4s infinite;
         }
+        .page-chat .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+        .page-chat .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
 
-        .typing-indicator span:nth-child(2) {
-            animation-delay: 0.2s;
-        }
-
-        .typing-indicator span:nth-child(3) {
-            animation-delay: 0.4s;
-        }
-
-        @keyframes typing {
+        @keyframes typingBounce {
             0%, 60%, 100% { transform: translateY(0); }
-            30% { transform: translateY(-10px); }
+            30% { transform: translateY(-8px); }
         }
 
-        /* ====== 仪表盘 ====== */
-        .dashboard-container {
-            display: none;
-        }
-
-        .dashboard-container.active {
-            display: block;
-        }
-
-        .dashboard-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-            gap: 16px;
-            margin-bottom: 24px;
-        }
-
-        .stat-card {
-            background: var(--card);
-            border-radius: var(--radius-lg);
-            padding: 24px;
-            box-shadow: var(--shadow-card);
-            transition: transform 0.3s var(--ease-default), box-shadow 0.3s var(--ease-default);
-        }
-
-        .stat-card:hover {
-            transform: translateY(-2px);
-            box-shadow: var(--shadow-float);
-        }
-
-        .stat-card h3 {
-            font-size: 0.85rem;
-            color: var(--text-muted);
-            margin-bottom: 12px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            font-weight: 600;
-        }
-
-        .stat-card .value {
-            font-size: 2.4rem;
-            font-weight: 800;
-            background: linear-gradient(135deg, var(--purple), var(--purple-light));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            line-height: 1.2;
-        }
-
-        .stat-card .subtitle {
-            font-size: 0.85rem;
-            color: var(--text-muted);
-            margin-top: 6px;
-        }
-
-        /* 亲密度卡片 */
-        .intimacy-card {
-            background: linear-gradient(135deg, var(--purple), var(--purple-light)) !important;
-            color: var(--white);
-        }
-
-        .intimacy-card h3 {
-            color: rgba(255,255,255,0.7) !important;
-        }
-
-        .intimacy-card .value {
-            background: linear-gradient(90deg, #FFD700, #FFF8DC) !important;
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-
-        .intimacy-card .subtitle {
-            color: rgba(255,255,255,0.6) !important;
-        }
-
-        .intimacy-bar {
-            height: 8px;
-            background: rgba(255,255,255,0.2);
-            border-radius: 4px;
-            margin-top: 16px;
-            overflow: hidden;
-            box-shadow: none;
-        }
-
-        .intimacy-fill {
-            height: 100%;
-            background: linear-gradient(90deg, #FFD700, #FFA500);
-            border-radius: 4px;
-            transition: width 1s var(--ease-default);
-        }
-
-        /* 情绪分布 */
-        .emotion-chart {
-            background: var(--card);
-            border-radius: var(--radius-lg);
-            padding: 24px;
-            box-shadow: var(--shadow-card);
-            margin-bottom: 24px;
-        }
-
-        .emotion-chart h3 {
-            font-size: 1.1rem;
-            font-weight: 700;
-            color: var(--text-primary);
-            margin-bottom: 20px;
-            padding-bottom: 12px;
-            border-bottom: 1px solid rgba(0,0,0,0.04);
-        }
-
-        @media (prefers-color-scheme: dark) {
-            .emotion-chart h3 {
-                border-bottom: 1px solid rgba(255,255,255,0.06);
-            }
-        }
-
-        .emotion-bar {
+        .page-chat .chat-input-area {
+            padding: var(--space-4) var(--space-5);
+            background: var(--card-bg);
             display: flex;
-            align-items: center;
-            margin-bottom: 14px;
-        }
-
-        .emotion-bar:last-child {
-            margin-bottom: 0;
-        }
-
-        .emotion-label {
-            width: 70px;
-            font-size: 0.9rem;
-            font-weight: 500;
-            color: var(--text-secondary);
+            gap: var(--space-3);
+            border-top: 1px solid var(--border-color);
             flex-shrink: 0;
         }
 
-        .emotion-progress {
+        .page-chat .chat-input {
             flex: 1;
-            height: 8px;
-            background: var(--bg);
-            border-radius: 4px;
-            overflow: hidden;
-            margin: 0 14px;
-            box-shadow: none;
-        }
-
-        .emotion-fill {
-            height: 100%;
-            border-radius: 4px;
-            transition: width 1s var(--ease-default);
-        }
-
-        .emotion-count {
-            width: 50px;
-            text-align: right;
-            font-weight: 700;
+            padding: var(--space-3) var(--space-5);
+            background: var(--bg-tertiary);
+            border: none;
+            border-radius: var(--radius-md);
+            font-size: var(--font-size-base);
             color: var(--text-primary);
-            font-size: 0.95rem;
+            outline: none;
+            transition: box-shadow var(--duration-fast) var(--ease);
+            font-family: inherit;
+        }
+        .page-chat .chat-input::placeholder { color: var(--text-tertiary); }
+        .page-chat .chat-input:focus {
+            box-shadow: 0 0 0 3px rgba(var(--purple-rgb), 0.15);
         }
 
-        /* 分析报告 */
-        .analysis-section {
-            background: var(--card);
-            border-radius: var(--radius-lg);
-            padding: 24px;
-            box-shadow: var(--shadow-card);
-            margin-bottom: 24px;
+        .page-chat .send-btn {
+            padding: var(--space-3) var(--space-6);
+            background: linear-gradient(135deg, var(--purple), var(--purple-light));
+            border: none;
+            border-radius: var(--radius-md);
+            color: #FFFFFF;
+            font-size: var(--font-size-base);
+            font-weight: var(--font-weight-semibold);
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(var(--purple-rgb), 0.25);
+            transition: all var(--duration-fast) var(--ease);
+            font-family: inherit;
+        }
+        .page-chat .send-btn:hover {
+            box-shadow: 0 4px 16px rgba(var(--purple-rgb), 0.35);
+            transform: translateY(-1px);
+        }
+        .page-chat .send-btn:active {
+            transform: scale(0.97);
         }
 
-        .analysis-section h3 {
-            font-size: 1.1rem;
-            font-weight: 700;
-            color: var(--text-primary);
-            margin-bottom: 20px;
-            padding-bottom: 12px;
-            border-bottom: 1px solid rgba(0,0,0,0.04);
-        }
-
-        @media (prefers-color-scheme: dark) {
-            .analysis-section h3 {
-                border-bottom: 1px solid rgba(255,255,255,0.06);
-            }
-        }
-
-        .analysis-item {
+        /* ================================================================
+           Page: Farm
+           ================================================================ */
+        .page-farm .farm-status-bar {
             display: flex;
-            justify-content: space-between;
             align-items: center;
-            padding: 14px 0;
-            border-bottom: 1px solid rgba(0,0,0,0.04);
-        }
-
-        @media (prefers-color-scheme: dark) {
-            .analysis-item {
-                border-bottom: 1px solid rgba(255,255,255,0.06);
-            }
-        }
-
-        .analysis-item:last-child {
-            border-bottom: none;
-        }
-
-        .analysis-label {
-            color: var(--text-secondary);
-            font-size: 0.95rem;
-        }
-
-        .analysis-value {
-            font-weight: 700;
-            color: var(--purple);
-            font-size: 0.95rem;
-        }
-
-        /* 建议卡片 */
-        .advice-card {
-            background: rgba(123,63,160,0.04);
+            justify-content: space-between;
+            padding: var(--space-3) var(--space-4);
+            background: var(--card-bg);
             border-radius: var(--radius-lg);
-            padding: 24px;
-            box-shadow: var(--shadow-card);
-            margin-bottom: 24px;
+            box-shadow: var(--shadow-sm);
+            margin-bottom: var(--space-4);
+            flex-wrap: wrap;
+            gap: var(--space-2);
         }
-
-        @media (prefers-color-scheme: dark) {
-            .advice-card {
-                background: rgba(191,111,224,0.08);
-            }
-        }
-
-        .advice-card h3 {
-            font-size: 1.1rem;
-            font-weight: 700;
-            color: var(--text-primary);
-            margin-bottom: 18px;
-            padding-bottom: 12px;
-            border-bottom: 1px solid rgba(0,0,0,0.04);
-        }
-
-        @media (prefers-color-scheme: dark) {
-            .advice-card h3 {
-                border-bottom: 1px solid rgba(255,255,255,0.06);
-            }
-        }
-
-        .advice-item {
-            padding: 12px 0;
-            border-bottom: 1px dashed rgba(123,63,160,0.1);
+        .page-farm .farm-stat {
+            display: flex;
+            align-items: center;
+            gap: var(--space-1);
+            font-size: var(--font-size-sm);
             color: var(--text-secondary);
-            line-height: 1.6;
-            font-size: 0.95rem;
+        }
+        .page-farm .farm-stat-value {
+            font-weight: var(--font-weight-semibold);
+            color: var(--text-primary);
         }
 
-        .advice-item:last-child {
-            border-bottom: none;
+        .page-farm .farm-section {
+            background: var(--card-bg);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-sm);
+            margin-bottom: var(--space-4);
+            overflow: hidden;
         }
 
-        /* ====== 页脚 ====== */
-        .footer {
+        .page-farm .farm-section-title {
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
+            font-size: var(--font-size-base);
+            font-weight: var(--font-weight-semibold);
+            color: var(--text-primary);
+            padding: var(--space-4);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .page-farm .farm-grid-container {
+            padding: var(--space-3);
+        }
+
+        .page-farm .seed-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: var(--space-2);
+            padding: var(--space-3);
+        }
+
+        .page-farm .inventory-grid-custom {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+            gap: var(--space-2);
+            padding: var(--space-3);
+        }
+
+        .page-farm .farm-chat-area {
+            padding: var(--space-3);
+        }
+
+        .page-farm .farm-chat-messages {
+            max-height: 200px;
+            overflow-y: auto;
+            padding: var(--space-2);
+            background: var(--bg-tertiary);
+            border-radius: var(--radius-md);
+            margin-bottom: var(--space-2);
+        }
+
+        .page-farm .farm-chat-input-row {
+            display: flex;
+            gap: var(--space-2);
+        }
+        .page-farm .farm-chat-input {
+            flex: 1;
+            height: 36px;
+            padding: 0 var(--space-3);
+            font-size: var(--font-size-sm);
+            color: var(--text-primary);
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-full);
+            outline: none;
+            font-family: inherit;
+        }
+        .page-farm .farm-chat-input:focus { border-color: var(--purple); }
+        .page-farm .farm-chat-send {
+            width: 36px;
+            height: 36px;
+            min-width: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--purple);
+            color: #FFFFFF;
+            border-radius: var(--radius-full);
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color var(--duration-fast) var(--ease);
+        }
+        .page-farm .farm-chat-send:hover { background: var(--purple-dark); }
+
+        /* ================================================================
+           Page: Game
+           ================================================================ */
+        .page-game {
+            padding: 0 !important;
+            overflow: hidden;
+        }
+        .page-game.active {
+            display: flex;
+            flex-direction: column;
+        }
+        .page-game .game-container {
+            position: relative;
+            width: 100%;
+            flex: 1;
+            overflow: hidden;
+            background-color: #000000;
+        }
+        .page-game .game-canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* ================================================================
+           Page: Gallery
+           ================================================================ */
+        .page-gallery .gallery-toolbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: var(--space-4);
+        }
+        .page-gallery .gallery-count {
+            font-size: var(--font-size-sm);
+            color: var(--text-secondary);
+        }
+        .page-gallery .photo-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: var(--space-2);
+        }
+        .page-gallery .photo-item {
+            position: relative;
+            aspect-ratio: 1;
+            border-radius: var(--radius-sm);
+            overflow: hidden;
+            cursor: pointer;
+            transition: transform var(--duration-fast) var(--spring);
+        }
+        .page-gallery .photo-item:active { transform: scale(0.95); }
+        .page-gallery .photo-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform var(--duration-slow) var(--ease);
+        }
+        .page-gallery .photo-item:hover img { transform: scale(1.05); }
+
+        .page-gallery .lightbox {
+            position: fixed;
+            inset: 0;
+            z-index: var(--z-modal);
+            background: rgba(0, 0, 0, 0.95);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity var(--duration-normal) var(--ease),
+                        visibility var(--duration-normal) var(--ease);
+        }
+        .page-gallery .lightbox.lightbox-visible {
+            opacity: 1;
+            visibility: visible;
+        }
+        .page-gallery .lightbox img {
+            max-width: 90%;
+            max-height: 80vh;
+            object-fit: contain;
+            border-radius: var(--radius-sm);
+        }
+        .page-gallery .lightbox-close {
+            position: absolute;
+            top: var(--space-4);
+            right: var(--space-4);
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.15);
+            color: #FFFFFF;
+            border-radius: var(--radius-full);
+            font-size: 20px;
+            cursor: pointer;
+        }
+        .page-gallery .lightbox-close:hover {
+            background: rgba(255, 255, 255, 0.25);
+        }
+
+        /* ================================================================
+           Page: Quota
+           ================================================================ */
+        .page-quota .quota-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: var(--space-3);
+            margin-bottom: var(--space-5);
+        }
+        .page-quota .quota-card {
+            background: var(--card-bg);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-sm);
+            padding: var(--space-4);
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-2);
+        }
+        .page-quota .quota-card-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+        .page-quota .quota-card-icon.api { background: rgba(var(--purple-rgb), 0.15); }
+        .page-quota .quota-card-icon.cpu { background: rgba(255, 149, 0, 0.15); }
+        .page-quota .quota-card-icon.mem { background: rgba(48, 209, 88, 0.15); }
+        .page-quota .quota-card-icon.net { background: rgba(90, 200, 250, 0.15); }
+        .page-quota .quota-card-name {
+            font-size: var(--font-size-xs);
+            color: var(--text-secondary);
+        }
+        .page-quota .quota-card-value {
+            font-size: var(--font-size-lg);
+            font-weight: var(--font-weight-bold);
+            color: var(--text-primary);
+        }
+        .page-quota .quota-progress-track {
+            width: 100%;
+            height: 4px;
+            background: var(--bg-tertiary);
+            border-radius: var(--radius-full);
+            overflow: hidden;
+        }
+        .page-quota .quota-progress-bar {
+            height: 100%;
+            border-radius: var(--radius-full);
+            transition: width var(--duration-slow) var(--ease);
+            background: var(--purple);
+        }
+        .page-quota .quota-progress-bar.ok { background: var(--success); }
+        .page-quota .quota-status {
+            display: flex;
+            align-items: center;
+            gap: var(--space-1);
+            font-size: var(--font-size-xs);
+            font-weight: var(--font-weight-medium);
+        }
+        .page-quota .quota-status.ok { color: var(--success); }
+        .page-quota .quota-status.warning { color: var(--warning); }
+        .page-quota .quota-status.error { color: var(--error); }
+        .page-quota .quota-status-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: var(--radius-full);
+            background: currentColor;
+        }
+        .page-quota .quota-summary {
+            background: var(--card-bg);
+            border-radius: var(--radius-lg);
+            padding: var(--space-4);
+            margin-bottom: var(--space-4);
+        }
+        .page-quota .quota-summary-title {
+            font-size: var(--font-size-sm);
+            font-weight: var(--font-weight-semibold);
+            color: var(--text-secondary);
+            margin-bottom: var(--space-3);
+        }
+        .page-quota .quota-summary-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: var(--space-2) 0;
+        }
+        .page-quota .quota-summary-label {
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
+            font-size: var(--font-size-sm);
+            color: var(--text-secondary);
+        }
+        .page-quota .quota-summary-value {
+            font-size: var(--font-size-sm);
+            font-weight: var(--font-weight-semibold);
+            color: var(--text-primary);
+        }
+        .page-quota .quota-overall-status {
             text-align: center;
-            padding: 32px 16px 24px;
-            color: var(--text-muted);
-            font-size: 0.85rem;
+            padding: var(--space-3);
+            border-radius: var(--radius-md);
+            font-size: var(--font-size-sm);
+            font-weight: var(--font-weight-medium);
+        }
+        .page-quota .quota-overall-status.ok {
+            background: rgba(48, 209, 88, 0.1);
+            color: var(--success);
+        }
+        .page-quota .quota-overall-status.warning {
+            background: rgba(255, 159, 10, 0.1);
+            color: var(--warning);
         }
 
-        .footer a {
-            color: var(--purple);
-            text-decoration: none;
-            font-weight: 500;
-            transition: color 0.25s var(--ease-default);
+        /* ================================================================
+           Page: Settings
+           ================================================================ */
+        .page-settings .settings-group {
+            margin-bottom: var(--space-6);
+        }
+        .page-settings .settings-group-title {
+            font-size: var(--font-size-xs);
+            font-weight: var(--font-weight-semibold);
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: var(--space-2);
+        }
+        .page-settings .settings-list {
+            background: var(--card-bg);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-sm);
+            overflow: hidden;
+        }
+        .page-settings .settings-item {
+            display: flex;
+            align-items: center;
+            gap: var(--space-3);
+            padding: var(--space-3) var(--space-4);
+            cursor: pointer;
+            transition: background-color var(--duration-fast) var(--ease);
+            user-select: none;
+        }
+        .page-settings .settings-item + .settings-item {
+            border-top: 1px solid var(--border-color);
+        }
+        .page-settings .settings-item:hover {
+            background-color: var(--purple-bg-tint);
+        }
+        .page-settings .settings-item .settings-icon {
+            font-size: var(--icon-size-md);
+            flex-shrink: 0;
+            width: 30px;
+            text-align: center;
+        }
+        .page-settings .settings-item .settings-label {
+            flex: 1;
+            font-size: var(--font-size-base);
+            color: var(--text-primary);
+        }
+        .page-settings .settings-item .settings-value {
+            font-size: var(--font-size-sm);
+            color: var(--text-secondary);
+            max-width: 140px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .page-settings .settings-item .settings-chevron {
+            color: var(--text-tertiary);
+            font-size: 16px;
         }
 
-        .footer a:hover {
-            color: var(--purple-light);
-            text-decoration: underline;
+        .page-settings .settings-profile {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: var(--space-6) var(--space-4);
+            gap: var(--space-3);
+            background: var(--card-bg);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-sm);
+            margin-bottom: var(--space-5);
+        }
+        .page-settings .profile-name {
+            font-size: var(--font-size-lg);
+            font-weight: var(--font-weight-bold);
+            color: var(--text-primary);
+        }
+        .page-settings .profile-id {
+            font-size: var(--font-size-sm);
+            color: var(--text-secondary);
         }
 
-        .footer .divider {
-            width: 60px;
-            height: 3px;
-            background: linear-gradient(90deg, var(--purple-light), var(--purple));
-            border-radius: 2px;
-            margin: 12px auto;
-            opacity: 0.3;
+        .page-settings .settings-danger {
+            margin-top: var(--space-7);
+        }
+        .page-settings .settings-danger .danger-btn {
+            width: 100%;
         }
 
-        /* ====== 响应式 ====== */
+        /* ================================================================
+           Responsive Design
+           ================================================================ */
         @media (max-width: 768px) {
-            .login-card {
-                padding: 32px 24px;
+            .sidebar {
+                transform: translateX(-100%);
             }
-
-            .login-header h1 {
-                font-size: 1.4rem;
+            .sidebar.open {
+                transform: translateX(0);
             }
-
-            .navbar {
-                flex-direction: column;
-                gap: 14px;
-                padding: 14px 16px;
+            .sidebar-overlay.active {
+                display: block;
             }
-
-            .navbar h1 {
-                font-size: 1.2rem;
-            }
-
-            .nav-tabs {
-                width: 100%;
-                justify-content: center;
-            }
-
-            .nav-tab {
-                flex: 1;
-                text-align: center;
-                padding: 10px 14px;
-                font-size: 0.9rem;
-            }
-
-            .logout-btn {
-                position: absolute;
-                top: 14px;
-                right: 16px;
+            .main-area {
                 margin-left: 0;
-                padding: 6px 12px;
-                font-size: 0.8rem;
             }
-
-            .container {
-                padding: 16px 10px;
+            .hamburger-btn {
+                display: flex;
             }
-
-            .chat-messages {
-                height: 400px;
-                padding: 14px;
+            .content-area {
+                padding: var(--space-4) var(--space-3);
             }
-
-            .message-bubble {
+            .page-chat .chat-box {
+                height: calc(100vh - var(--nav-bar-height) - var(--space-3) * 2 - env(safe-area-inset-top));
+            }
+            .page-chat .message-bubble {
                 max-width: 85%;
-                padding: 12px 16px;
-                font-size: 0.9rem;
             }
-
-            .chat-input-area {
-                padding: 12px 14px;
-                gap: 8px;
+            .page-home .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
             }
-
-            .chat-input {
-                padding: 12px 16px;
-                font-size: 0.9rem;
+            .page-home .quick-actions {
+                grid-template-columns: repeat(2, 1fr);
             }
-
-            .send-btn {
-                padding: 12px 20px;
-                font-size: 0.9rem;
+            .page-quota .quota-grid {
+                grid-template-columns: 1fr;
             }
-
-            .dashboard-grid {
-                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-                gap: 12px;
-            }
-
-            .stat-card {
-                padding: 20px 16px;
-                border-radius: var(--radius-md);
-            }
-
-            .stat-card .value {
-                font-size: 1.8rem;
-            }
-
-            .emotion-chart,
-            .analysis-section,
-            .advice-card {
-                padding: 20px 16px;
-                border-radius: var(--radius-md);
-            }
-
-            .emotion-label {
-                width: 56px;
-                font-size: 0.8rem;
-            }
-
-            .emotion-count {
-                width: 40px;
-                font-size: 0.85rem;
+            .login-card {
+                padding: var(--space-6) var(--space-5);
             }
         }
 
         @media (max-width: 400px) {
-            .dashboard-grid {
+            .page-home .stats-grid {
                 grid-template-columns: 1fr;
             }
+            .page-home .quick-actions {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .top-navbar-user {
+                display: none;
+            }
+        }
 
-            .stat-card .value {
-                font-size: 2rem;
+        @media (min-width: 769px) {
+            .sidebar-overlay {
+                display: none !important;
             }
         }
     </style>
 </head>
 <body>
-    <!-- 登录界面 -->
-    <div id="login-container" class="login-container">
-        <div class="login-card">
-            <div class="login-header">
-                <h1>恋爱至上主义区域</h1>
-                <div class="subtitle">LOVE SUPREMACY ZONE</div>
-            </div>
 
-            <div class="login-tabs">
-                <button class="login-tab active" onclick="switchLoginTab('login')">登录</button>
-                <button class="login-tab" onclick="switchLoginTab('register')">注册</button>
-            </div>
+<!-- ================================================================
+     Login Screen
+     ================================================================ -->
+<div id="login-screen" class="login-screen">
+    <div class="login-card">
+        <div class="login-card-header">
+            <div class="login-card-logo">&#9729;</div>
+            <div class="login-card-title">恋爱至上主义区域</div>
+            <div class="login-card-subtitle">LOVE SUPREMACY ZONE</div>
+        </div>
 
-            <form class="login-form" id="login-form" onsubmit="handleAuth(event)">
-                <div class="form-group">
-                    <label for="username">用户名</label>
-                    <input type="text" id="username" class="form-input" placeholder="请输入用户名" required autocomplete="username">
-                </div>
-                <div class="form-group">
-                    <label for="password">密码</label>
-                    <div style="position: relative;">
-                        <input type="password" id="password" class="form-input" placeholder="请输入密码" required autocomplete="current-password" style="padding-right: 44px;">
-                        <button type="button" onclick="togglePasswordVisibility()" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; padding: 4px 8px; color: var(--text-muted); font-size: 16px;" id="toggle-pwd-btn" aria-label="切换密码可见性">
-                            👁️
-                        </button>
-                    </div>
-                </div>
-                <div class="form-group" id="chatid-group" style="display: none;">
-                    <label for="chat-id">Telegram Chat ID <span style="color: var(--danger);">*</span></label>
-                    <input type="text" id="chat-id" class="form-input" placeholder="你的 Telegram Chat ID">
-                    <div style="font-size: 12px; color: var(--text-muted); margin-top: 6px;">
-                        向 <a href="https://t.me/userinfobot" target="_blank" style="color: var(--purple);">@userinfobot</a> 发送任意消息获取
-                    </div>
-                </div>
-                <div class="error-message" id="error-message"></div>
-                <button type="submit" class="login-btn" id="login-btn">登录</button>
-            </form>
+        <div class="login-tabs">
+            <button class="login-tab active" data-mode="login" onclick="switchLoginTab(this, 'login')">登录</button>
+            <button class="login-tab" data-mode="register" onclick="switchLoginTab(this, 'register')">注册</button>
+        </div>
 
-            <div class="login-footer">
-                车如云 &copy; 2025
+        <form class="login-form" id="login-form" onsubmit="handleAuth(event)">
+            <div class="form-group">
+                <label class="form-label" for="auth-username">用户名</label>
+                <input type="text" id="auth-username" class="form-input" placeholder="请输入用户名" required autocomplete="username">
             </div>
+            <div class="form-group">
+                <label class="form-label" for="auth-password">密码</label>
+                <div class="password-wrapper">
+                    <input type="password" id="auth-password" class="form-input" placeholder="请输入密码" required autocomplete="current-password">
+                    <button type="button" class="password-toggle" id="pwd-toggle-btn" onclick="togglePasswordVisibility()" aria-label="切换密码可见性">&#128065;</button>
+                </div>
+            </div>
+            <div class="form-group" id="chatid-group" style="display: none;">
+                <label class="form-label" for="auth-chatid">Telegram Chat ID <span style="color: var(--error);">*</span></label>
+                <input type="text" id="auth-chatid" class="form-input" placeholder="你的 Telegram Chat ID">
+                <div class="form-hint">
+                    向 <a href="https://t.me/userinfobot" target="_blank">@userinfobot</a> 发送任意消息获取
+                </div>
+            </div>
+            <div class="form-error" id="auth-error"></div>
+            <button type="submit" class="btn-primary login-btn" id="auth-submit-btn">登录</button>
+        </form>
+
+        <div class="login-card-footer">
+            车如云 &copy; 2025
         </div>
     </div>
+</div>
 
-    <!-- 主应用界面 -->
-    <div id="app-container" class="app-container">
-        <nav class="navbar">
-            <h1>车如云 <span class="dot">/ 恋爱至上主义区域</span></h1>
-            <div style="display: flex; align-items: center;">
-                <div class="nav-tabs">
-                    <button class="nav-tab active" onclick="showTab('chat')">聊天</button>
-                    <button class="nav-tab" onclick="showTab('dashboard')">仪表盘</button>
-                </div>
-                <button class="logout-btn" onclick="logout()">退出</button>
+<!-- ================================================================
+     App Shell (Sidebar + Main)
+     ================================================================ -->
+<div id="app-shell" class="app-shell">
+
+    <!-- Sidebar Overlay (mobile) -->
+    <div id="sidebar-overlay" class="sidebar-overlay" onclick="closeSidebar()"></div>
+
+    <!-- Sidebar -->
+    <aside id="sidebar" class="sidebar">
+        <div class="sidebar-header">
+            <div class="sidebar-logo">车如云</div>
+            <div class="sidebar-subtitle">LOVE SUPREMACY ZONE</div>
+        </div>
+
+        <nav class="sidebar-nav">
+            <div class="nav-item active" data-page="home" onclick="navigateTo('home')">
+                <span class="nav-item-icon">&#127968;</span>
+                <span class="nav-item-label">首页</span>
+            </div>
+            <div class="nav-item" data-page="chat" onclick="navigateTo('chat')">
+                <span class="nav-item-icon">&#128172;</span>
+                <span class="nav-item-label">聊天</span>
+            </div>
+            <div class="nav-item" data-page="farm" onclick="navigateTo('farm')">
+                <span class="nav-item-icon">&#127806;</span>
+                <span class="nav-item-label">农场</span>
+            </div>
+            <div class="nav-item" data-page="game" onclick="navigateTo('game')">
+                <span class="nav-item-icon">&#127918;</span>
+                <span class="nav-item-label">游戏</span>
+            </div>
+            <div class="nav-item" data-page="gallery" onclick="navigateTo('gallery')">
+                <span class="nav-item-icon">&#128247;</span>
+                <span class="nav-item-label">相册</span>
+            </div>
+            <div class="nav-item" data-page="quota" onclick="navigateTo('quota')">
+                <span class="nav-item-icon">&#128202;</span>
+                <span class="nav-item-label">监控</span>
+            </div>
+            <div class="nav-item" data-page="settings" onclick="navigateTo('settings')">
+                <span class="nav-item-icon">&#9881;&#65039;</span>
+                <span class="nav-item-label">设置</span>
             </div>
         </nav>
 
-        <div class="container">
-            <!-- 聊天界面 -->
-            <div id="chat-tab" class="chat-container active">
+        <div class="sidebar-footer">
+            v1.3.1
+        </div>
+    </aside>
+
+    <!-- Main Area -->
+    <div class="main-area">
+        <!-- Top Navbar -->
+        <header class="top-navbar">
+            <div class="top-navbar-left">
+                <button class="hamburger-btn" id="hamburger-btn" onclick="openSidebar()" aria-label="打开菜单">&#9776;</button>
+                <span class="top-navbar-title" id="top-navbar-title">首页</span>
+            </div>
+            <div class="top-navbar-right">
+                <span class="top-navbar-user" id="top-navbar-user"></span>
+                <button class="top-navbar-logout" onclick="logout()">退出</button>
+            </div>
+        </header>
+
+        <!-- Content Area -->
+        <div class="content-area">
+
+            <!-- ===== Page: Home ===== -->
+            <div class="page page-home active" id="page-home">
+                <!-- Welcome Card -->
+                <div class="welcome-card" id="home-welcome">
+                    <div class="welcome-greeting">欢迎使用</div>
+                    <div class="welcome-name" id="home-username">车如云</div>
+                    <div class="welcome-message">你的智能助手，管理照片、分析聊天记录和视频</div>
+                </div>
+
+                <!-- Stats Grid -->
+                <div class="section-title">
+                    <span class="section-title-text">数据概览</span>
+                </div>
+                <div class="stats-grid" id="home-stats">
+                    <div class="stat-card">
+                        <div class="stat-icon">&#128172;</div>
+                        <div class="stat-value" id="stat-messages">--</div>
+                        <div class="stat-label">总消息数</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">&#128197;</div>
+                        <div class="stat-value" id="stat-days">--</div>
+                        <div class="stat-label">聊天天数</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">&#128248;</div>
+                        <div class="stat-value" id="stat-selfies">--</div>
+                        <div class="stat-label">自拍照片</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">&#10084;&#65039;</div>
+                        <div class="stat-value" id="stat-intimacy">--</div>
+                        <div class="stat-label">亲密度</div>
+                    </div>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="section-title">
+                    <span class="section-title-text">快捷操作</span>
+                </div>
+                <div class="quick-actions">
+                    <div class="quick-action-btn" onclick="navigateTo('chat')">
+                        <div class="quick-action-icon purple">&#128172;</div>
+                        <span class="quick-action-label">开始聊天</span>
+                    </div>
+                    <div class="quick-action-btn" onclick="navigateTo('farm')">
+                        <div class="quick-action-icon green">&#127806;</div>
+                        <span class="quick-action-label">我的农场</span>
+                    </div>
+                    <div class="quick-action-btn" onclick="navigateTo('gallery')">
+                        <div class="quick-action-icon blue">&#128247;</div>
+                        <span class="quick-action-label">查看相册</span>
+                    </div>
+                    <div class="quick-action-btn" onclick="navigateTo('quota')">
+                        <div class="quick-action-icon orange">&#128202;</div>
+                        <span class="quick-action-label">额度监控</span>
+                    </div>
+                </div>
+
+                <!-- Upload Section -->
+                <div class="card">
+                    <div class="card-title">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                        上传自拍
+                    </div>
+                    <div class="upload-zone" id="upload-area" onclick="document.getElementById('home-file-input').click()">
+                        <div class="upload-zone-icon">
+                            <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+                        </div>
+                        <div class="upload-zone-text">点击选择照片</div>
+                        <div class="upload-zone-hint">支持 JPG、PNG、GIF、WEBP</div>
+                    </div>
+                    <input type="file" id="home-file-input" accept="image/*" multiple style="display:none;">
+                    <div class="preview-section" id="home-preview-section">
+                        <div class="preview-grid" id="home-preview-grid"></div>
+                        <button class="btn-primary" style="margin-top: var(--space-3);" onclick="uploadPhotos()">上传照片</button>
+                    </div>
+                    <div class="loading-overlay" id="home-upload-loading">
+                        <div class="loading-spinner"></div>
+                        <div class="loading-text">上传中...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===== Page: Chat ===== -->
+            <div class="page page-chat" id="page-chat">
                 <div class="chat-box">
                     <div class="chat-header">
                         <div class="chat-avatar">&#9729;</div>
                         <div class="chat-header-info">
                             <h2>车如云</h2>
-                            <p id="status-text">在线</p>
+                            <p id="chat-status-text">在线</p>
                         </div>
                     </div>
                     <div class="chat-messages" id="chat-messages">
@@ -1133,537 +1378,936 @@
                             <div class="message-time">刚刚</div>
                         </div>
                     </div>
-                    <div class="typing-indicator" id="typing">
+                    <div class="typing-indicator" id="chat-typing">
                         <span></span><span></span><span></span>
                     </div>
                     <div class="chat-input-area">
-                        <input type="text" class="chat-input" id="message-input" placeholder="输入消息..." onkeypress="handleKeyPress(event)">
+                        <input type="text" class="chat-input" id="chat-message-input" placeholder="输入消息..." onkeypress="if(event.key==='Enter')sendMessage()">
                         <button class="send-btn" onclick="sendMessage()">发送</button>
                     </div>
                 </div>
             </div>
 
-            <!-- 仪表盘 -->
-            <div id="dashboard-tab" class="dashboard-container">
-                <div class="dashboard-grid">
-                    <div class="stat-card">
-                        <h3>总消息数</h3>
-                        <div class="value" id="total-messages">--</div>
-                        <div class="subtitle">条消息</div>
+            <!-- ===== Page: Farm ===== -->
+            <div class="page page-farm" id="page-farm">
+                <!-- Farm Status -->
+                <div class="farm-status-bar">
+                    <div class="farm-stat">
+                        <span>&#127974;</span>
+                        <span class="farm-stat-value" id="farm-money">0</span>
                     </div>
-                    <div class="stat-card">
-                        <h3>聊天天数</h3>
-                        <div class="value" id="total-days">--</div>
-                        <div class="subtitle">天</div>
+                    <div class="farm-stat">
+                        <span>&#127804;</span>
+                        <span class="farm-stat-value" id="farm-hearts">0</span>
                     </div>
-                    <div class="stat-card">
-                        <h3>今日消息</h3>
-                        <div class="value" id="today-messages">--</div>
-                        <div class="subtitle">条</div>
+                    <div class="farm-stat">
+                        <span>&#127774;&#65039;</span>
+                        <span class="farm-stat-value" id="farm-weather">晴天</span>
                     </div>
-                    <div class="stat-card intimacy-card">
-                        <h3>亲密度</h3>
-                        <div class="value" id="intimacy-score">--</div>
-                        <div class="subtitle" id="intimacy-level">--</div>
-                        <div class="intimacy-bar">
-                            <div class="intimacy-fill" id="intimacy-bar" style="width: 0%"></div>
+                    <button class="btn-small" onclick="refreshFarm()" style="padding: 4px 12px; font-size: 0.8rem;">刷新</button>
+                </div>
+
+                <!-- Farm Grid -->
+                <div class="farm-section">
+                    <div class="farm-section-title">
+                        &#127807; 农田
+                        <span id="farm-scene-label" style="font-size: 0.75rem; color: var(--text-tertiary); margin-left: 8px;">&#127806; 阳光农场</span>
+                    </div>
+                    <div class="farm-grid-container">
+                        <div id="farm-grid" class="farm-grid-wrapper" style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px;">
+                            <!-- Farm tiles generated by JS -->
                         </div>
                     </div>
                 </div>
 
-                <div class="dashboard-grid">
-                    <div class="stat-card">
-                        <h3>关心表达</h3>
-                        <div class="value" id="caring-count">--</div>
-                        <div class="subtitle">次</div>
-                    </div>
-                    <div class="stat-card">
-                        <h3>吃醋次数</h3>
-                        <div class="value" id="jealous-count">--</div>
-                        <div class="subtitle">次</div>
-                    </div>
-                    <div class="stat-card">
-                        <h3>温暖表达</h3>
-                        <div class="value" id="warm-count">--</div>
-                        <div class="subtitle">次</div>
-                    </div>
-                    <div class="stat-card">
-                        <h3>记忆条数</h3>
-                        <div class="value" id="memory-count">--</div>
-                        <div class="subtitle">条</div>
+                <!-- Seed Shop -->
+                <div class="farm-section">
+                    <div class="farm-section-title">&#127790; 种子商店</div>
+                    <div id="seed-shop" class="seed-list">
+                        <!-- Seeds generated by JS -->
                     </div>
                 </div>
 
-                <div class="emotion-chart">
-                    <h3>情绪分布</h3>
-                    <div id="emotion-bars"></div>
+                <!-- Inventory -->
+                <div class="farm-section">
+                    <div class="farm-section-title">&#127890; 我的背包</div>
+                    <div id="inventory" class="inventory-grid-custom">
+                        <div style="text-align: center; color: var(--text-tertiary); grid-column: span 4; font-size: var(--font-size-sm);">空空如也</div>
+                    </div>
                 </div>
 
-                <div class="analysis-section">
-                    <h3>对话风格分析</h3>
-                    <div id="analysis-items"></div>
+                <!-- Character Chat -->
+                <div class="farm-section">
+                    <div class="farm-section-title">&#128172; 和车如云说话</div>
+                    <div class="farm-chat-area">
+                        <div id="game-chat-box" class="farm-chat-messages">
+                            <div style="text-align: center; color: var(--text-tertiary); font-size: var(--font-size-sm);">点击下方按钮开始对话</div>
+                        </div>
+                        <div class="farm-chat-input-row">
+                            <input type="text" id="game-chat-input" class="farm-chat-input" placeholder="说点什么...">
+                            <button class="farm-chat-send" onclick="sendGameChat()">&#10148;</button>
+                        </div>
+                    </div>
                 </div>
 
-                <div class="advice-card">
-                    <h3>关系建议</h3>
-                    <div id="advice-items"></div>
+                <!-- Daily Check-in -->
+                <div class="farm-section">
+                    <div class="farm-section-title">&#127873; 每日签到</div>
+                    <div style="padding: var(--space-3); text-align: center;">
+                        <button id="daily-btn" class="btn-primary" onclick="claimDaily()" style="width: 100%;">&#127873; 点击签到</button>
+                    </div>
                 </div>
             </div>
-        </div>
 
-        <!-- 页脚 -->
-        <footer class="footer">
-            <div class="divider"></div>
-            <p><a href="/terms" target="_blank">服务条款</a> &nbsp;|&nbsp; <a href="/privacy" target="_blank">隐私政策</a></p>
-            <p style="margin-top: 8px; opacity: 0.6;">车如云 &copy; 2025</p>
-        </footer>
-    </div>
-
-    <script>
-        // ====== 全局状态 ======
-        let chatHistory = [];
-        let lastMessageCount = 0;
-        let syncInterval = null;
-        let authToken = localStorage.getItem('auth_token');
-        let isLoginMode = true;
-
-        // ====== 初始化 ======
-        document.addEventListener('DOMContentLoaded', async () => {
-            if (authToken) {
-                // 验证 token 有效性
-                const isValid = await validateToken();
-                if (isValid) {
-                    showApp();
-                } else {
-                    localStorage.removeItem('auth_token');
-                    authToken = null;
-                    showLogin();
-                }
-            } else {
-                showLogin();
-            }
-        });
-
-        // ====== 登录/注册相关 ======
-        function showLogin() {
-            document.getElementById('login-container').classList.remove('hidden');
-            document.getElementById('app-container').classList.remove('active');
-        }
-
-        function showApp() {
-            document.getElementById('login-container').classList.add('hidden');
-            document.getElementById('app-container').classList.add('active');
-            // 加载聊天历史并开始同步
-            loadChatHistory();
-            startMessageSync();
-        }
-
-        function switchLoginTab(mode) {
-            isLoginMode = mode === 'login';
-            document.querySelectorAll('.login-tab').forEach(tab => tab.classList.remove('active'));
-            event.target.classList.add('active');
-            document.getElementById('login-btn').textContent = isLoginMode ? '登录' : '注册';
-            document.getElementById('chatid-group').style.display = isLoginMode ? 'none' : 'block';
-            document.getElementById('chat-id').required = !isLoginMode;
-            hideError();
-        }
-
-        function showError(message) {
-            const errorEl = document.getElementById('error-message');
-            errorEl.textContent = message;
-            errorEl.classList.add('show');
-        }
-
-        function hideError() {
-            const errorEl = document.getElementById('error-message');
-            errorEl.classList.remove('show');
-        }
-
-        function togglePasswordVisibility() {
-            const pwdInput = document.getElementById('password');
-            const btn = document.getElementById('toggle-pwd-btn');
-            if (pwdInput.type === 'password') {
-                pwdInput.type = 'text';
-                btn.textContent = '🙈';
-            } else {
-                pwdInput.type = 'password';
-                btn.textContent = '👁️';
-            }
-        }
-
-        async function validateToken() {
-            try {
-                const response = await fetch('/api/user/profile', {
-                    headers: {
-                        'Authorization': `Bearer ${authToken}`
-                    }
-                });
-                return response.ok;
-            } catch (error) {
-                return false;
-            }
-        }
-
-        async function handleAuth(event) {
-            event.preventDefault();
-            hideError();
-
-            const username = document.getElementById('username').value.trim();
-            const password = document.getElementById('password').value;
-            const chatId = document.getElementById('chat-id').value.trim();
-            const btn = document.getElementById('login-btn');
-
-            if (!username || !password) {
-                showError('请输入用户名和密码');
-                return;
-            }
-
-            if (!isLoginMode && !chatId) {
-                showError('请输入 Telegram Chat ID');
-                return;
-            }
-
-            btn.disabled = true;
-            btn.textContent = isLoginMode ? '登录中...' : '注册中...';
-
-            try {
-                const endpoint = isLoginMode ? '/api/login' : '/api/register';
-                const body = isLoginMode
-                    ? { username, password }
-                    : { username, password, chat_id: chatId };
-                const response = await fetch(endpoint, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(body)
-                });
-
-                const data = await response.json();
-
-                if (response.ok && data.token) {
-                    // 保存 token
-                    authToken = data.token;
-                    localStorage.setItem('auth_token', authToken);
-                    // 清空表单
-                    document.getElementById('username').value = '';
-                    document.getElementById('password').value = '';
-                    if (document.getElementById('chat-id')) document.getElementById('chat-id').value = '';
-                    // 显示应用
-                    showApp();
-                } else {
-                    let errorMsg = data.error || (isLoginMode ? '登录失败' : '注册失败');
-                    // 如果是注册时账号已存在，提示切换到登录
-                    if (!isLoginMode && errorMsg.includes('已注册')) {
-                        errorMsg += '，请直接登录';
-                    }
-                    showError(errorMsg);
-                }
-            } catch (error) {
-                showError('网络错误，请稍后重试');
-            } finally {
-                btn.disabled = false;
-                btn.textContent = isLoginMode ? '登录' : '注册';
-            }
-        }
-
-        function logout() {
-            // 停止同步
-            stopMessageSync();
-            // 清除 token
-            authToken = null;
-            localStorage.removeItem('auth_token');
-            // 重置聊天状态
-            chatHistory = [];
-            lastMessageCount = 0;
-            document.getElementById('chat-messages').innerHTML = `
-                <div class="message bot">
-                    <div class="message-bubble">...又是你。（低头，不看你）...好吧，既然你来了。直接说话就行。</div>
-                    <div class="message-time">刚刚</div>
+            <!-- ===== Page: Game ===== -->
+            <div class="page page-game" id="page-game">
+                <div class="game-container">
+                    <canvas id="game-canvas" class="game-canvas"></canvas>
                 </div>
-            `;
-            // 显示登录界面
+            </div>
+
+            <!-- ===== Page: Gallery ===== -->
+            <div class="page page-gallery" id="page-gallery">
+                <div class="gallery-toolbar">
+                    <div class="section-title" style="margin-bottom: 0;">
+                        <span class="section-title-text">照片相册</span>
+                    </div>
+                    <span class="gallery-count" id="gallery-count">0 张照片</span>
+                </div>
+
+                <div class="loading-overlay" id="gallery-loading">
+                    <div class="loading-spinner"></div>
+                    <div class="loading-text">加载中...</div>
+                </div>
+
+                <div class="photo-grid" id="gallery-grid">
+                    <div class="empty-state">
+                        <div class="empty-state-illustration">&#128247;</div>
+                        <div class="empty-state-title">还没有照片</div>
+                        <div class="empty-state-description">上传你的第一张照片吧</div>
+                    </div>
+                </div>
+
+                <!-- Lightbox -->
+                <div class="lightbox" id="gallery-lightbox">
+                    <button class="lightbox-close" onclick="closeLightbox()">&#10005;</button>
+                    <img id="lightbox-image" src="" alt="Preview">
+                </div>
+            </div>
+
+            <!-- ===== Page: Quota ===== -->
+            <div class="page page-quota" id="page-quota">
+                <div class="section-title">
+                    <span class="section-title-text">额度监控</span>
+                    <span class="section-subtitle" id="quota-month" style="margin-left: var(--space-2);"></span>
+                </div>
+
+                <div class="quota-loading" id="quota-loading">
+                    <div class="loading-spinner"></div>
+                    <div class="loading-text">加载额度信息...</div>
+                </div>
+
+                <div class="quota-error" id="quota-error">
+                    <div class="empty-state-illustration">&#9888;&#65039;</div>
+                    <div class="quota-error-text">无法加载额度信息</div>
+                    <button class="btn-secondary" onclick="loadQuota()" style="margin-top: var(--space-3);">重试</button>
+                </div>
+
+                <div id="quota-content" style="display:none;">
+                    <div class="quota-grid">
+                        <div class="quota-card">
+                            <div class="quota-card-icon api">&#128268;</div>
+                            <div class="quota-card-name">API 请求</div>
+                            <div class="quota-card-value" id="quota-api-value">-- <span>/ --</span></div>
+                            <div class="quota-progress-track">
+                                <div class="quota-progress-bar ok" id="quota-api-bar" style="width:0%"></div>
+                            </div>
+                            <div class="quota-status ok" id="quota-api-status">
+                                <div class="quota-status-dot"></div>
+                                正常
+                            </div>
+                        </div>
+                        <div class="quota-card">
+                            <div class="quota-card-icon cpu">&#128187;</div>
+                            <div class="quota-card-name">CPU 用量</div>
+                            <div class="quota-card-value" id="quota-cpu-value">-- <span>%</span></div>
+                            <div class="quota-progress-track">
+                                <div class="quota-progress-bar ok" id="quota-cpu-bar" style="width:0%"></div>
+                            </div>
+                            <div class="quota-status ok" id="quota-cpu-status">
+                                <div class="quota-status-dot"></div>
+                                正常
+                            </div>
+                        </div>
+                        <div class="quota-card">
+                            <div class="quota-card-icon mem">&#128190;</div>
+                            <div class="quota-card-name">内存用量</div>
+                            <div class="quota-card-value" id="quota-mem-value">-- <span>/ --</span></div>
+                            <div class="quota-progress-track">
+                                <div class="quota-progress-bar ok" id="quota-mem-bar" style="width:0%"></div>
+                            </div>
+                            <div class="quota-status ok" id="quota-mem-status">
+                                <div class="quota-status-dot"></div>
+                                正常
+                            </div>
+                        </div>
+                        <div class="quota-card">
+                            <div class="quota-card-icon net">&#128225;</div>
+                            <div class="quota-card-name">网络流量</div>
+                            <div class="quota-card-value" id="quota-net-value">-- <span>/ --</span></div>
+                            <div class="quota-progress-track">
+                                <div class="quota-progress-bar ok" id="quota-net-bar" style="width:0%"></div>
+                            </div>
+                            <div class="quota-status ok" id="quota-net-status">
+                                <div class="quota-status-dot"></div>
+                                正常
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="quota-summary">
+                        <div class="quota-summary-title">&#128200; 使用统计</div>
+                        <div class="quota-summary-row">
+                            <div class="quota-summary-label">&#129302; AI 请求次数</div>
+                            <div class="quota-summary-value" id="quota-ai-count">-- <span>次</span></div>
+                        </div>
+                        <div class="quota-summary-row">
+                            <div class="quota-summary-label">&#128248; 图片生成次数</div>
+                            <div class="quota-summary-value" id="quota-img-count">-- <span>次</span></div>
+                        </div>
+                    </div>
+
+                    <div class="quota-overall-status ok" id="quota-overall-status">&#9989; 运行正常</div>
+                </div>
+            </div>
+
+            <!-- ===== Page: Settings ===== -->
+            <div class="page page-settings" id="page-settings">
+                <!-- Profile -->
+                <div class="settings-profile">
+                    <div class="avatar avatar-xl">&#9729;</div>
+                    <div class="profile-name" id="settings-username">--</div>
+                    <div class="profile-id" id="settings-userid">--</div>
+                </div>
+
+                <!-- General -->
+                <div class="settings-group">
+                    <div class="settings-group-title">通用</div>
+                    <div class="settings-list">
+                        <div class="settings-item" onclick="navigateTo('quota')">
+                            <span class="settings-icon">&#128202;</span>
+                            <span class="settings-label">额度监控</span>
+                            <span class="settings-value">查看详情</span>
+                            <span class="settings-chevron">&#8250;</span>
+                        </div>
+                        <div class="settings-item" onclick="navigateTo('farm')">
+                            <span class="settings-icon">&#127806;</span>
+                            <span class="settings-label">农场设置</span>
+                            <span class="settings-value">管理</span>
+                            <span class="settings-chevron">&#8250;</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Admin Config (hidden by default) -->
+                <div class="settings-group" id="admin-config-group" style="display: none;">
+                    <div class="settings-group-title">管理员配置</div>
+                    <div class="settings-list">
+                        <div class="settings-item" style="flex-direction: column; align-items: stretch; cursor: default;">
+                            <div style="display: flex; align-items: center; gap: var(--space-3); margin-bottom: var(--space-3);">
+                                <span class="settings-icon">&#128274;</span>
+                                <span class="settings-label">Bot 配置</span>
+                            </div>
+                            <div style="display: flex; flex-direction: column; gap: var(--space-3);">
+                                <div class="form-group">
+                                    <label class="form-label">Telegram Bot Token</label>
+                                    <input type="password" class="form-input" id="cfg-token" placeholder="Bot Token">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">你的 Chat ID</label>
+                                    <input type="text" class="form-input" id="cfg-chatid" placeholder="Telegram ID">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">OpenRouter API Key</label>
+                                    <input type="password" class="form-input" id="cfg-aikey" placeholder="sk-or-v1-...">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">AI API 地址</label>
+                                    <input type="text" class="form-input" id="cfg-aibase" placeholder="https://openrouter.ai/api/v1">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">服务器公网地址</label>
+                                    <input type="text" class="form-input" id="cfg-publicurl" placeholder="https://xxx.trycloudflare.com">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">修改密码（留空不修改）</label>
+                                    <input type="password" class="form-input" id="cfg-newpass" placeholder="新密码">
+                                </div>
+                                <button class="btn-primary" onclick="saveConfig()">保存配置</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Character Selection -->
+                <div class="settings-group">
+                    <div class="settings-group-title">角色</div>
+                    <div class="settings-list" id="character-list">
+                        <div class="settings-item">
+                            <span class="settings-icon">&#128100;</span>
+                            <span class="settings-label">加载中...</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Telegram Link -->
+                <div class="settings-group">
+                    <div class="settings-group-title">Telegram 关联</div>
+                    <div class="settings-list">
+                        <div class="settings-item" style="flex-direction: column; align-items: stretch; cursor: default;">
+                            <div style="display: flex; align-items: center; gap: var(--space-3); margin-bottom: var(--space-2);">
+                                <span class="settings-icon">&#128172;</span>
+                                <span class="settings-label">关联 Telegram</span>
+                                <span class="settings-value" id="telegram-status-text">检查中...</span>
+                            </div>
+                            <div style="display: flex; gap: var(--space-2);">
+                                <input type="number" class="form-input" id="telegram-id-input" placeholder="输入 Telegram ID" style="flex: 1;">
+                                <button class="btn-primary" id="link-telegram-btn" onclick="linkTelegram()">关联</button>
+                            </div>
+                            <div class="form-hint" style="margin-top: var(--space-1);">
+                                向 <a href="https://t.me/userinfobot" target="_blank">@userinfobot</a> 发送任意消息获取你的 ID
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- About -->
+                <div class="settings-group">
+                    <div class="settings-group-title">关于</div>
+                    <div class="settings-list">
+                        <div class="settings-item" style="cursor: default;">
+                            <span class="settings-icon">&#8505;&#65039;</span>
+                            <span class="settings-label">版本</span>
+                            <span class="settings-value">v1.3.1</span>
+                        </div>
+                        <div class="settings-item" style="cursor: default;">
+                            <span class="settings-icon">&#128214;</span>
+                            <span class="settings-label">车如云 Bot</span>
+                            <span class="settings-value">恋爱至上主义区域</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Danger Zone -->
+                <div class="settings-danger">
+                    <button class="btn-danger danger-btn" onclick="logout()">退出登录</button>
+                </div>
+            </div>
+
+        </div><!-- /content-area -->
+    </div><!-- /main-area -->
+</div><!-- /app-shell -->
+
+<!-- ================================================================
+     Toast Container
+     ================================================================ -->
+<div class="toast-container" id="toast-container"></div>
+
+<!-- ================================================================
+     Image Modal
+     ================================================================ -->
+<div class="image-modal" id="image-modal">
+    <img id="modal-image" src="" alt="">
+    <div class="image-modal-actions">
+        <button class="btn-danger" id="modal-delete-btn">删除</button>
+        <button class="btn-close" id="modal-close-btn">关闭</button>
+    </div>
+</div>
+
+<!-- ================================================================
+     External Scripts
+     ================================================================ -->
+<script src="/static/miniapp/js/api.js"></script>
+<script src="/static/miniapp/js/components/auth.js"></script>
+<script src="/static/miniapp/js/components/modal.js"></script>
+<script src="/static/miniapp/js/components/toast.js"></script>
+<script src="/static/miniapp/js/components/navigation.js"></script>
+<script src="/static/miniapp/js/pages/home.js"></script>
+<script src="/static/miniapp/js/pages/farm.js"></script>
+<script src="/static/miniapp/js/pages/gallery.js"></script>
+<script src="/static/miniapp/js/pages/quota.js"></script>
+<script src="/static/miniapp/js/pages/settings.js"></script>
+<script src="/static/miniapp/js/pages/skills.js"></script>
+<script src="/static/miniapp/js/pages/chat.js"></script>
+<script src="/static/game.js"></script>
+
+<script>
+/* ================================================================
+   Global State
+   ================================================================ */
+let authToken = localStorage.getItem('auth_token');
+let isLoginMode = true;
+let currentPage = 'home';
+let chatHistory = [];
+let lastMessageCount = 0;
+let syncInterval = null;
+
+/* ================================================================
+   Page Title Map
+   ================================================================ */
+const PAGE_TITLES = {
+    home: '首页',
+    chat: '聊天',
+    farm: '农场',
+    game: '游戏',
+    gallery: '相册',
+    quota: '监控',
+    settings: '设置'
+};
+
+/* ================================================================
+   Initialization
+   ================================================================ */
+document.addEventListener('DOMContentLoaded', async () => {
+    if (authToken) {
+        const isValid = await validateToken();
+        if (isValid) {
+            showApp();
+        } else {
+            localStorage.removeItem('auth_token');
+            authToken = null;
             showLogin();
         }
+    } else {
+        showLogin();
+    }
+});
 
-        // ====== API 请求辅助函数 ======
-        function getAuthHeaders() {
-            return {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${authToken}`
-            };
-        }
+/* ================================================================
+   Auth Functions
+   ================================================================ */
+function showLogin() {
+    document.getElementById('login-screen').classList.remove('hidden');
+    document.getElementById('app-shell').classList.remove('active');
+}
 
-        // ====== 标签切换 ======
-        function showTab(tab) {
-            document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
-            document.querySelectorAll('.chat-container, .dashboard-container').forEach(c => c.classList.remove('active'));
+function showApp() {
+    document.getElementById('login-screen').classList.add('hidden');
+    document.getElementById('app-shell').classList.add('active');
+    loadUserProfile();
+    loadHomeStats();
+}
 
-            if (tab === 'chat') {
-                document.querySelector('.nav-tab:first-child').classList.add('active');
-                document.getElementById('chat-tab').classList.add('active');
-                // 加载聊天历史并开始同步
-                loadChatHistory();
-                startMessageSync();
-            } else {
-                document.querySelector('.nav-tab:nth-child(2)').classList.add('active');
-                document.getElementById('dashboard-tab').classList.add('active');
-                // 停止消息同步
-                stopMessageSync();
-                loadDashboard();
+function switchLoginTab(el, mode) {
+    isLoginMode = (mode === 'login');
+    document.querySelectorAll('.login-tab').forEach(t => t.classList.remove('active'));
+    el.classList.add('active');
+    document.getElementById('auth-submit-btn').textContent = isLoginMode ? '登录' : '注册';
+    document.getElementById('chatid-group').style.display = isLoginMode ? 'none' : 'block';
+    document.getElementById('auth-chatid').required = !isLoginMode;
+    document.getElementById('auth-error').textContent = '';
+}
+
+function togglePasswordVisibility() {
+    const pwd = document.getElementById('auth-password');
+    const btn = document.getElementById('pwd-toggle-btn');
+    if (pwd.type === 'password') {
+        pwd.type = 'text';
+        btn.innerHTML = '&#128564;';
+    } else {
+        pwd.type = 'password';
+        btn.innerHTML = '&#128065;';
+    }
+}
+
+async function validateToken() {
+    try {
+        const response = await fetch('/api/user/profile', {
+            headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        return response.ok;
+    } catch (e) {
+        return false;
+    }
+}
+
+async function handleAuth(event) {
+    event.preventDefault();
+    const errorEl = document.getElementById('auth-error');
+    errorEl.textContent = '';
+
+    const username = document.getElementById('auth-username').value.trim();
+    const password = document.getElementById('auth-password').value;
+    const chatId = document.getElementById('auth-chatid').value.trim();
+    const btn = document.getElementById('auth-submit-btn');
+
+    if (!username || !password) {
+        errorEl.textContent = '请输入用户名和密码';
+        return;
+    }
+    if (!isLoginMode && !chatId) {
+        errorEl.textContent = '请输入 Telegram Chat ID';
+        return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = isLoginMode ? '登录中...' : '注册中...';
+
+    try {
+        const endpoint = isLoginMode ? '/api/login' : '/api/register';
+        const body = isLoginMode
+            ? { username, password }
+            : { username, password, chat_id: chatId };
+        const response = await fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+        });
+        const data = await response.json();
+
+        if (response.ok && data.token) {
+            authToken = data.token;
+            localStorage.setItem('auth_token', authToken);
+            document.getElementById('auth-username').value = '';
+            document.getElementById('auth-password').value = '';
+            document.getElementById('auth-chatid').value = '';
+            showApp();
+        } else {
+            let errorMsg = data.error || (isLoginMode ? '登录失败' : '注册失败');
+            if (!isLoginMode && errorMsg.includes('已注册')) {
+                errorMsg += '，请直接登录';
             }
+            errorEl.textContent = errorMsg;
         }
+    } catch (e) {
+        errorEl.textContent = '网络错误，请稍后重试';
+    } finally {
+        btn.disabled = false;
+        btn.textContent = isLoginMode ? '登录' : '注册';
+    }
+}
 
-        function handleKeyPress(event) {
-            if (event.key === 'Enter') {
-                sendMessage();
-            }
+function logout() {
+    stopMessageSync();
+    authToken = null;
+    localStorage.removeItem('auth_token');
+    chatHistory = [];
+    lastMessageCount = 0;
+    document.getElementById('chat-messages').innerHTML = `
+        <div class="message bot">
+            <div class="message-bubble">...又是你。（低头，不看你）...好吧，既然你来了。直接说话就行。</div>
+            <div class="message-time">刚刚</div>
+        </div>
+    `;
+    showLogin();
+}
+
+/* ================================================================
+   User Profile
+   ================================================================ */
+async function loadUserProfile() {
+    try {
+        const response = await fetch('/api/user/profile', {
+            headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        if (response.ok) {
+            const data = await response.json();
+            const name = data.username || '用户';
+            document.getElementById('top-navbar-user').textContent = name;
+            document.getElementById('home-username').textContent = name;
+            document.getElementById('settings-username').textContent = name;
+            document.getElementById('settings-userid').textContent = 'ID: ' + (data.chat_id || '--');
         }
+    } catch (e) {
+        console.log('Failed to load user profile');
+    }
+}
 
-        // ====== 聊天功能 ======
-        async function sendMessage() {
-            const input = document.getElementById('message-input');
-            const message = input.value.trim();
-            if (!message) return;
-
-            // 添加用户消息
-            addMessage(message, 'user');
-            input.value = '';
-
-            // 显示打字指示器
-            document.getElementById('typing').style.display = 'block';
-            document.getElementById('status-text').textContent = '正在输入...';
-
-            try {
-                const response = await fetch('/api/chat', {
-                    method: 'POST',
-                    headers: getAuthHeaders(),
-                    body: JSON.stringify({ message })
-                });
-
-                // 处理 401 未授权
-                if (response.status === 401) {
-                    logout();
-                    return;
-                }
-
-                const data = await response.json();
-
-                // 隐藏打字指示器
-                document.getElementById('typing').style.display = 'none';
-                document.getElementById('status-text').textContent = '在线';
-
-                // 兼容 response 和 reply 两种字段名
-                const replyText = data.response || data.reply;
-                if (replyText) {
-                    addMessage(replyText, 'bot');
-                }
-
-                // 更新消息计数
-                lastMessageCount += 2;
-            } catch (error) {
-                document.getElementById('typing').style.display = 'none';
-                document.getElementById('status-text').textContent = '在线';
-                addMessage('...（沉默了一会儿）连接出了点问题。', 'bot');
-            }
+/* ================================================================
+   Home Stats
+   ================================================================ */
+async function loadHomeStats() {
+    try {
+        const response = await fetch('/api/stats', {
+            headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        if (response.ok) {
+            const data = await response.json();
+            document.getElementById('stat-messages').textContent = data.total_messages || 0;
+            document.getElementById('stat-days').textContent = data.total_days || 0;
+            document.getElementById('stat-selfies').textContent = data.selfie_count || 0;
+            document.getElementById('stat-intimacy').textContent = data.intimacy_score || 0;
         }
+    } catch (e) {
+        console.log('Failed to load home stats');
+    }
+}
 
-        // 从服务器同步新消息（Telegram -> Web）
-        async function syncMessages() {
-            try {
-                const response = await fetch(`/api/messages/sync?since=${lastMessageCount}`, {
-                    headers: {
-                        'Authorization': `Bearer ${authToken}`
-                    }
-                });
+/* ================================================================
+   Navigation
+   ================================================================ */
+function navigateTo(pageName) {
+    currentPage = pageName;
 
-                // 处理 401 未授权
-                if (response.status === 401) {
-                    logout();
-                    return;
-                }
+    // Update sidebar active state
+    document.querySelectorAll('.nav-item').forEach(item => {
+        item.classList.toggle('active', item.dataset.page === pageName);
+    });
 
-                const data = await response.json();
+    // Hide all pages, show target
+    document.querySelectorAll('.content-area .page').forEach(p => {
+        p.classList.remove('active');
+    });
+    const targetPage = document.getElementById('page-' + pageName);
+    if (targetPage) {
+        targetPage.classList.add('active');
+    }
 
-                if (data.messages && data.messages.length > 0) {
-                    data.messages.forEach(msg => {
-                        addMessage(msg.content, msg.role === 'user' ? 'user' : 'bot');
-                    });
-                    lastMessageCount = data.total_count || lastMessageCount + data.messages.length;
-                }
-            } catch (error) {
-                console.log('消息同步失败:', error);
-            }
+    // Update top navbar title
+    document.getElementById('top-navbar-title').textContent = PAGE_TITLES[pageName] || pageName;
+
+    // Close sidebar on mobile
+    closeSidebar();
+
+    // Page-specific hooks
+    if (pageName === 'chat') {
+        loadChatHistory();
+        startMessageSync();
+    } else {
+        stopMessageSync();
+    }
+
+    if (pageName === 'quota') {
+        if (typeof loadQuota === 'function') loadQuota();
+    }
+
+    if (pageName === 'gallery') {
+        if (typeof loadGallery === 'function') loadGallery();
+    }
+
+    if (pageName === 'farm') {
+        if (typeof refreshFarm === 'function') refreshFarm();
+    }
+
+    if (pageName === 'settings') {
+        if (typeof loadSettings === 'function') loadSettings();
+    }
+}
+
+/* ================================================================
+   Sidebar (Mobile)
+   ================================================================ */
+function openSidebar() {
+    document.getElementById('sidebar').classList.add('open');
+    const overlay = document.getElementById('sidebar-overlay');
+    overlay.classList.add('active');
+    // Force reflow for transition
+    overlay.offsetHeight;
+    overlay.classList.add('visible');
+}
+
+function closeSidebar() {
+    document.getElementById('sidebar').classList.remove('open');
+    const overlay = document.getElementById('sidebar-overlay');
+    overlay.classList.remove('visible');
+    setTimeout(() => {
+        overlay.classList.remove('active');
+    }, 250);
+}
+
+/* ================================================================
+   Chat Functions
+   ================================================================ */
+function getAuthHeaders() {
+    return {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${authToken}`
+    };
+}
+
+async function sendMessage() {
+    const input = document.getElementById('chat-message-input');
+    const message = input.value.trim();
+    if (!message) return;
+
+    addMessage(message, 'user');
+    input.value = '';
+
+    document.getElementById('chat-typing').style.display = 'block';
+    document.getElementById('chat-status-text').textContent = '正在输入...';
+
+    try {
+        const response = await fetch('/api/chat', {
+            method: 'POST',
+            headers: getAuthHeaders(),
+            body: JSON.stringify({ message })
+        });
+
+        if (response.status === 401) { logout(); return; }
+
+        const data = await response.json();
+        document.getElementById('chat-typing').style.display = 'none';
+        document.getElementById('chat-status-text').textContent = '在线';
+
+        const replyText = data.response || data.reply;
+        if (replyText) addMessage(replyText, 'bot');
+        lastMessageCount += 2;
+    } catch (e) {
+        document.getElementById('chat-typing').style.display = 'none';
+        document.getElementById('chat-status-text').textContent = '在线';
+        addMessage('...（沉默了一会儿）连接出了点问题。', 'bot');
+    }
+}
+
+async function syncMessages() {
+    try {
+        const response = await fetch(`/api/messages/sync?since=${lastMessageCount}`, {
+            headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        if (response.status === 401) { logout(); return; }
+        const data = await response.json();
+        if (data.messages && data.messages.length > 0) {
+            data.messages.forEach(msg => {
+                addMessage(msg.content, msg.role === 'user' ? 'user' : 'bot');
+            });
+            lastMessageCount = data.total_count || lastMessageCount + data.messages.length;
         }
+    } catch (e) {
+        console.log('Message sync failed:', e);
+    }
+}
 
-        // 加载历史消息
-        async function loadChatHistory() {
-            try {
-                const response = await fetch('/api/messages/history?limit=50', {
-                    headers: {
-                        'Authorization': `Bearer ${authToken}`
-                    }
-                });
-
-                // 处理 401 未授权
-                if (response.status === 401) {
-                    logout();
-                    return;
-                }
-
-                const data = await response.json();
-
-                if (data.messages && data.messages.length > 0) {
-                    const container = document.getElementById('chat-messages');
-                    container.innerHTML = '';
-                    data.messages.forEach(msg => {
-                        addMessage(msg.content, msg.role === 'user' ? 'user' : 'bot');
-                    });
-                    lastMessageCount = data.messages.length;
-                }
-            } catch (error) {
-                console.log('加载历史消息失败:', error);
-            }
-        }
-
-        // 开始消息同步（每3秒检查一次）
-        function startMessageSync() {
-            if (syncInterval) clearInterval(syncInterval);
-            syncInterval = setInterval(syncMessages, 3000);
-        }
-
-        // 停止消息同步
-        function stopMessageSync() {
-            if (syncInterval) {
-                clearInterval(syncInterval);
-                syncInterval = null;
-            }
-        }
-
-        function addMessage(text, sender) {
+async function loadChatHistory() {
+    try {
+        const response = await fetch('/api/messages/history?limit=50', {
+            headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        if (response.status === 401) { logout(); return; }
+        const data = await response.json();
+        if (data.messages && data.messages.length > 0) {
             const container = document.getElementById('chat-messages');
-            const now = new Date();
-            const timeStr = now.getHours().toString().padStart(2, '0') + ':' +
-                           now.getMinutes().toString().padStart(2, '0');
-
-            const msgDiv = document.createElement('div');
-            msgDiv.className = `message ${sender}`;
-            msgDiv.innerHTML = `
-                <div class="message-bubble">${escapeHtml(text)}</div>
-                <div class="message-time">${timeStr}</div>
-            `;
-            container.appendChild(msgDiv);
-            container.scrollTop = container.scrollHeight;
+            container.innerHTML = '';
+            data.messages.forEach(msg => {
+                addMessage(msg.content, msg.role === 'user' ? 'user' : 'bot');
+            });
+            lastMessageCount = data.messages.length;
         }
+    } catch (e) {
+        console.log('Failed to load chat history');
+    }
+}
 
-        function escapeHtml(text) {
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-        }
+function startMessageSync() {
+    if (syncInterval) clearInterval(syncInterval);
+    syncInterval = setInterval(syncMessages, 3000);
+}
 
-        // ====== 仪表盘功能 ======
-        async function loadDashboard() {
-            try {
-                const response = await fetch('/api/stats', {
-                    headers: {
-                        'Authorization': `Bearer ${authToken}`
-                    }
-                });
+function stopMessageSync() {
+    if (syncInterval) {
+        clearInterval(syncInterval);
+        syncInterval = null;
+    }
+}
 
-                // 处理 401 未授权
-                if (response.status === 401) {
-                    logout();
-                    return;
-                }
+function addMessage(text, sender) {
+    const container = document.getElementById('chat-messages');
+    const now = new Date();
+    const timeStr = now.getHours().toString().padStart(2, '0') + ':' +
+                   now.getMinutes().toString().padStart(2, '0');
+    const msgDiv = document.createElement('div');
+    msgDiv.className = `message ${sender}`;
+    msgDiv.innerHTML = `
+        <div class="message-bubble">${escapeHtml(text)}</div>
+        <div class="message-time">${timeStr}</div>
+    `;
+    container.appendChild(msgDiv);
+    container.scrollTop = container.scrollHeight;
+}
 
-                const data = await response.json();
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
 
-                // 更新统计卡片
-                document.getElementById('total-messages').textContent = data.total_messages || 0;
-                document.getElementById('total-days').textContent = data.total_days || 0;
-                document.getElementById('today-messages').textContent = data.today_count || 0;
-                document.getElementById('caring-count').textContent = data.caring_count || 0;
-                document.getElementById('jealous-count').textContent = data.jealous_count || 0;
-                document.getElementById('warm-count').textContent = data.warm_count || 0;
-                document.getElementById('memory-count').textContent = data.memory_count || 0;
+/* ================================================================
+   Gallery Lightbox
+   ================================================================ */
+function openLightbox(src) {
+    const lightbox = document.getElementById('gallery-lightbox');
+    document.getElementById('lightbox-image').src = src;
+    lightbox.classList.add('lightbox-visible');
+}
 
-                // 亲密度
-                document.getElementById('intimacy-score').textContent = data.intimacy_score || 0;
-                document.getElementById('intimacy-level').textContent = data.intimacy_level || '陌生人';
-                document.getElementById('intimacy-bar').style.width = (data.intimacy_score || 0) + '%';
+function closeLightbox() {
+    document.getElementById('gallery-lightbox').classList.remove('lightbox-visible');
+}
 
-                // 情绪分布
-                const emotionContainer = document.getElementById('emotion-bars');
-                emotionContainer.innerHTML = '';
-                const emotions = data.emotions || {};
-                const emotionColors = {
-                    '开心': '#F39C12',
-                    '难过': '#3498DB',
-                    '生气': '#E74C3C',
-                    '疲惫': '#95A5A6',
-                    '思念': '#9B59B6',
-                    '撒娇': '#E91E63',
-                    '紧张': '#FF9800',
-                    '无聊': '#795548'
+/* ================================================================
+   Photo Upload (Home Page)
+   ================================================================ */
+document.addEventListener('DOMContentLoaded', () => {
+    const fileInput = document.getElementById('home-file-input');
+    if (fileInput) {
+        fileInput.addEventListener('change', (e) => {
+            const files = e.target.files;
+            if (!files.length) return;
+            const previewSection = document.getElementById('home-preview-section');
+            const previewGrid = document.getElementById('home-preview-grid');
+            previewGrid.innerHTML = '';
+            previewSection.classList.add('active');
+            Array.from(files).forEach(file => {
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    const item = document.createElement('div');
+                    item.className = 'preview-item';
+                    item.innerHTML = `<img src="${ev.target.result}" alt="Preview"><button class="remove-btn" onclick="this.parentElement.remove()">&times;</button>`;
+                    previewGrid.appendChild(item);
                 };
-                const maxCount = Math.max(...Object.values(emotions), 1);
+                reader.readAsDataURL(file);
+            });
+        });
+    }
+});
 
-                for (const [emotion, count] of Object.entries(emotions)) {
-                    const bar = document.createElement('div');
-                    bar.className = 'emotion-bar';
-                    bar.innerHTML = `
-                        <span class="emotion-label">${emotion}</span>
-                        <div class="emotion-progress">
-                            <div class="emotion-fill" style="width: ${(count/maxCount)*100}%; background: linear-gradient(90deg, ${emotionColors[emotion] || '#888'}, ${emotionColors[emotion] || '#888'}cc)"></div>
-                        </div>
-                        <span class="emotion-count">${count}</span>
-                    `;
-                    emotionContainer.appendChild(bar);
-                }
+async function uploadPhotos() {
+    const fileInput = document.getElementById('home-file-input');
+    if (!fileInput.files.length) return;
+    const loading = document.getElementById('home-upload-loading');
+    loading.classList.add('active');
+    try {
+        const formData = new FormData();
+        Array.from(fileInput.files).forEach(f => formData.append('photos', f));
+        const response = await fetch('/api/photos/upload', {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${authToken}` },
+            body: formData
+        });
+        if (response.ok) {
+            if (typeof showToast === 'function') showToast('上传成功', 'success');
+            document.getElementById('home-preview-section').classList.remove('active');
+            document.getElementById('home-preview-grid').innerHTML = '';
+            fileInput.value = '';
+            loadHomeStats();
+        } else {
+            if (typeof showToast === 'function') showToast('上传失败', 'error');
+        }
+    } catch (e) {
+        if (typeof showToast === 'function') showToast('网络错误', 'error');
+    } finally {
+        loading.classList.remove('active');
+    }
+}
 
-                // 分析项
-                const analysisContainer = document.getElementById('analysis-items');
-                analysisContainer.innerHTML = '';
-                const analysisItems = [
-                    { label: '用户平均消息长度', value: data.user_avg_len || '--' },
-                    { label: '车如云平均回复长度', value: data.bot_avg_len || '--' },
-                    { label: '用户主动发起比例', value: data.user_initiative || '--' },
-                    { label: '日均消息数', value: data.avg_daily || '--' },
-                    { label: '车如云使用省略号', value: data.bot_ellipsis || '--' },
-                    { label: '车如云内心独白', value: data.bot_inner || '--' },
-                ];
+/* ================================================================
+   Settings Helpers
+   ================================================================ */
+async function saveConfig() {
+    const token = document.getElementById('cfg-token').value.trim();
+    const chatid = document.getElementById('cfg-chatid').value.trim();
+    const aikey = document.getElementById('cfg-aikey').value.trim();
+    const aibase = document.getElementById('cfg-aibase').value.trim();
+    const publicurl = document.getElementById('cfg-publicurl').value.trim();
+    const newpass = document.getElementById('cfg-newpass').value;
 
-                for (const item of analysisItems) {
-                    const div = document.createElement('div');
-                    div.className = 'analysis-item';
-                    div.innerHTML = `
-                        <span class="analysis-label">${item.label}</span>
-                        <span class="analysis-value">${item.value}</span>
-                    `;
-                    analysisContainer.appendChild(div);
-                }
+    try {
+        const body = {};
+        if (token) body.bot_token = token;
+        if (chatid) body.chat_id = chatid;
+        if (aikey) body.ai_api_key = aikey;
+        if (aibase) body.ai_api_base = aibase;
+        if (publicurl) body.public_url = publicurl;
+        if (newpass) body.new_password = newpass;
 
-                // 建议
-                const adviceContainer = document.getElementById('advice-items');
-                adviceContainer.innerHTML = '';
-                const advices = data.advice || ['...没什么特别的。继续这样就好。'];
-                for (const advice of advices) {
-                    const div = document.createElement('div');
-                    div.className = 'advice-item';
-                    div.textContent = advice;
-                    adviceContainer.appendChild(div);
-                }
+        const response = await fetch('/api/config', {
+            method: 'POST',
+            headers: getAuthHeaders(),
+            body: JSON.stringify(body)
+        });
+        if (response.ok) {
+            if (typeof showToast === 'function') showToast('配置已保存', 'success');
+        } else {
+            if (typeof showToast === 'function') showToast('保存失败', 'error');
+        }
+    } catch (e) {
+        if (typeof showToast === 'function') showToast('网络错误', 'error');
+    }
+}
 
-            } catch (error) {
-                console.error('加载仪表盘失败:', error);
+async function linkTelegram() {
+    const telegramId = document.getElementById('telegram-id-input').value.trim();
+    if (!telegramId) return;
+    try {
+        const response = await fetch('/api/user/link-telegram', {
+            method: 'POST',
+            headers: getAuthHeaders(),
+            body: JSON.stringify({ telegram_id: telegramId })
+        });
+        if (response.ok) {
+            document.getElementById('telegram-status-text').textContent = '已关联';
+            if (typeof showToast === 'function') showToast('关联成功', 'success');
+        } else {
+            if (typeof showToast === 'function') showToast('关联失败', 'error');
+        }
+    } catch (e) {
+        if (typeof showToast === 'function') showToast('网络错误', 'error');
+    }
+}
+
+async function loadSettings() {
+    try {
+        const response = await fetch('/api/user/profile', {
+            headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        if (response.ok) {
+            const data = await response.json();
+            if (data.is_admin) {
+                document.getElementById('admin-config-group').style.display = 'block';
+            }
+            if (data.telegram_id) {
+                document.getElementById('telegram-status-text').textContent = '已关联';
             }
         }
+    } catch (e) {
+        console.log('Failed to load settings');
+    }
+}
 
-        // 页面加载时刷新仪表盘
-        setInterval(() => {
-            if (document.getElementById('dashboard-tab').classList.contains('active')) {
-                loadDashboard();
-            }
-        }, 30000);
-    </script>
+/* ================================================================
+   Farm Helpers (fallback if external JS not loaded)
+   ================================================================ */
+function refreshFarm() {
+    if (typeof window.refreshFarm === 'function') {
+        window.refreshFarm();
+    }
+}
+
+function claimDaily() {
+    if (typeof window.claimDaily === 'function') {
+        window.claimDaily();
+    }
+}
+
+function sendGameChat() {
+    if (typeof window.sendGameChat === 'function') {
+        window.sendGameChat();
+    }
+}
+
+/* ================================================================
+   Keyboard shortcut: Escape to close sidebar/lightbox
+   ================================================================ */
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+        closeSidebar();
+        closeLightbox();
+        const modal = document.getElementById('image-modal');
+        if (modal && modal.classList.contains('active')) {
+            modal.classList.remove('active');
+        }
+    }
+});
+</script>
+
 </body>
 </html>
