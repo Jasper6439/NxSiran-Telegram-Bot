@@ -29,20 +29,28 @@ async def authenticate_request(request) -> tuple:
     """统一认证逻辑：session token > api token > config fallback
     
     Returns:
-        (internal_user_id, error_response) - 成功时返回数据库内部 users.id，失败时 error_response 有效
+        (user_id, error_response) - 成功时返回用户ID（字符串或整数），失败时 error_response 有效
     """
-    telegram_id = validate_session_token(request)
-    if not telegram_id:
-        telegram_id = validate_api_token(request)
-    if not telegram_id:
-        telegram_id = load_config().get('your_chat_id', 0)
-    if not telegram_id:
+    user_id = validate_session_token(request)
+    if not user_id:
+        user_id = validate_api_token(request)
+    if not user_id:
+        user_id = load_config().get('your_chat_id', 0)
+    if not user_id:
         return 0, web.json_response({'success': False, 'error': '未登录'})
     
-    # 将 telegram_id 转换为数据库内部 users.id
-    db = get_db()
-    internal_id = db.get_or_create_user(telegram_id, f"user_{telegram_id}")
-    return internal_id, None
+    # 如果 user_id 是字符串（UUID），直接返回
+    # 如果是数字，需要转换为数据库内部 ID
+    if isinstance(user_id, str) and not user_id.isdigit():
+        return user_id, None
+    
+    # 旧的数字 ID 逻辑：将 telegram_id 转换为数据库内部 users.id
+    try:
+        db = get_db()
+        internal_id = db.get_or_create_user(int(user_id), f"user_{user_id}")
+        return internal_id, None
+    except:
+        return user_id, None
 
 
 # ============================================================

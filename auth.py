@@ -297,12 +297,12 @@ def _save_sessions():
 # 启动时加载会话
 _load_sessions()
 
-def generate_session_token(username, chat_id):
+def generate_session_token(username, user_id):
     """生成用户会话令牌（持久化）"""
     token = secrets.token_hex(32)
     USER_SESSIONS[token] = {
         "username": username,
-        "user_id": int(chat_id) if chat_id else 0,
+        "user_id": user_id,  # 支持 UUID 字符串或数字
         "created": time.time()
     }
     _save_sessions()
