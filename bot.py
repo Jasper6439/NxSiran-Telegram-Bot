@@ -126,7 +126,7 @@ from packages.web.routes import register_routes
 # Package imports - Bridge routes
 # ============================================================
 
-from packages.bridge.routes import register_bridge_routes
+
 
 # ============================================================
 # Package imports - Video import
@@ -365,7 +365,6 @@ async def scheduler(app):
 async def web_server():
     app = web.Application()
     register_routes(app)
-    register_bridge_routes(app)
 
     # Game API routes
     from game_api import register_game_routes
