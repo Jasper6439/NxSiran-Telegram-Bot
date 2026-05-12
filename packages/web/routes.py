@@ -644,7 +644,9 @@ async def api_register(request):
             return web.json_response({'success': False, 'error': '密码长度至少6位'})
 
         # 检查邮箱是否已注册
-        users = _get_users_dict()
+        from auth import load_users, save_users, hash_password
+        user_data = load_users()
+        users = user_data.get("users", {})
         for u in users.values():
             if u.get('email', '').lower() == email:
                 return web.json_response({'success': False, 'error': '该邮箱已注册'})
@@ -654,7 +656,7 @@ async def api_register(request):
             if u.get('username', '').lower() == username.lower():
                 return web.json_response({'success': False, 'error': '用户名已被使用'})
 
-        # 创建用户（使用邮箱前缀作为临时 user_id）
+        # 创建用户
         from config import get_default_tz
         from datetime import datetime
         import uuid
@@ -677,7 +679,8 @@ async def api_register(request):
             "reset_code": None,
             "reset_code_expires": None
         }
-        _save_users_dict(users)
+        user_data["users"] = users
+        save_users(user_data)
 
         logging.info(f"[API注册] 新用户: {username} ({email}, role: {role})")
 
@@ -706,11 +709,15 @@ async def api_login(request):
         auto_login = data.get('auto_login', False)  # 是否记住登录
         auto_token = data.get('auto_token', '')  # 自动登录令牌
 
+        from auth import load_users, save_users, _verify_password, generate_auto_login_token
+
         # 如果有自动登录令牌，优先使用
         if auto_token:
+            from auth import validate_auto_login_token
             user_id = validate_auto_login_token(auto_token)
             if user_id:
-                users = _get_users_dict()
+                user_data_loaded = load_users()
+                users = user_data_loaded.get("users", {})
                 user = users.get(str(user_id))
                 if user:
                     token = generate_session_token(user['username'], user_id)
@@ -729,7 +736,8 @@ async def api_login(request):
             return web.json_response({'success': False, 'error': '用户名和密码不能为空'})
 
         # 验证用户（支持用户名或邮箱登录）
-        users = _get_users_dict()
+        user_data_loaded = load_users()
+        users = user_data_loaded.get("users", {})
         user_id = None
         user_data = None
 
@@ -752,7 +760,6 @@ async def api_login(request):
             return web.json_response({'success': False, 'error': '用户名或密码错误'})
 
         # 验证密码
-        from auth import _verify_password
         if not _verify_password(password, user_data['password_hash']):
             return web.json_response({'success': False, 'error': '用户名或密码错误'})
 
@@ -762,7 +769,8 @@ async def api_login(request):
         user_data['last_login'] = datetime.now(get_default_tz()).isoformat()
         user_data['login_count'] = user_data.get('login_count', 0) + 1
         users[user_id] = user_data
-        _save_users_dict(users)
+        user_data_loaded["users"] = users
+        save_users(user_data_loaded)
 
         # 生成会话令牌
         token = generate_session_token(user_data['username'], user_id)
@@ -799,7 +807,9 @@ async def api_user_profile(request):
         token = auth[7:] if auth.startswith('Bearer ') else ''
 
         # 获取用户详细信息
-        users = _get_users_dict()
+        from auth import load_users
+        user_data = load_users()
+        users = user_data.get("users", {})
         user = users.get(str(user_id), {})
 
         return web.json_response({
