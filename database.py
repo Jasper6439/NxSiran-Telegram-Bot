@@ -72,6 +72,7 @@ class GameDatabase:
                 ('happiness', 'INTEGER DEFAULT 50'),
                 ('awakening', 'INTEGER DEFAULT 0'),
                 ('current_world_layer', 'TEXT DEFAULT \'stage\''),
+                ('world_layer', 'TEXT DEFAULT \'stage\''),
             ],
             'characters': [
                 ('world_layer', 'TEXT DEFAULT \'stage\''),

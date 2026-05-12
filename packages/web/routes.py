@@ -133,7 +133,7 @@ __all__ = [
 
 
 async def health_check(request):
-    return web.Response(text="🟢 车如云在线 v1.4")
+    return web.Response(text="🟢 车如云在线 v1.4.1")
 
 
 async def serve_index(request):

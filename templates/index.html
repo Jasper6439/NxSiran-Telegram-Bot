@@ -1200,6 +1200,10 @@
                     向 <a href="https://t.me/userinfobot" target="_blank">@userinfobot</a> 发送任意消息获取
                 </div>
             </div>
+            <div class="form-group" style="display: flex; align-items: center; gap: 8px; margin-top: -8px;">
+                <input type="checkbox" id="remember-me" style="width: 16px; height: 16px; cursor: pointer;">
+                <label for="remember-me" style="font-size: var(--font-size-sm); color: var(--text-secondary); cursor: pointer; user-select: none;">记住账号</label>
+            </div>
             <div class="form-error" id="auth-error"></div>
             <button type="submit" class="btn-primary login-btn" id="auth-submit-btn">登录</button>
         </form>
@@ -1789,6 +1793,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 function showLogin() {
     document.getElementById('login-screen').classList.remove('hidden');
     document.getElementById('app-shell').classList.remove('active');
+
+    // 恢复记住的账号
+    const rememberedUsername = localStorage.getItem('remembered_username');
+    if (rememberedUsername) {
+        document.getElementById('auth-username').value = rememberedUsername;
+        document.getElementById('remember-me').checked = true;
+    }
 }
 
 function showApp() {
@@ -1868,6 +1879,15 @@ async function handleAuth(event) {
         if (response.ok && data.token) {
             authToken = data.token;
             localStorage.setItem('auth_token', authToken);
+
+            // 记住账号功能
+            const rememberMe = document.getElementById('remember-me').checked;
+            if (rememberMe) {
+                localStorage.setItem('remembered_username', username);
+            } else {
+                localStorage.removeItem('remembered_username');
+            }
+
             document.getElementById('auth-username').value = '';
             document.getElementById('auth-password').value = '';
             document.getElementById('auth-chatid').value = '';

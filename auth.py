@@ -254,17 +254,50 @@ def validate_user(username, password):
 
 
 # ============================================================
-# 会话管理
+# 会话管理（持久化存储）
 # ============================================================
 
+USER_SESSIONS = {}  # 内存缓存
+SESSIONS_FILE = os.path.join(os.path.dirname(USERS_FILE), "sessions.json")
+
+def _load_sessions():
+    """从文件加载会话"""
+    global USER_SESSIONS
+    try:
+        if os.path.exists(SESSIONS_FILE):
+            with open(SESSIONS_FILE, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+                # 过滤掉过期的会话（7天）
+                now = time.time()
+                USER_SESSIONS = {
+                    k: v for k, v in data.items()
+                    if now - v.get("created", 0) < 7 * 24 * 3600
+                }
+    except Exception as e:
+        logging.warning(f"[会话] 加载会话失败: {e}")
+        USER_SESSIONS = {}
+
+def _save_sessions():
+    """保存会话到文件"""
+    try:
+        os.makedirs(os.path.dirname(SESSIONS_FILE), exist_ok=True)
+        with open(SESSIONS_FILE, 'w', encoding='utf-8') as f:
+            json.dump(USER_SESSIONS, f, ensure_ascii=False)
+    except Exception as e:
+        logging.warning(f"[会话] 保存会话失败: {e}")
+
+# 启动时加载会话
+_load_sessions()
+
 def generate_session_token(username, chat_id):
-    """生成用户会话令牌"""
+    """生成用户会话令牌（持久化）"""
     token = secrets.token_hex(32)
     USER_SESSIONS[token] = {
         "username": username,
         "user_id": int(chat_id) if chat_id else 0,
         "created": time.time()
     }
+    _save_sessions()
     return token
 
 def validate_session_token(request):
@@ -272,8 +305,18 @@ def validate_session_token(request):
     auth = request.headers.get('Authorization', '')
     if auth.startswith('Bearer '):
         token = auth[7:]
+        # 如果内存中没有，尝试重新加载
+        if token not in USER_SESSIONS:
+            _load_sessions()
         if token in USER_SESSIONS:
-            return USER_SESSIONS[token]["user_id"]
+            # 检查是否过期
+            session = USER_SESSIONS[token]
+            if time.time() - session.get("created", 0) < 7 * 24 * 3600:
+                return session["user_id"]
+            else:
+                # 过期删除
+                del USER_SESSIONS[token]
+                _save_sessions()
     return None
 
 def is_admin_user(request):
