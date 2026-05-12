@@ -461,6 +461,18 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 break
         if last_bot_msg:
             learn_from_correction(user_text, last_bot_msg)
+            # [Skill: self-improving v1.4.7] 添加学习反馈提示
+            correction_responses = [
+                "...（记下了）",
+                "...知道了。",
+                "...我会记住的。",
+                "...（低头）...明白了。",
+            ]
+            # 30% 概率回复，避免太频繁
+            if random.random() < 0.3:
+                asyncio.create_task(
+                    send_active_message(context.bot, chat_id, random.choice(correction_responses))
+                )
     
     # [Skill: 表情反应] 后台添加emoji反应
     asyncio.create_task(add_reaction(update, emotion))
@@ -812,27 +824,30 @@ async def music_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
         logging.error(f"[Music] 错误: {e}")
         await update.message.reply_text("...（搜索失败）网络问题。")
 
-# [Skill: LightRAG] 小说知识查询
-from novel_knowledge import query_novel
+# [Skill: LightRAG] 小说知识查询 - v1.4.7 修复：添加依赖检查和更好错误提示
+from novel_knowledge import query_novel, init_novel_knowledge
 
 async def novel_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """查询小说知识库"""
     chat_id = update.effective_chat.id
     if YOUR_CHAT_ID != 0 and chat_id != YOUR_CHAT_ID:
         return
-    
+
     # 获取查询内容（去掉 /novel 命令）
     query = update.message.text.replace('/novel', '').strip()
     if not query:
         await update.message.reply_text("...想问小说里的什么？（把问题发给我）")
         return
-    
+
     await update.message.chat.send_action("typing")
-    
+
     try:
+        # v1.4.7: 尝试初始化知识库（如果还没初始化）
+        await init_novel_knowledge()
+
         # 查询知识库
         result = await query_novel(query)
-        
+
         # 车如云风格的回应
         if result and len(result) > 10:
             # 让 AI 用车如云的口吻转述
@@ -841,24 +856,27 @@ async def novel_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await update.message.reply_text(response)
         else:
             await update.message.reply_text("...小说里好像没有这个。")
-            
+
+    except ImportError as e:
+        logging.error(f"[Novel] 缺少依赖: {e}")
+        await update.message.reply_text("...（知识库依赖未安装）需要安装 LightRAG。")
     except Exception as e:
         logging.error(f"[Novel] 查询失败: {e}")
         await update.message.reply_text("...（查询失败）知识库还没准备好。")
 
-# [Skill: ChromaDB] 记忆搜索
+# [Skill: ChromaDB] 记忆搜索 - v1.4.7 修复：改为 /semantic 命令避免冲突
 from qdrant_memory import search_memories
 
 async def qdrant_memory_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """搜索Qdrant语义记忆"""
+    """搜索Qdrant语义记忆 - 使用 /semantic 命令"""
     chat_id = update.effective_chat.id
     if YOUR_CHAT_ID != 0 and chat_id != YOUR_CHAT_ID:
         return
-    
-    # 获取查询内容
-    query = update.message.text.replace('/memory', '').replace('/记忆', '').strip()
+
+    # 获取查询内容（支持 /semantic 或 /语义）
+    query = update.message.text.replace('/semantic', '').replace('/语义', '').strip()
     if not query:
-        await update.message.reply_text("...想找什么记忆？（比如：/memory 我们聊过跑步吗）")
+        await update.message.reply_text("...想找什么记忆？（比如：/semantic 我们聊过跑步吗）")
         return
     
     try:
