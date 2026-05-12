@@ -753,20 +753,22 @@ async def api_login(request):
         if not username or not password:
             return web.json_response({'success': False, 'error': '用户名和密码不能为空'})
 
-        # 验证用户
-        success, chat_id = validate_user(username, password)
+        # 验证用户（支持用户名或 chat_id 登录）
+        success, user_data = validate_user(username, password)
 
-        if success and chat_id:
-            user_id = int(chat_id)
-            token = generate_session_token(username, chat_id)
-            config = load_config()
-            is_admin = (username == config.get("admin_username", "Ulysses"))
+        if success and user_data:
+            chat_id = user_data.get("chat_id", user_data.get("_key", ""))
+            actual_username = user_data.get("username", username)
+            user_id = int(chat_id) if chat_id else 0
+            token = generate_session_token(actual_username, chat_id)
+            is_admin = user_data.get("role") == "admin"
             return web.json_response({
                 'success': True,
                 'token': token,
                 'user_id': user_id,
-                'username': username,
-                'is_admin': is_admin
+                'username': actual_username,
+                'is_admin': is_admin,
+                'display_name': user_data.get("display_name", actual_username)
             })
         else:
             return web.json_response({'success': False, 'error': '用户名或密码错误'})
