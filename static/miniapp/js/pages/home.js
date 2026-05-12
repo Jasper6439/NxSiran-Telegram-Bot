@@ -25,6 +25,33 @@
      */
     function onPageEnter() {
         loadStats();
+        rotateQuote();
+    }
+
+    // ===== Quotes =====
+    var quotes = [
+        '恋爱是两个人的事，但喜欢是一个人的事。',
+        '世界上最远的距离，不是生与死，而是我就站在你面前，你却不知道我爱你。',
+        '如果你认识从前的我，也许你会原谅现在的我。',
+        '人生若只如初见，何事秋风悲画扇。',
+        '我行过许多地方的桥，看过许多次数的云，喝过许多种类的酒，却只爱过一个正当最好年龄的人。',
+        '于千万人之中遇见你所要遇见的人，于千万年之中，时间的无涯的荒野里，没有早一步，也没有晚一步。',
+        '你是一树一树的花开，是燕在梁间呢喃。你是爱，是暖，是希望，你是人间的四月天。',
+        '草在结它的种子，风在摇它的叶子。我们站着，不说话，就十分美好。',
+        '从前的日色变得慢，车、马、邮件都慢，一生只够爱一个人。',
+        '我明白你会来，所以我等。'
+    ];
+
+    function showRandomQuote() {
+        var container = document.getElementById('quote-display');
+        if (!container) return;
+        var quote = quotes[Math.floor(Math.random() * quotes.length)];
+        container.textContent = '\u300C' + quote + '\u300D';
+    }
+
+    function rotateQuote() {
+        showRandomQuote();
+        setInterval(showRandomQuote, 30000);
     }
 
     // ===== Stats =====
@@ -32,13 +59,86 @@
         if (!window.Auth || !window.Auth.isLoggedIn) return;
 
         window.API.stats.get().then(function (data) {
-            var selfieEl = document.getElementById('selfie-count');
+            var chatDaysEl = document.getElementById('chat-days-count');
+            var chatCountEl = document.getElementById('chat-count');
+            var mediaEl = document.getElementById('media-count');
             var userEl = document.getElementById('user-count');
-            if (selfieEl) selfieEl.textContent = data.selfie_count || 0;
+            if (chatDaysEl) chatDaysEl.textContent = data.chat_days || 0;
+            if (chatCountEl) chatCountEl.textContent = data.total_messages || 0;
+            if (mediaEl) mediaEl.textContent = (data.selfie_count || 0) + (data.user_photo_count || 0);
             if (userEl) userEl.textContent = data.user_photo_count || 0;
         }).catch(function (error) {
             console.error('Load stats error:', error);
         });
+    }
+
+    // ===== Chat Days Modal =====
+    function showChatDaysModal() {
+        var chatDaysEl = document.getElementById('chat-days-count');
+        var totalDays = chatDaysEl ? parseInt(chatDaysEl.textContent) || 0 : 0;
+        var now = new Date();
+        var year = now.getFullYear();
+        var month = now.getMonth();
+        var daysInMonth = new Date(year, month + 1, 0).getDate();
+        var firstDay = new Date(year, month, 1).getDay();
+
+        var modal = document.createElement('div');
+        modal.className = 'stats-modal';
+        modal.id = 'stats-modal';
+
+        var monthNames = ['一月','二月','三月','四月','五月','六月','七月','八月','九月','十月','十一月','十二月'];
+
+        var html = '<div class="stats-modal-content">' +
+            '<div class="stats-modal-header">' +
+            '  <h3>' + monthNames[month] + ' ' + year + '</h3>' +
+            '  <button class="stats-modal-close" onclick="document.getElementById(\'stats-modal\').remove()">&#10005;</button>' +
+            '</div>' +
+            '<div class="calendar-grid">';
+
+        ['日','一','二','三','四','五','六'].forEach(function(d) {
+            html += '<div class="calendar-day-header">' + d + '</div>';
+        });
+
+        for (var i = 0; i < firstDay; i++) {
+            html += '<div class="calendar-day empty"></div>';
+        }
+
+        var today = now.getDate();
+        for (var d = 1; d <= daysInMonth; d++) {
+            var isToday = d === today;
+            var isActive = d <= today && d > today - 7;
+            html += '<div class="calendar-day' + (isToday ? ' today' : '') + (isActive ? ' active' : '') + '">' + d + '</div>';
+        }
+
+        html += '</div>' +
+            '<div style="text-align:center;margin-top:16px;font-size:13px;color:var(--text-secondary);">累计聊天 ' + totalDays + ' 天</div>' +
+            '</div>';
+        modal.innerHTML = html;
+        document.body.appendChild(modal);
+    }
+
+    // ===== Chat Count Modal =====
+    function showChatCountModal() {
+        var chatCountEl = document.getElementById('chat-count');
+        var count = chatCountEl ? parseInt(chatCountEl.textContent) || 0 : 0;
+        var modal = document.createElement('div');
+        modal.className = 'stats-modal';
+        modal.id = 'stats-modal';
+        modal.innerHTML =
+            '<div class="stats-modal-content">' +
+            '  <div class="stats-modal-header">' +
+            '    <h3>聊天统计</h3>' +
+            '    <button class="stats-modal-close" onclick="document.getElementById(\'stats-modal\').remove()">&#10005;</button>' +
+            '  </div>' +
+            '  <div class="chat-stats-detail">' +
+            '    <div class="detail-item">' +
+            '      <span class="detail-label">总消息数</span>' +
+            '      <span class="detail-value">' + count + '</span>' +
+            '    </div>' +
+            '    <p class="detail-note">详细统计功能开发中...</p>' +
+            '  </div>' +
+            '</div>';
+        document.body.appendChild(modal);
     }
 
     // ===== Selfie Upload =====
@@ -149,6 +249,9 @@
                 if (previewSection) previewSection.classList.remove('active');
                 if (fileInput) fileInput.value = '';
                 loadStats();
+                if (window.GalleryPage) {
+                    GalleryPage.loadGallery();
+                }
             } else {
                 throw new Error(result.error || 'Upload failed');
             }
@@ -508,4 +611,8 @@
         onPageEnter: onPageEnter,
         loadStats: loadStats
     };
+
+    // Expose modal functions globally for onclick handlers
+    window.showChatDaysModal = showChatDaysModal;
+    window.showChatCountModal = showChatCountModal;
 })();

@@ -12,6 +12,7 @@
         setupConfigForm();
         setupLogoutButton();
         setupTelegramLink();
+        setupAvatarUpload();
     }
 
     /**
@@ -113,7 +114,17 @@
         listDiv.innerHTML = '<div class="character-loading">\u52A0\u8F7D\u4E2D...</div>';
 
         window.API.characters.list().then(function (data) {
-            if (!data.success) throw new Error(data.error);
+            if (!data) {
+                listDiv.innerHTML = '<div class="character-loading">\u670D\u52A1\u5668\u65E0\u54CD\u5E94</div>' +
+                    '<button class="btn-secondary" style="margin-top:8px" onclick="SettingsPage.loadCharacters()">\u91CD\u8BD5</button>';
+                return;
+            }
+
+            if (data.error) {
+                listDiv.innerHTML = '<div class="character-loading">\u52A0\u8F7D\u5931\u8D25: ' + (data.error || '\u672A\u77E5\u9519\u8BEF') + '</div>' +
+                    '<button class="btn-secondary" style="margin-top:8px" onclick="SettingsPage.loadCharacters()">\u91CD\u8BD5</button>';
+                return;
+            }
 
             var characters = data.characters || [];
             var current = data.current;
@@ -174,6 +185,42 @@
         }).catch(function () {
             window.Toast.show('\u5207\u6362\u5931\u8D25', 'error');
         });
+    }
+
+    // ===== Avatar Upload =====
+    function setupAvatarUpload() {
+        var container = document.getElementById('avatar-section');
+        if (!container) return;
+
+        var avatarDisplay = container.querySelector('.avatar-display');
+        var uploadInput = container.querySelector('#avatar-upload');
+
+        if (avatarDisplay) {
+            avatarDisplay.addEventListener('click', function () {
+                if (uploadInput) uploadInput.click();
+            });
+        }
+
+        if (uploadInput) {
+            uploadInput.addEventListener('change', function (e) {
+                var file = e.target.files[0];
+                if (!file) return;
+
+                var reader = new FileReader();
+                reader.onload = function (ev) {
+                    localStorage.setItem('user_avatar', ev.target.result);
+                    if (avatarDisplay) {
+                        avatarDisplay.innerHTML = '<img src="' + ev.target.result + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">';
+                    }
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        var savedAvatar = localStorage.getItem('user_avatar');
+        if (savedAvatar && avatarDisplay) {
+            avatarDisplay.innerHTML = '<img src="' + savedAvatar + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">';
+        }
     }
 
     // ===== Telegram Linking =====

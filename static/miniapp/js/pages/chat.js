@@ -87,8 +87,7 @@
         messageList.innerHTML = messages.map(function(msg) {
             var isUser = msg.role === 'user';
             var time = formatTime(msg.timestamp);
-            return
-                '<div class="chat-message ' + (isUser ? 'message-user' : 'message-bot') + '">' +
+            return '<div class="chat-message ' + (isUser ? 'message-user' : 'message-bot') + '">' +
                 '  <div class="message-bubble">' +
                 '    <div class="message-content">' + escapeHtml(msg.content) + '</div>' +
                 '    <div class="message-time">' + time + '</div>' +

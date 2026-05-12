@@ -42,9 +42,15 @@
             if (data.selfies && data.selfies.length > 0) {
                 grid.innerHTML = '';
                 data.selfies.forEach(function (item) {
+                var imgUrl = item.url;
+                if (imgUrl && imgUrl.charAt(0) === '/') {
+                    imgUrl = (window.API._base || '') + imgUrl;
+                } else if (imgUrl && window.API._base && imgUrl.indexOf('http') !== 0) {
+                    imgUrl = window.API._base + imgUrl;
+                }
                     var div = document.createElement('div');
                     div.className = 'photo-item';
-                    div.innerHTML = '<img src="' + window.API._base + item.url + '" alt="selfie">' +
+                    div.innerHTML = '<img src="' + imgUrl + '" alt="selfie">' +
                         '<div class="photo-overlay">' +
                         '<svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>' +
                         '</div>';
@@ -115,7 +121,13 @@
         currentModalFilename = filename;
         var modalImg = document.getElementById('modal-image');
         var modal = document.getElementById('image-modal');
-        if (modalImg) modalImg.src = window.API._base + url;
+        var imgUrl = url;
+        if (imgUrl && imgUrl.charAt(0) === '/') {
+            imgUrl = (window.API._base || '') + imgUrl;
+        } else if (imgUrl && window.API._base && imgUrl.indexOf('http') !== 0) {
+            imgUrl = window.API._base + imgUrl;
+        }
+        if (modalImg) modalImg.src = imgUrl;
         if (modal) modal.classList.add('active');
     }
 
