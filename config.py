@@ -264,3 +264,6 @@ def init_config():
     YOUR_CHAT_ID = int(os.environ.get("YOUR_CHAT_ID", chat_id_val))
     AI_API_BASE = os.environ.get("AI_API_BASE", _config.get("ai_api_base", "https://openrouter.ai/api/v1"))
     AI_API_KEY = os.environ.get("AI_API_KEY", _config.get("ai_api_key", ""))
+
+# 模块加载时自动初始化配置
+init_config()
