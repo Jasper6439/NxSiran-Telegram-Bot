@@ -763,6 +763,11 @@ async def api_login(request):
         if not _verify_password(password, user_data['password_hash']):
             return web.json_response({'success': False, 'error': '用户名或密码错误'})
 
+        # 检查是否为管理员（根据配置文件中的 admin_username）
+        config = load_config()
+        if user_data['username'] == config.get('admin_username', 'Jasper'):
+            user_data['role'] = 'admin'
+
         # 更新登录信息
         from datetime import datetime
         from config import get_default_tz
