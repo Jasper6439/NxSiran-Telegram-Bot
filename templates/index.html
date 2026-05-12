@@ -1651,7 +1651,7 @@
                 <!-- Character Selection -->
                 <div class="settings-group">
                     <div class="settings-group-title">角色</div>
-                    <div class="settings-list" id="character-list">
+                    <div id="character-list">
                         <div class="settings-item">
                             <span class="settings-icon">&#128100;</span>
                             <span class="settings-label">加载中...</span>
@@ -1923,6 +1923,23 @@ async function loadUserProfile() {
    ================================================================ */
 async function loadHomeStats() {
     try {
+        // 加载角色列表到选择器
+        const charSelect = document.getElementById('stats-character-select');
+        if (charSelect && charSelect.options.length <= 1) {
+            try {
+                const charResp = await fetch('/api/characters', { headers: { 'Authorization': `Bearer ${authToken}` } });
+                const charData = await charResp.json();
+                if (charData.success && charData.characters) {
+                    charData.characters.forEach(c => {
+                        const opt = document.createElement('option');
+                        opt.value = c.id;
+                        opt.textContent = c.name;
+                        charSelect.appendChild(opt);
+                    });
+                }
+            } catch (e) { console.log('Failed to load characters'); }
+        }
+
         const response = await fetch('/api/stats', {
             headers: { 'Authorization': `Bearer ${authToken}` }
         });
