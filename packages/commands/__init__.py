@@ -37,12 +37,8 @@ from packages.commands.misc import (
 )
 
 from packages.commands.extra import (
-    gemini_cmd,
     analyze_img_cmd,
     ocr_cmd,
-    research_cmd,
-    search_msg_cmd,
-    my_chats_cmd,
 )
 
 __all__ = [
@@ -58,6 +54,5 @@ __all__ = [
     "search_relay_messages", "list_relay_chats", "call_gemini", "web_search",
     "auto_delete_messages",
     # extra
-    "gemini_cmd", "analyze_img_cmd", "ocr_cmd", "research_cmd",
-    "search_msg_cmd", "my_chats_cmd",
+    "analyze_img_cmd", "ocr_cmd",
 ]
