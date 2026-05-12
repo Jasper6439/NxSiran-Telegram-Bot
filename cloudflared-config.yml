@@ -1,0 +1,28 @@
+# Cloudflare Tunnel 配置
+# 将 YOUR-DOMAIN.COM 替换为你的实际域名
+# 如果没有域名，使用 trycloudflare.com 免费临时域名
+
+tunnel: YOUR-TUNNEL-ID
+credentials-file: /root/.cloudflared/YOUR-TUNNEL-ID.json
+
+# 日志
+loglevel: info
+logfile: /var/log/cloudflared.log
+
+ingress:
+  # Bot Web 界面 (主服务)
+  - hostname: YOUR-DOMAIN.COM
+    service: http://localhost:8080
+
+  # Webhook (GitHub 自动部署)
+  - hostname: YOUR-DOMAIN.COM
+    path: /webhook/*
+    service: http://localhost:8082
+
+  # Bridge (SOLO 远程命令)
+  - hostname: YOUR-DOMAIN.COM
+    path: /bridge/*
+    service: http://localhost:8081
+
+  # 兜底
+  - service: http_status:404
