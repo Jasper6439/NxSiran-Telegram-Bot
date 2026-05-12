@@ -10,6 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      pull-requests: write
 
     steps:
       - name: Checkout
@@ -21,7 +22,6 @@ jobs:
         id: version
         run: |
           BRANCH="${GITHUB_REF_NAME}"
-          # 从分支名提取版本号（支持多种格式）
           VERSION=$(echo "$BRANCH" | grep -oP 'v?\K\d+\.\d+\.\d+[\.\d]*' | head -1)
 
           if [ -z "$VERSION" ]; then
@@ -34,28 +34,22 @@ jobs:
           echo "branch=$BRANCH" >> $GITHUB_OUTPUT
           echo "Found version: $VERSION from branch: $BRANCH"
 
-      - name: Check and merge in version order
+      - name: Check version order
         if: steps.version.outputs.has_version != 'false'
+        id: check
         run: |
           CURRENT_VERSION="${{ steps.version.outputs.version }}"
           CURRENT_BRANCH="${{ steps.version.outputs.branch }}"
 
-          echo "=== Current branch: $CURRENT_BRANCH (v$CURRENT_VERSION) ==="
-
-          # 获取所有远程分支（排除 master）
-          git branch -r | grep -v 'master' | grep -v 'HEAD' | sed 's|origin/||' | while read BRANCH; do
-            # 提取版本号
-            VER=$(echo "$BRANCH" | grep -oP 'v?\K\d+\.\d+\.\d+[\.\d]*' | head -1)
-            if [ -n "$VER" ]; then
-              echo "Branch: $BRANCH -> Version: $VER"
-            fi
-          done
+          echo "=== Checking version order for v$CURRENT_VERSION ==="
 
           # 获取所有有版本号的远程分支
           BRANCHES=$(git branch -r | grep -v 'master' | grep -v 'HEAD' | sed 's|origin/||')
 
-          # 找出所有版本号并排序
           LOWER_EXISTS=false
+          LOWER_BRANCH=""
+          LOWER_VERSION=""
+
           for BRANCH in $BRANCHES; do
             VER=$(echo "$BRANCH" | grep -oP 'v?\K\d+\.\d+\.\d+[\.\d]*' | head -1)
             if [ -z "$VER" ]; then
@@ -70,39 +64,126 @@ jobs:
 
             # 比较版本号
             if [ "$VER" != "$CURRENT_VERSION" ]; then
-              # 用 sort -V 比较版本号
               LOWER=$(echo -e "$VER\n$CURRENT_VERSION" | sort -V | head -1)
               if [ "$LOWER" = "$VER" ]; then
-                echo "⚠️ Branch $BRANCH (v$VER) has lower version and is not merged yet"
-                echo "   Waiting for v$VER to merge before v$CURRENT_VERSION"
+                echo "  ⏳ $BRANCH (v$VER) is pending"
                 LOWER_EXISTS=true
+                LOWER_BRANCH="$BRANCH"
+                LOWER_VERSION="$VER"
               fi
             fi
           done
 
           if [ "$LOWER_EXISTS" = true ]; then
+            echo "can_merge=false" >> $GITHUB_OUTPUT
+            echo "blocking_branch=$LOWER_BRANCH" >> $GITHUB_OUTPUT
+            echo "blocking_version=$LOWER_VERSION" >> $GITHUB_OUTPUT
             echo ""
-            echo "🚫 Cannot merge: there are lower-version branches pending"
-            echo "   Current: v$CURRENT_VERSION"
-            exit 0
+            echo "🚫 Blocked: waiting for v$LOWER_VERSION ($LOWER_BRANCH) to merge first"
+          else
+            echo "can_merge=true" >> $GITHUB_OUTPUT
+            echo ""
+            echo "✅ No lower-version branches pending. Safe to merge!"
           fi
 
-          echo ""
-          echo "✅ No lower-version branches pending. Safe to merge!"
-          echo ""
+      - name: Try auto merge
+        if: steps.check.outputs.can_merge == 'true'
+        id: merge
+        run: |
+          CURRENT_VERSION="${{ steps.version.outputs.version }}"
+          CURRENT_BRANCH="${{ steps.version.outputs.branch }}"
 
-          # 合并到 master
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git checkout master
           git pull origin master
 
-          echo "Merging $CURRENT_BRANCH (v$CURRENT_VERSION) into master..."
-          git merge --no-ff "$CURRENT_BRANCH" -m "Merge $CURRENT_BRANCH (v$CURRENT_VERSION)"
+          # 尝试合并，检测是否有冲突
+          if git merge --no-ff "$CURRENT_BRANCH" -m "Merge $CURRENT_BRANCH (v$CURRENT_VERSION)" --no-commit 2>&1; then
+            echo "has_conflict=false" >> $GITHUB_OUTPUT
+            echo "✅ No conflicts! Committing merge..."
+            git commit -m "Merge $CURRENT_BRANCH (v$CURRENT_VERSION)"
+            git push origin master
+            git push origin --delete "$CURRENT_BRANCH" 2>/dev/null || true
+            echo "🎉 Successfully merged v$CURRENT_VERSION to master!"
+          else
+            # 有冲突，中止合并
+            git merge --abort
+            echo "has_conflict=true" >> $GITHUB_OUTPUT
+            echo "⚠️ Merge conflict detected in v$CURRENT_VERSION"
+          fi
 
-          git push origin master
+      - name: Create PR for conflicts
+        if: steps.merge.outputs.has_conflict == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const version = '${{ steps.version.outputs.version }}';
+            const branch = '${{ steps.version.outputs.branch }}';
 
-          # 删除已合并的远程分支
-          git push origin --delete "$CURRENT_BRANCH" 2>/dev/null || true
+            // 检查是否已有该分支的 PR
+            const { data: existingPRs } = await github.rest.pulls.list({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              head: branch,
+              state: 'open'
+            });
 
-          echo "🎉 Successfully merged v$CURRENT_VERSION to master!"
+            if (existingPRs.length > 0) {
+              // 更新已有 PR 标题
+              await github.rest.pulls.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: existingPRs[0].number,
+                title: `⚠️ v${version} - 合并冲突，需要手动解决`
+              });
+              console.log(`Updated existing PR #${existingPRs[0].number}`);
+            } else {
+              // 创建新 PR
+              const { data: pr } = await github.rest.pulls.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: `⚠️ v${version} - 合并冲突，需要手动解决`,
+                head: branch,
+                base: 'master',
+                body: `## ⚠️ 自动合并失败 - 版本顺序正确但有冲突\n\n` +
+                      `**分支**: \`${branch}\`\n` +
+                      `**版本**: v${version}\n\n` +
+                      `### 解决步骤\n` +
+                      `1. 在本地拉取该分支: \`git fetch origin ${branch} && git checkout ${branch}\`\n` +
+                      `2. 合并 master: \`git merge master\`\n` +
+                      `3. 解决冲突后推送: \`git push origin ${branch}\`\n` +
+                      `4. PR 会自动合并\n\n` +
+                      `---\n*由 [Auto Merge](./actions/workflows/auto-merge.yml) 自动创建*`
+              });
+              console.log(`Created PR #${pr.number}`);
+            }
+
+      - name: Comment on blocked
+        if: steps.check.outputs.can_merge == 'false'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const branch = '${{ steps.version.outputs.branch }}';
+            const version = '${{ steps.version.outputs.version }}';
+            const blocking = '${{ steps.check.outputs.blocking_branch }}';
+            const blockingVer = '${{ steps.check.outputs.blocking_version }}';
+
+            // 找到该分支的 PR（如果有）
+            const { data: prs } = await github.rest.pulls.list({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              head: branch,
+              state: 'open'
+            });
+
+            if (prs.length > 0) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prs[0].number,
+                body: `⏳ **版本等待中**: v${version} 正在等待 v${blockingVer} (\`${blocking}\`) 先合并。\n\n` +
+                      `当 v${blockingVer} 合并后，下次 push 到此分支时会自动尝试合并。`
+              });
+              console.log(`Commented on PR #${prs[0].number}`);
+            }
