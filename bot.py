@@ -514,10 +514,10 @@ async def web_server(bot_app=None):
                     f"或者在宿主机设置自动重启监控。"
                 )
             elif has_systemd:
-                # 使用 systemd 重启服务
+                # 使用 systemd 重启服务（需要 sudo）
                 logging.info("[Webhook] Restarting systemd service...")
                 result = subprocess.run(
-                    ['systemctl', 'restart', systemd_service],
+                    ['sudo', 'systemctl', 'restart', systemd_service],
                     capture_output=True, text=True, timeout=60
                 )
                 if result.returncode == 0:
