@@ -12,6 +12,7 @@ SQLite 数据库操作模块 - 支持农场经营 + 角色互动游戏
 - inventory: 背包系统
 - chat: 聊天记录 + 记忆系统
 - player: 玩家位置
+- maps: 多地图系统 (v1.4.10.2)
 """
 
 from database.base import (
@@ -30,9 +31,10 @@ from database.events import EventsMixin
 from database.inventory import InventoryMixin
 from database.chat import ChatMixin
 from database.player import PlayerMixin
+from database.maps import MapMixin
 
 
-class GameDatabase(FarmMixin, RelationshipMixin, CookingMixin, EventsMixin, InventoryMixin, ChatMixin, PlayerMixin, _Base):
+class GameDatabase(MapMixin, FarmMixin, RelationshipMixin, CookingMixin, EventsMixin, InventoryMixin, ChatMixin, PlayerMixin, _Base):
     """游戏数据库管理类（组合所有业务域 Mixin）"""
     pass
 

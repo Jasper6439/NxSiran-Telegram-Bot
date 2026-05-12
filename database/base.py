@@ -65,7 +65,7 @@ class GameDatabase:
             self._migrate_db(conn)
 
     def _migrate_db(self, conn):
-        """数据库自动迁移 - 添加缺失的列"""
+        """数据库自动迁移 - 添加缺失的列和表"""
         migrations = {
             'relationships': [
                 ('affection', 'INTEGER DEFAULT 0'),
@@ -98,6 +98,18 @@ class GameDatabase:
                         logger.info(f"[DB] 迁移: {table} 添加列 {col_name}")
                     except Exception as e:
                         logger.warning(f"[DB] 迁移失败 {table}.{col_name}: {e}")
+
+        # v1.4.10.2 - 多地图系统：创建 player_maps 表
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS player_maps (
+                user_id INTEGER PRIMARY KEY,
+                current_map TEXT DEFAULT 'home',
+                unlocked_maps TEXT DEFAULT '["home","school","cafe"]',
+                map_discoveries TEXT DEFAULT '{}',
+                last_visit TEXT,
+                FOREIGN KEY (user_id) REFERENCES users(id)
+            )
+        """)
 
     @contextmanager
     def get_connection(self):

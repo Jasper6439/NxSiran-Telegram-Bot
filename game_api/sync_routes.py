@@ -85,6 +85,9 @@ async def api_get_full_game_state(request):
         # 获取世界层级状态
         world_layer_state = db.get_world_layer_state(user_id)
 
+        # 获取地图系统状态（v1.4.10.2）
+        map_state = db.get_map_state(user_id)
+
         # 获取角色位置
         location = db.get_character_location(character_id)
 
@@ -185,6 +188,13 @@ async def api_get_full_game_state(request):
             'relationshipStatus': relationship['relationship_status'] if relationship else 'stranger',
             'emotionValues': emotion_values,
             'worldLayer': world_layer_state,
+            'mapSystem': {
+                'currentMap': map_state['current_map'],
+                'currentMapInfo': map_state['current_map_info'],
+                'maps': map_state['maps'],
+                'unlockedCount': map_state['unlocked_count'],
+                'totalMaps': map_state['total_maps'],
+            },
             'buildings': buildings,
             'decorations': decorations,
             'weather': 'sunny',
@@ -285,7 +295,7 @@ async def api_trigger_awakening(request):
 
 
 async def api_switch_world_layer(request):
-    """切换世界层级 API"""
+    """切换世界层级 API（向后兼容，同时支持 layer 和 target_layer 字段）"""
     try:
         user_id, err = await authenticate_request(request)
         if err:
@@ -293,7 +303,8 @@ async def api_switch_world_layer(request):
 
 
         data = await request.json()
-        layer = data.get('layer', 'normal')
+        # 兼容前端发 target_layer 或 layer
+        layer = data.get('target_layer') or data.get('layer', 'normal')
 
         db = get_db()
         result = db.switch_world_layer(user_id, layer)

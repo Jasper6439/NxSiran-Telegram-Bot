@@ -29,6 +29,10 @@ from game_api.media_routes import (
 from game_api.heart_routes import (
     api_check_heart_events, api_trigger_heart_event,
 )
+from game_api.map_routes import (
+    api_get_maps, api_switch_map, api_get_map_state,
+    api_discover_map, api_get_map_discoveries,
+)
 
 
 def register_game_routes(app):
@@ -83,3 +87,10 @@ def register_game_routes(app):
     app.router.add_post("/api/game/generate/sticker", api_generate_sticker)
     app.router.add_post("/api/game/generate/scene", api_generate_scene)
     app.router.add_post("/api/game/tts", api_tts)
+
+    # 多地图系统 API（v1.4.10.2）
+    app.router.add_get("/api/game/maps", api_get_maps)
+    app.router.add_post("/api/game/maps/switch", api_switch_map)
+    app.router.add_get("/api/game/maps/state", api_get_map_state)
+    app.router.add_post("/api/game/maps/discover", api_discover_map)
+    app.router.add_get("/api/game/maps/discoveries", api_get_map_discoveries)
