@@ -1,0 +1,20 @@
+[Unit]
+Description=Cloudflare Quick Tunnel (NxSiran Bot)
+After=network-online.target nxsiran-bot.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/root/NxSiran-Telegram-Bot
+ExecStart=/usr/bin/cloudflared tunnel --url http://localhost:8080
+Restart=always
+RestartSec=10
+Environment=TUNNEL_URL=
+
+# 日志
+StandardOutput=append:/opt/NxSiran/data/logs/tunnel.log
+StandardError=append:/opt/NxSiran/data/logs/tunnel.log
+
+[Install]
+WantedBy=multi-user.target
