@@ -1395,3 +1395,119 @@
 .chat-link-prompt p {
     margin: 8px 0;
 }
+
+/* ── Voice Page ───────────────────────────────────────────────────────── */
+.voice-status {
+  display: flex;
+  gap: var(--space-4);
+  margin-bottom: var(--space-4);
+}
+
+.voice-status-item {
+  flex: 1;
+  text-align: center;
+  padding: var(--space-3);
+  background: var(--card-bg);
+  border-radius: var(--radius-lg);
+}
+
+.voice-status-item .label {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-bottom: var(--space-1);
+}
+
+.voice-status-item .value {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.voice-upload-area {
+  border: 2px dashed var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: var(--space-6);
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-bottom: var(--space-4);
+}
+
+.voice-upload-area:hover {
+  border-color: var(--purple);
+  background: var(--hover-bg);
+}
+
+.voice-upload-area.dragover {
+  border-color: var(--purple);
+  background: rgba(139, 92, 246, 0.1);
+}
+
+.voice-upload-area.uploading {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.voice-upload-area svg {
+  width: 48px;
+  height: 48px;
+  color: var(--text-muted);
+  margin-bottom: var(--space-2);
+}
+
+.upload-hint div:first-child {
+  font-weight: 500;
+  margin-bottom: var(--space-1);
+}
+
+.voice-samples-list {
+  margin-bottom: var(--space-4);
+}
+
+.voice-sample-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-2) var(--space-3);
+  background: var(--card-bg);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-2);
+}
+
+.voice-sample-item .sample-name {
+  font-size: 0.875rem;
+  color: var(--text-primary);
+}
+
+.voice-actions {
+  display: flex;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+.voice-actions button {
+  flex: 1;
+}
+
+.voice-tips {
+  background: var(--card-bg);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+}
+
+.voice-tips .tip-title {
+  font-weight: 600;
+  margin-bottom: var(--space-2);
+}
+
+.voice-tips ul {
+  margin: 0;
+  padding-left: var(--space-5);
+  font-size: 0.875rem;
+  color: var(--text-muted);
+}
+
+.voice-tips li {
+  margin-bottom: var(--space-1);
+}

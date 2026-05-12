@@ -94,7 +94,7 @@ SEMANTIC_MEMORY_FILE = os.path.join(DATA_DIR, "semantic_memory.json")
 
 # [Skill: auto-updater] 版本信息文件
 VERSION_FILE = os.path.join(DATA_DIR, "version.json")
-BOT_VERSION = "1.4.7.2"
+BOT_VERSION = "1.4.7.3"
 APP_NAME = "恋爱至上主义区域"
 APP_NAME_EN = "Love Supremacy Zone"
 
@@ -106,7 +106,7 @@ os.makedirs(VIDEO_DIR, exist_ok=True)
 SKILLS_STATE_FILE = os.path.join(DATA_DIR, "skills_state.json")
 
 # Skills 注册表：记录所有已集成的 skills
-# v1.4.7.2 - 修复: TTS改为韩语男声, 新增声音克隆系统
+# v1.4.7.3 - 新增: Web端声音语料上传功能
 SKILLS_REGISTRY = {
     "humanize-ai-text": {"name": "AI文本人性化", "desc": "让回复更像真人，去除机械感", "enabled": True, "category": "对话优化"},
     "self-improving": {"name": "自我改进", "desc": "从用户纠正中学习", "enabled": True, "category": "学习"},
