@@ -1081,6 +1081,13 @@
                     <label for="password">密码</label>
                     <input type="password" id="password" class="form-input" placeholder="请输入密码" required autocomplete="current-password">
                 </div>
+                <div class="form-group" id="chatid-group" style="display: none;">
+                    <label for="chat-id">Telegram Chat ID <span style="color: var(--danger);">*</span></label>
+                    <input type="text" id="chat-id" class="form-input" placeholder="你的 Telegram Chat ID">
+                    <div style="font-size: 12px; color: var(--text-muted); margin-top: 6px;">
+                        向 <a href="https://t.me/userinfobot" target="_blank" style="color: var(--purple);">@userinfobot</a> 发送任意消息获取
+                    </div>
+                </div>
                 <div class="error-message" id="error-message"></div>
                 <button type="submit" class="login-btn" id="login-btn">登录</button>
             </form>
@@ -1251,6 +1258,8 @@
             document.querySelectorAll('.login-tab').forEach(tab => tab.classList.remove('active'));
             event.target.classList.add('active');
             document.getElementById('login-btn').textContent = isLoginMode ? '登录' : '注册';
+            document.getElementById('chatid-group').style.display = isLoginMode ? 'none' : 'block';
+            document.getElementById('chat-id').required = !isLoginMode;
             hideError();
         }
 
@@ -1284,10 +1293,16 @@
 
             const username = document.getElementById('username').value.trim();
             const password = document.getElementById('password').value;
+            const chatId = document.getElementById('chat-id').value.trim();
             const btn = document.getElementById('login-btn');
 
             if (!username || !password) {
                 showError('请输入用户名和密码');
+                return;
+            }
+
+            if (!isLoginMode && !chatId) {
+                showError('请输入 Telegram Chat ID');
                 return;
             }
 
@@ -1296,10 +1311,13 @@
 
             try {
                 const endpoint = isLoginMode ? '/api/login' : '/api/register';
+                const body = isLoginMode
+                    ? { username, password }
+                    : { username, password, chat_id: chatId };
                 const response = await fetch(endpoint, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username, password })
+                    body: JSON.stringify(body)
                 });
 
                 const data = await response.json();
