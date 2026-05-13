@@ -688,6 +688,90 @@
             transform: scale(0.97);
         }
 
+        /* Emoji Button */
+        .page-chat .emoji-btn {
+            width: 40px;
+            height: 40px;
+            border: none;
+            border-radius: var(--radius-md);
+            background: var(--bg-tertiary);
+            font-size: 20px;
+            cursor: pointer;
+            flex-shrink: 0;
+            transition: background var(--duration-fast) var(--ease);
+        }
+        .page-chat .emoji-btn:hover {
+            background: var(--purple-bg-tint);
+        }
+        .page-chat .emoji-btn:active {
+            transform: scale(0.95);
+        }
+
+        /* Emoji Picker */
+        .emoji-picker {
+            position: absolute;
+            bottom: 80px;
+            left: 20px;
+            right: 20px;
+            background: var(--card-bg);
+            border-radius: var(--radius-lg);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            z-index: 100;
+            max-height: 280px;
+            display: flex;
+            flex-direction: column;
+            border: 1px solid var(--border-color);
+        }
+
+        .emoji-tabs {
+            display: flex;
+            gap: 4px;
+            padding: 8px 8px 4px;
+            border-bottom: 1px solid var(--border-color);
+            overflow-x: auto;
+            flex-shrink: 0;
+        }
+
+        .emoji-tab {
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all var(--duration-fast) var(--ease);
+        }
+
+        .emoji-tab.active {
+            background: var(--purple);
+            color: white;
+        }
+
+        .emoji-grid {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            gap: 2px;
+            padding: 8px;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        .emoji-item {
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            cursor: pointer;
+            border-radius: 6px;
+            transition: background var(--duration-fast) var(--ease);
+        }
+
+        .emoji-item:hover {
+            background: var(--bg-tertiary);
+        }
+
         /* ================================================================
            Page: Farm
            ================================================================ */
@@ -1366,18 +1450,24 @@
                         <span></span><span></span><span></span>
                     </div>
                     <div class="chat-input-area">
+                        <button class="emoji-btn" id="chat-emoji-btn" onclick="toggleEmojiPicker()" title="表情包">😊</button>
                         <input type="text" class="chat-input" id="chat-message-input" placeholder="输入消息..." onkeypress="if(event.key==='Enter')sendMessage()">
                         <button class="send-btn" onclick="sendMessage()">发送</button>
+                    </div>
+                    <!-- Emoji Picker -->
+                    <div class="emoji-picker" id="emoji-picker" style="display:none;">
+                        <div class="emoji-tabs" id="emoji-tabs"></div>
+                        <div class="emoji-grid" id="emoji-grid"></div>
                     </div>
                 </div>
             </div>
 
             <!-- ===== Page: Farm ===== -->
             <div class="page page-farm" id="page-farm">
-                <!-- Tab Switch: 数据页 / 游戏页 -->
+                <!-- Tab Switch: 游戏页 / 农场页 (已互换) -->
                 <div style="display:flex; gap:0; margin-bottom:var(--space-3); background:var(--bg-tertiary); border-radius:var(--radius-lg); padding:3px;">
-                    <button id="farm-tab-data" class="btn-secondary" style="flex:1; border-radius:var(--radius-md); border:none; padding:8px; font-size:var(--font-size-sm); cursor:pointer; background:var(--purple); color:#fff;" onclick="switchFarmTab('data')">📊 数据</button>
-                    <button id="farm-tab-game" class="btn-secondary" style="flex:1; border-radius:var(--radius-md); border:none; padding:8px; font-size:var(--font-size-sm); cursor:pointer; background:transparent; color:var(--text-secondary);" onclick="switchFarmTab('game')">🎮 游戏</button>
+                    <button id="farm-tab-game" class="btn-secondary" style="flex:1; border-radius:var(--radius-md); border:none; padding:8px; font-size:var(--font-size-sm); cursor:pointer; background:var(--purple); color:#fff;" onclick="switchFarmTab('game')">🎮 游戏</button>
+                    <button id="farm-tab-data" class="btn-secondary" style="flex:1; border-radius:var(--radius-md); border:none; padding:8px; font-size:var(--font-size-sm); cursor:pointer; background:transparent; color:var(--text-secondary);" onclick="switchFarmTab('data')">🌾 农场</button>
                 </div>
 
                 <!-- Data View -->
@@ -2071,24 +2161,66 @@ async function loadHomeStats() {
 }
 
 /* ================================================================
-   Home Quote
+   Home Quote - 从角色API获取名言
    ================================================================ */
-var homeQuotes = [
-    '恋爱是两个人的事，但喜欢是一个人的事。',
-    '世界上最远的距离，不是生与死，而是我就站在你面前，你却不知道我爱你。',
-    '如果你认识从前的我，也许你会原谅现在的我。',
-    '人生若只如初见，何事秋风悲画扇。',
-    '我行过许多地方的桥，看过许多次数的云，喝过许多种类的酒，却只爱过一个正当最好年龄的人。',
-    '于千万人之中遇见你所要遇见的人，于千万年之中，时间的无涯的荒野里，没有早一步，也没有晚一步。',
-    '草在结它的种子，风在摇它的叶子。我们站着，不说话，就十分美好。',
-    '从前的日色变得慢，车、马、邮件都慢，一生只够爱一个人。',
-    '我明白你会来，所以我等。',
-    '你是一树一树的花开，是燕在梁间呢喃。你是爱，是暖，是希望，你是人间的四月天。'
-];
+var homeQuotes = [];
+var cachedCharacterQuotes = null;
+
+function loadQuotesFromCharacter() {
+    if (cachedCharacterQuotes && cachedCharacterQuotes.length > 0) {
+        homeQuotes = cachedCharacterQuotes;
+        showHomeQuote();
+        return;
+    }
+    
+    fetch('/api/characters')
+        .then(r => r.json())
+        .then(data => {
+            var chars = data.characters || [];
+            var currentId = data.current;
+            var char = chars.find(function(c) { return c.id === currentId; }) || chars[0];
+            
+            if (char && char.quotes && char.quotes.length > 0) {
+                cachedCharacterQuotes = char.quotes;
+                homeQuotes = char.quotes;
+            } else if (char && char.catchphrases && char.catchphrases.length > 0) {
+                cachedCharacterQuotes = char.catchphrases;
+                homeQuotes = char.catchphrases;
+            } else {
+                // 回退到默认名言
+                cachedCharacterQuotes = getDefaultQuotes();
+                homeQuotes = cachedCharacterQuotes;
+            }
+            showHomeQuote();
+        })
+        .catch(function() {
+            homeQuotes = getDefaultQuotes();
+            showHomeQuote();
+        });
+}
+
+function getDefaultQuotes() {
+    return [
+        '恋爱是两个人的事，但喜欢是一个人的事。',
+        '世界上最远的距离，不是生与死，而是我就站在你面前，你却不知道我爱你。',
+        '如果你认识从前的我，也许你会原谅现在的我。',
+        '人生若只如初见，何事秋风悲画扇。',
+        '我行过许多地方的桥，看过许多次数的云，喝过许多种类的酒，却只爱过一个正当最好年龄的人。',
+        '于千万人之中遇见你所要遇见的人，于千万年之中，时间的无涯的荒野里，没有早一步，也没有晚一步。',
+        '草在结它的种子，风在摇它的叶子。我们站着，不说话，就十分美好。',
+        '从前的日色变得慢，车、马、邮件都慢，一生只够爱一个人。',
+        '我明白你会来，所以我等。',
+        '你是一树一树的花开，是燕在梁间呢喃。你是爱，是暖，是希望，你是人间的四月天。'
+    ];
+}
 
 function showHomeQuote() {
     var el = document.getElementById('home-quote');
     if (!el) return;
+    if (homeQuotes.length === 0) {
+        loadQuotesFromCharacter();
+        return;
+    }
     var q = homeQuotes[Math.floor(Math.random() * homeQuotes.length)];
     el.textContent = '「' + q + '」';
 }
@@ -2154,10 +2286,11 @@ function navigateTo(pageName) {
                     document.getElementById('admin-config-group').style.display = 'block';
                 }
 
-                // Avatar upload
+                // Avatar upload - 使用标志避免重复绑定事件
                 var avatarEl = document.getElementById('settings-avatar');
                 var avatarInput = document.getElementById('avatar-upload-input');
-                if (avatarEl && avatarInput) {
+                if (avatarEl && avatarInput && !avatarEl.dataset.initialized) {
+                    avatarEl.dataset.initialized = 'true';
                     avatarEl.addEventListener('click', function() { avatarInput.click(); });
                     avatarInput.addEventListener('change', function(e) {
                         var file = e.target.files[0];
@@ -2172,23 +2305,37 @@ function navigateTo(pageName) {
                         };
                         reader.readAsDataURL(file);
                     });
-                    var saved = localStorage.getItem('user_avatar');
-                    if (saved) {
-                        avatarEl.style.backgroundImage = 'url(' + saved + ')';
-                        avatarEl.style.backgroundSize = 'cover';
-                        avatarEl.style.backgroundPosition = 'center';
-                        avatarEl.innerHTML = '';
-                    }
+                }
+                // 每次进入页面都恢复头像显示
+                var saved = localStorage.getItem('user_avatar');
+                if (saved && avatarEl) {
+                    avatarEl.style.backgroundImage = 'url(' + saved + ')';
+                    avatarEl.style.backgroundSize = 'cover';
+                    avatarEl.style.backgroundPosition = 'center';
+                    avatarEl.innerHTML = '';
                 }
 
-                // Load character bindings
+                // Load character bindings - 如果没有绑定，显示可用角色
                 var bindingsList = document.getElementById('character-bindings-list');
                 if (bindingsList) {
                     var bindings = data.character_bindings || {};
                     var keys = Object.keys(bindings);
 
                     if (keys.length === 0) {
-                        bindingsList.innerHTML = '<div class="settings-item"><span class="settings-icon">&#128100;</span><span class="settings-label">暂无角色绑定</span></div>';
+                        // 没有绑定，从 /api/characters 获取可用角色列表
+                        fetch('/api/characters', { headers: { 'Authorization': 'Bearer ' + authToken } })
+                            .then(function(r) { return r.json(); })
+                            .then(function(charData) {
+                                if (charData.success && charData.characters && charData.characters.length > 0) {
+                                    var currentChar = charData.characters.find(function(c) { return c.id === charData.current; }) || charData.characters[0];
+                                    bindingsList.innerHTML = '<div class="settings-item"><span class="settings-icon">&#128100;</span><span class="settings-label">' + (currentChar.name || currentChar.id) + '</span><span class="settings-value" style="color:var(--success);">当前角色</span></div>';
+                                } else {
+                                    bindingsList.innerHTML = '<div class="settings-item"><span class="settings-icon">&#128100;</span><span class="settings-label">暂无角色绑定</span></div>';
+                                }
+                            })
+                            .catch(function() {
+                                bindingsList.innerHTML = '<div class="settings-item"><span class="settings-icon">&#128100;</span><span class="settings-label">暂无角色绑定</span></div>';
+                            });
                     } else {
                         bindingsList.innerHTML = keys.map(function(charName) {
                             var chatId = bindings[charName];
@@ -2282,6 +2429,7 @@ async function sendMessage() {
 
     addMessage(message, 'user');
     input.value = '';
+    closeEmojiPicker();
 
     document.getElementById('chat-typing').style.display = 'block';
     document.getElementById('chat-status-text').textContent = '正在输入...';
@@ -2307,6 +2455,85 @@ async function sendMessage() {
         document.getElementById('chat-status-text').textContent = '在线';
         addMessage('...（沉默了一会儿）连接出了点问题。', 'bot');
     }
+}
+
+// ================================================================
+// Emoji Picker
+// ================================================================
+var EMOJI_CATEGORIES = [
+    { name: '笑脸', emojis: ['😀','😃','😄','😁','😆','😅','🤣','😂','🙂','😊','😇','🥰','😍','🤩','😘','😗','😚','😋','😛','😜','🤪','😝','🤑','🤗','🤭','🤫','🤔','🤐','🤨','😐','😑','😶','😏','😒','🙄','😬','🤥','😌','😔','😪','🤤','😴','😷','🤒','🤕'] },
+    { name: '爱心', emojis: ['❤️','🧡','💛','💚','💙','💜','🖤','🤍','🤎','💔','❣','💕','💞','💓','💗','💖','💘','💝','💟','♥'] },
+    { name: '手势', emojis: ['👍','👎','👊','✊','🤛','🤜','🤝','👏','🙌','🤲','🙏','💪','🤳','✌','🤞','🤟','🤘','🤙','👈','👉','👆','👇','☝'] },
+    { name: '物品', emojis: ['💎','💰','🎁','🎀','🎈','🎉','🎊','🏆','🥇','🥈','🥉','⭐','🌟','✨','💫','🔥','💥','💢','💦','💨','🕐','💭','💬','📱','📷','🎵','🎶'] },
+    { name: '食物', emojis: ['🍎','🍊','🍋','🍌','🍉','🍇','🍓','🫐','🍒','🍑','🥭','🍍','🥝','🍅','🥕','🌽','🍕','🍔','🍟','🌭','🍿','🍩','🍪','🎂','🍰','🧁','🍫','🍬','🍭'] },
+    { name: '动物', emojis: ['🐶','🐱','🐭','🐹','🐰','🦊','🐻','🐼','🐨','🐯','🦁','🐮','🐷','🐸','🐵','🐔','🐧','🐦','🐤','🦆','🦅','🦉','🦇','🐺','🐗','🐴','🦄','🐝','🐛','🦋','🐌'] }
+];
+
+var currentEmojiCategory = 0;
+
+function initEmojiPicker() {
+    var tabsContainer = document.getElementById('emoji-tabs');
+    if (!tabsContainer) return;
+    
+    tabsContainer.innerHTML = EMOJI_CATEGORIES.map(function(cat, i) {
+        return '<div class="emoji-tab' + (i === 0 ? ' active' : '') + '" data-cat="' + i + '" onclick="switchEmojiCategory(' + i + ')">' + cat.name + '</div>';
+    }).join('');
+    
+    renderEmojiGrid(0);
+}
+
+function toggleEmojiPicker() {
+    var picker = document.getElementById('emoji-picker');
+    if (!picker) return;
+    
+    if (picker.style.display === 'none') {
+        picker.style.display = 'flex';
+        if (document.getElementById('emoji-tabs').innerHTML === '') {
+            initEmojiPicker();
+        }
+    } else {
+        picker.style.display = 'none';
+    }
+}
+
+function closeEmojiPicker() {
+    var picker = document.getElementById('emoji-picker');
+    if (picker) picker.style.display = 'none';
+}
+
+function switchEmojiCategory(index) {
+    currentEmojiCategory = index;
+    
+    document.querySelectorAll('.emoji-tab').forEach(function(tab, i) {
+        tab.classList.toggle('active', i === index);
+    });
+    
+    renderEmojiGrid(index);
+}
+
+function renderEmojiGrid(categoryIndex) {
+    var grid = document.getElementById('emoji-grid');
+    if (!grid) return;
+    
+    var category = EMOJI_CATEGORIES[categoryIndex];
+    if (!category) return;
+    
+    grid.innerHTML = category.emojis.map(function(emoji) {
+        return '<span class="emoji-item" onclick="insertEmoji(\'' + emoji + '\')">' + emoji + '</span>';
+    }).join('');
+}
+
+function insertEmoji(emoji) {
+    var input = document.getElementById('chat-message-input');
+    if (!input) return;
+    
+    var currentValue = input.value;
+    var cursorPos = input.selectionStart || currentValue.length;
+    input.value = currentValue.substring(0, cursorPos) + emoji + currentValue.substring(cursorPos);
+    
+    var newPos = cursorPos + emoji.length;
+    input.setSelectionRange(newPos, newPos);
+    input.focus();
 }
 
 async function syncMessages() {
