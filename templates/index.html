@@ -3025,18 +3025,25 @@ async function saveConfig() {
         if (smtpEmail) body.smtp_email = smtpEmail;
         if (smtpPassword) body.smtp_password = smtpPassword;
 
+        if (Object.keys(body).length === 0) {
+            Toast.show('没有需要保存的配置', 'warning');
+            return;
+        }
+
         const response = await fetch('/api/config', {
             method: 'POST',
             headers: getAuthHeaders(),
             body: JSON.stringify(body)
         });
-        if (response.ok) {
-            if (typeof showToast === 'function') Toast.show('配置已保存', 'success');
+        const result = await response.json();
+        if (response.ok && result.success) {
+            Toast.show('配置已保存', 'success');
         } else {
-            if (typeof showToast === 'function') Toast.show('保存失败', 'error');
+            Toast.show(result.error || '保存失败', 'error');
         }
     } catch (e) {
-        if (typeof showToast === 'function') Toast.show('网络错误', 'error');
+        console.error('saveConfig error:', e);
+        Toast.show('网络错误', 'error');
     }
 }
 
