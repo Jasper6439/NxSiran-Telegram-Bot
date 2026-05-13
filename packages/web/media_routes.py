@@ -238,15 +238,34 @@ async def serve_uploaded_file(request):
                 filepath = candidate
 
         else:
-            # folder 是 character_id 或 '_shared'，只在当前用户的目录中查找
+            # folder 是 character_id 或 '_shared'
             # 兼容旧数据：'default' 映射到 '_shared'
             if folder == 'default':
                 folder = '_shared'
-            user_selfie_dir = get_user_selfie_dir(user_id, folder)
-            if os.path.isdir(user_selfie_dir):
-                candidate = os.path.join(user_selfie_dir, filename)
-                if os.path.exists(candidate):
-                    filepath = candidate
+            
+            # 1. 先在当前用户的目录中查找
+            if user_id:
+                user_selfie_dir = get_user_selfie_dir(user_id, folder)
+                if os.path.isdir(user_selfie_dir):
+                    candidate = os.path.join(user_selfie_dir, filename)
+                    if os.path.exists(candidate):
+                        filepath = candidate
+            
+            # 2. 如果找不到，尝试全局 uploads/{folder}/ 目录（兼容旧数据）
+            if not filepath:
+                global_dir = os.path.join(DATA_DIR, "uploads", folder)
+                if os.path.isdir(global_dir):
+                    candidate = os.path.join(global_dir, filename)
+                    if os.path.exists(candidate):
+                        filepath = candidate
+            
+            # 3. 再尝试 SELFIE_DIR/{folder}/ 目录
+            if not filepath:
+                legacy_dir = os.path.join(SELFIE_DIR, folder)
+                if os.path.isdir(legacy_dir):
+                    candidate = os.path.join(legacy_dir, filename)
+                    if os.path.exists(candidate):
+                        filepath = candidate
 
         if filepath and os.path.exists(filepath):
             with open(filepath, 'rb') as f:
