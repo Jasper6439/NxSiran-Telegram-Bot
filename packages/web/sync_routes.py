@@ -202,7 +202,7 @@ async def generate_ai_reply(telegram_id: int, user_message: str):
     try:
         from ai_client import call_ai
         from chat_history import load_chat_history, append_bot_message
-        from bot import get_current_character
+        from characters import get_current_character
 
         # Load recent chat history for context
         history = load_chat_history(telegram_id)

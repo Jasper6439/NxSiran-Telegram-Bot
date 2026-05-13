@@ -94,7 +94,7 @@ SEMANTIC_MEMORY_FILE = os.path.join(DATA_DIR, "semantic_memory.json")
 
 # [Skill: auto-updater] 版本信息文件
 VERSION_FILE = os.path.join(DATA_DIR, "version.json")
-BOT_VERSION = "1.4.10.2"
+BOT_VERSION = "1.4.10.3"
 APP_NAME = "恋爱至上主义区域"
 APP_NAME_EN = "Love Supremacy Zone"
 
