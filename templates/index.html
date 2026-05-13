@@ -2448,7 +2448,7 @@ async function bindTelegramChatId() {
         var data = await resp.json();
         if (data.success) {
             if (bindStatus) { bindStatus.textContent = '绑定成功！Chat ID: ' + chatId; bindStatus.style.color = 'var(--success)'; }
-            if (typeof showToast === 'function') showToast('Telegram Chat ID 绑定成功', 'success');
+            if (typeof showToast === 'function') Toast.show('Telegram Chat ID 绑定成功', 'success');
         } else {
             if (bindStatus) { bindStatus.textContent = data.error || '绑定失败'; bindStatus.style.color = 'var(--danger)'; }
         }
@@ -2746,12 +2746,12 @@ async function deleteLightboxPhoto() {
         if (data.success) {
             closeLightbox();
             loadGalleryItems();
-            showToast('已删除', 'success');
+            Toast.show('已删除', 'success');
         } else {
-            showToast(data.error || '删除失败', 'error');
+            Toast.show(data.error || '删除失败', 'error');
         }
     } catch (e) {
-        showToast('删除失败', 'error');
+        Toast.show('删除失败', 'error');
     }
 }
 
@@ -2766,12 +2766,12 @@ async function deletePhoto(filename, characterId) {
         const data = await resp.json();
         if (data.success) {
             loadGalleryItems();
-            showToast('已删除', 'success');
+            Toast.show('已删除', 'success');
         } else {
-            showToast(data.error || '删除失败', 'error');
+            Toast.show(data.error || '删除失败', 'error');
         }
     } catch (e) {
-        showToast('删除失败', 'error');
+        Toast.show('删除失败', 'error');
     }
 }
 
@@ -2842,11 +2842,11 @@ async function uploadPhotos() {
         if (response.ok) {
             const data = await response.json();
             if (data.success) {
-                if (typeof showToast === 'function') showToast('上传成功', 'success');
+                if (typeof showToast === 'function') Toast.show('上传成功', 'success');
                 // 上传成功后刷新相册
                 loadGalleryItems();
             } else {
-                if (typeof showToast === 'function') showToast(data.error || '上传失败', 'error');
+                if (typeof showToast === 'function') Toast.show(data.error || '上传失败', 'error');
             }
             document.getElementById('home-preview-section').classList.remove('active');
             document.getElementById('home-preview-grid').innerHTML = '';
@@ -2855,11 +2855,11 @@ async function uploadPhotos() {
         } else if (response.status === 401) {
             logout();
         } else {
-            if (typeof showToast === 'function') showToast('上传失败', 'error');
+            if (typeof showToast === 'function') Toast.show('上传失败', 'error');
         }
     } catch (e) {
         console.error('Upload error:', e);
-        if (typeof showToast === 'function') showToast('网络错误', 'error');
+        if (typeof showToast === 'function') Toast.show('网络错误', 'error');
     } finally {
         loading.classList.remove('active');
     }
@@ -2891,12 +2891,12 @@ async function saveConfig() {
             body: JSON.stringify(body)
         });
         if (response.ok) {
-            if (typeof showToast === 'function') showToast('配置已保存', 'success');
+            if (typeof showToast === 'function') Toast.show('配置已保存', 'success');
         } else {
-            if (typeof showToast === 'function') showToast('保存失败', 'error');
+            if (typeof showToast === 'function') Toast.show('保存失败', 'error');
         }
     } catch (e) {
-        if (typeof showToast === 'function') showToast('网络错误', 'error');
+        if (typeof showToast === 'function') Toast.show('网络错误', 'error');
     }
 }
 
