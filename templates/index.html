@@ -909,22 +909,22 @@
         /* ================================================================
            Page: Gallery
            ================================================================ */
-        .page-gallery .gallery-toolbar {
+        .page-media .gallery-toolbar {
             display: flex;
             align-items: center;
             justify-content: space-between;
             margin-bottom: var(--space-4);
         }
-        .page-gallery .gallery-count {
+        .page-media .gallery-count {
             font-size: var(--font-size-sm);
             color: var(--text-secondary);
         }
-        .page-gallery .photo-grid {
+        .page-media .photo-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
             gap: var(--space-2);
         }
-        .page-gallery .photo-item {
+        .page-media .photo-item {
             position: relative;
             aspect-ratio: 1;
             border-radius: var(--radius-sm);
@@ -932,16 +932,16 @@
             cursor: pointer;
             transition: transform var(--duration-fast) var(--spring);
         }
-        .page-gallery .photo-item:active { transform: scale(0.95); }
-        .page-gallery .photo-item img {
+        .page-media .photo-item:active { transform: scale(0.95); }
+        .page-media .photo-item img {
             width: 100%;
             height: 100%;
             object-fit: cover;
             transition: transform var(--duration-slow) var(--ease);
         }
-        .page-gallery .photo-item:hover img { transform: scale(1.05); }
+        .page-media .photo-item:hover img { transform: scale(1.05); }
 
-        .page-gallery .lightbox {
+        .page-media .lightbox {
             position: fixed;
             inset: 0;
             z-index: var(--z-modal);
@@ -955,11 +955,11 @@
                         visibility var(--duration-normal) var(--ease);
             cursor: zoom-out;
         }
-        .page-gallery .lightbox.lightbox-visible {
+        .page-media .lightbox.lightbox-visible {
             opacity: 1;
             visibility: visible;
         }
-        .page-gallery .lightbox img {
+        .page-media .lightbox img {
             max-width: 92%;
             max-height: 85vh;
             object-fit: contain;
@@ -967,7 +967,7 @@
             box-shadow: 0 8px 32px rgba(0,0,0,0.5);
             cursor: default;
         }
-        .page-gallery .lightbox-close {
+        .page-media .lightbox-close {
             position: absolute;
             top: var(--space-4);
             right: var(--space-4);
@@ -984,7 +984,7 @@
             border: none;
             z-index: 1;
         }
-        .page-gallery .lightbox-close:hover {
+        .page-media .lightbox-close:hover {
             background: rgba(255, 255, 255, 0.25);
         }
 
