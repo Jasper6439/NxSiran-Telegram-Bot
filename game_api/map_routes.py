@@ -2,7 +2,7 @@
 
 import logging
 from aiohttp import web
-from database import get_db
+from database.base import get_db
 from database.maps import MAPS
 from game_api.auth import authenticate_request
 
