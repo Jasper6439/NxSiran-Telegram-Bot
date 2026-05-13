@@ -98,7 +98,7 @@ async def api_get_selfies(request):
                     selfies.append({
                         'filename': f,
                         # 返回带 character_id 的 URL，让前端能正确加载
-                        'url': f'/uploads/{character_id or "default"}/{f}',
+                        'url': f'/uploads/{character_id or "_shared"}/{f}',
                         'date': datetime.fromtimestamp(stat.st_mtime).strftime('%Y-%m-%d'),
                         'size': stat.st_size
                     })
@@ -235,7 +235,10 @@ async def serve_uploaded_file(request):
                 filepath = candidate
 
         else:
-            # folder 是 character_id，只在当前用户的目录中查找
+            # folder 是 character_id 或 '_shared'，只在当前用户的目录中查找
+            # 兼容旧数据：'default' 映射到 '_shared'
+            if folder == 'default':
+                folder = '_shared'
             user_selfie_dir = get_user_selfie_dir(user_id, folder)
             if os.path.isdir(user_selfie_dir):
                 candidate = os.path.join(user_selfie_dir, filename)
