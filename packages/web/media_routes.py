@@ -181,7 +181,7 @@ async def api_user_photos(request):
 
 
 async def serve_uploaded_file(request):
-    """提供上传的文件 - 只允许访问当前用户的文件"""
+    """提供上传的文件"""
     try:
         folder = request.match_info.get('folder', '')
         filename = request.match_info.get('filename', '')
@@ -189,20 +189,22 @@ async def serve_uploaded_file(request):
         if '..' in filename or '/' in filename:
             return web.Response(status=403)
 
-        # 验证用户身份 - 支持 header 或 query string
-        user_id = validate_session_token(request)
-        if not user_id:
-            user_id = validate_api_token(request)
-        # 支持从 query string 获取 token（用于 <img> 标签）
-        if not user_id:
-            token = request.query.get('token', '')
-            if token:
-                user_id = validate_session_token_from_token(token)
-        if not user_id:
-            user_id = load_config().get('your_chat_id', 0)
-        if not user_id:
-            # 未登录用户不允许访问
-            return web.Response(status=401)
+        # 图片文件不需要身份验证（URL 本身已足够随机）
+        is_image = filename.lower().endswith(('.jpg', '.jpeg', '.png', '.gif', '.webp'))
+
+        if not is_image:
+            # 非图片文件需要验证身份
+            user_id = validate_session_token(request)
+            if not user_id:
+                user_id = validate_api_token(request)
+            if not user_id:
+                token = request.query.get('token', '')
+                if token:
+                    user_id = validate_session_token_from_token(token)
+            if not user_id:
+                user_id = load_config().get('your_chat_id', 0)
+            if not user_id:
+                return web.Response(status=401)
 
         filepath = None
 
