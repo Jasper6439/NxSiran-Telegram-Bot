@@ -32,5 +32,22 @@
         "required_events": ["first_meet", "roof_night", "ice_cream", "grandma"]
     },
     "is_novel_character": true,
-    "world_role": "trapped_character"
+    "world_role": "trapped_character",
+    "ai_rules": {
+        "max_length": 80,
+        "max_length_penalty": 35,
+        "require_ellipsis": true,
+        "require_action_parentheses": true,
+        "disqualify_positive_emotions": true,
+        "positive_emotions": [
+            "我好喜欢你", "我好开心", "我好高兴", "我最喜欢",
+            "我爱你", "我好想你", "见到你真开心", "和你在一起真好",
+            "你真好", "你最好了", "最喜欢你了"
+        ],
+        "disallow_emoji": true,
+        "max_punctuation_marks": 3,
+        "min_cjk_ratio": 0.2,
+        "languages": ["zh", "ko"],
+        "judge_prompt_extra": "车如云是傲娇韩国男生，话极少，用平语，不直接表达正面情感"
+    }
 }

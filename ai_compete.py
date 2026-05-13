@@ -46,110 +46,137 @@ JUDGE_TIMEOUT = 20.0
 TOTAL_TIMEOUT = 60.0
 
 # ============================================================
-# 规则引擎（本地执行，角色扮演专属）
+# 规则引擎（本地执行，从角色配置加载规则）
 # ============================================================
 
-# 提示词泄露关键词（一票否决）
+# 提示词泄露关键词（全局一票否决，所有角色通用）
 LEAK_KEYWORDS = [
     'respond as', 'following the style', 'we need to respond',
     'calling user', 'system prompt', 'you are a', 'as an ai',
     'i need to', 'i should respond', 'according to the',
 ]
 
-# 直接正面情感（违反傲娇人设，一票否决）
-POSITIVE_EXPRESSIONS = [
-    '我好喜欢你', '我好开心', '我好高兴', '我最喜欢',
-    '我爱你', '我好想你', '见到你真开心', '和你在一起真好',
-    '你真好', '你最好了', '最喜欢你了',
-]
+# 默认规则（当角色没有配置 ai_rules 时使用）
+DEFAULT_RULES = {
+    "max_length": 100,
+    "max_length_penalty": 25,
+    "require_ellipsis": False,
+    "require_action_parentheses": False,
+    "disqualify_positive_emotions": False,
+    "positive_emotions": [],
+    "disallow_emoji": False,
+    "max_punctuation_marks": 5,
+    "min_cjk_ratio": 0.0,
+    "languages": ["zh", "en"],
+    "judge_prompt_extra": "",
+}
 
-# 评委提示词（二选一，更轻量）
-JUDGE_PROMPT_BINARY = """你是一个评委，从两个AI回复中选一个更好的。
 
-角色设定：车如云，傲娇韩国女生，话极少，用"..."开头，括号动作描写，不直接表达正面情感，用平语。
-
-用户说："{user_message}"
-
-A: {reply_a}
-B: {reply_b}
-
-只回复A或B，不要其他内容。"""
+def _load_character_rules() -> dict:
+    """从当前角色的 config.json 加载 ai_rules"""
+    try:
+        from characters import get_current_character
+        character = get_current_character()
+        if character and hasattr(character, 'config') and character.config:
+            rules = getattr(character.config, 'ai_rules', None)
+            if rules and isinstance(rules, dict):
+                return rules
+    except Exception as e:
+        logger.debug(f"[规则引擎] 加载角色规则失败: {e}")
+    return DEFAULT_RULES
 
 
 def _rule_engine_score(reply: str) -> Tuple[float, bool]:
     """
-    本地规则引擎评分。返回 (分数, 是否被淘汰)。
-    淘汰 = 一票否决（提示词泄露、直接正面情感）
-    分数 0-100，低于 60 分视为不合格。
+    本地规则引擎评分。从当前角色配置加载规则。
+    返回 (分数, 是否被淘汰)。
     """
     if not reply:
         return 0, True
 
+    rules = _load_character_rules()
     score = 100.0
     disqualified = False
 
-    # --- 一票否决规则 ---
-
-    # 提示词泄露
+    # --- 全局一票否决：提示词泄露 ---
     reply_lower = reply.lower()
     if any(kw in reply_lower for kw in LEAK_KEYWORDS):
-        logger.debug(f"[规则引擎] 淘汰: 提示词泄露")
+        logger.debug("[规则引擎] 淘汰: 提示词泄露")
         return 0, True
 
-    # 直接正面情感（傲娇人设核心）
-    if any(expr in reply for expr in POSITIVE_EXPRESSIONS):
-        logger.debug(f"[规则引擎] 淘汰: 直接正面情感")
-        return 0, True
+    # --- 角色规则：正面情感一票否决 ---
+    if rules.get("disqualify_positive_emotions"):
+        positive_list = rules.get("positive_emotions", [])
+        if any(expr in reply for expr in positive_list):
+            logger.debug("[规则引擎] 淘汰: 直接正面情感")
+            return 0, True
 
     # --- 扣分规则 ---
 
-    # 长度：车如云话少，>80字扣分，>150字重扣
+    # 长度
+    max_len = rules.get("max_length", 100)
     length = len(reply)
-    if length > 150:
-        score -= 35
-    elif length > 100:
-        score -= 25
-    elif length > 80:
-        score -= 15
+    if length > max_len * 2:
+        score -= rules.get("max_length_penalty", 25) + 10
+    elif length > max_len:
+        score -= rules.get("max_length_penalty", 25)
     elif length < 3:
-        score -= 20  # 太短也不行
+        score -= 20
 
-    # 格式：无 "..." 开头或无括号动作，扣分
+    # 格式：省略号和括号动作
     has_ellipsis = reply.strip().startswith('...')
     has_action = bool(re.search(r'[（(].+?[）)]', reply))
-    if not has_ellipsis and not has_action:
-        score -= 20
-    elif not has_ellipsis:
-        score -= 10
-    elif not has_action:
-        score -= 5
+    require_ellipsis = rules.get("require_ellipsis", False)
+    require_action = rules.get("require_action_parentheses", False)
 
-    # 英文占比过高（可能是提示词泄露的变体）
+    if require_ellipsis and require_action:
+        if not has_ellipsis and not has_action:
+            score -= 20
+        elif not has_ellipsis:
+            score -= 10
+        elif not has_action:
+            score -= 5
+    elif require_ellipsis and not has_ellipsis:
+        score -= 15
+    elif require_action and not has_action:
+        score -= 10
+
+    # CJK 占比（支持角色配置的语言列表）
     if length > 20:
-        chinese_chars = sum(1 for c in reply if '\u4e00' <= c <= '\u9fff')
-        chinese_ratio = chinese_chars / length
-        # 韩语字符也算正常（车如云是韩国人）
-        korean_chars = sum(1 for c in reply if '\uAC00' <= c <= '\uD7AF' or '\u1100' <= c <= '\u11FF')
-        cjk_ratio = (chinese_chars + korean_chars) / length
-        if cjk_ratio < 0.2:
-            score -= 30
-        elif cjk_ratio < 0.4:
-            score -= 15
+        allowed_langs = rules.get("languages", ["zh", "en"])
+        cjk_chars = 0
+        if "zh" in allowed_langs:
+            cjk_chars += sum(1 for c in reply if '\u4e00' <= c <= '\u9fff')
+        if "ko" in allowed_langs:
+            cjk_chars += sum(1 for c in reply if '\uAC00' <= c <= '\uD7AF' or '\u1100' <= c <= '\u11FF')
+        if "ja" in allowed_langs:
+            cjk_chars += sum(1 for c in reply if '\u3040' <= c <= '\u309F' or '\u30A0' <= c <= '\u30FF')
 
-    # 多个感叹号或问号（情绪过激）
-    if reply.count('！') + reply.count('?') + reply.count('！') > 3:
+        min_ratio = rules.get("min_cjk_ratio", 0.0)
+        if min_ratio > 0:
+            cjk_ratio = cjk_chars / length
+            if cjk_ratio < min_ratio:
+                score -= 30
+            elif cjk_ratio < min_ratio + 0.2:
+                score -= 15
+
+    # 标点符号数量
+    max_punct = rules.get("max_punctuation_marks", 5)
+    punct_count = reply.count('！') + reply.count('?') + reply.count('！') + reply.count('？')
+    if punct_count > max_punct:
         score -= 10
 
-    # 包含 emoji（车如云不用 emoji）
-    emoji_pattern = re.compile(
-        '[\U0001F600-\U0001F64F\U0001F300-\U0001F5FF\U0001F680-\U0001F6FF'
-        '\U0001F1E0-\U0001F1FF\U00002702-\U000027B0\U0000FE00-\U0000FE0F'
-        '\U0001F900-\U0001F9FF\U0001FA00-\U0001FA6F\U0001FA70-\U0001FAFF'
-        '\U00002600-\U000026FF\U00002700-\U000027BF]'
-    )
-    emoji_count = len(emoji_pattern.findall(reply))
-    if emoji_count > 0:
-        score -= emoji_count * 5
+    # Emoji
+    if rules.get("disallow_emoji"):
+        emoji_pattern = re.compile(
+            '[\U0001F600-\U0001F64F\U0001F300-\U0001F5FF\U0001F680-\U0001F6FF'
+            '\U0001F1E0-\U0001F1FF\U00002702-\U000027B0\U0000FE00-\U0000FE0F'
+            '\U0001F900-\U0001F9FF\U0001FA00-\U0001FA6F\U0001FA70-\U0001FAFF'
+            '\U00002600-\U000026FF\U00002700-\U000027BF]'
+        )
+        emoji_count = len(emoji_pattern.findall(reply))
+        if emoji_count > 0:
+            score -= emoji_count * 5
 
     score = max(0, min(100, score))
     return score, False
@@ -258,11 +285,18 @@ async def _judge_binary(user_message: str, reply_a: str, reply_b: str,
                         model_a: str, model_b: str,
                         judge_model: str) -> Optional[str]:
     """评委二选一，返回获胜模型名或 None"""
-    prompt = JUDGE_PROMPT_BINARY.format(
-        user_message=user_message[:200],
-        reply_a=reply_a,
-        reply_b=reply_b,
-    )
+    rules = _load_character_rules()
+    extra = rules.get("judge_prompt_extra", "")
+
+    prompt = f"""你是一个评委，从两个AI回复中选一个更好的。
+{extra}
+
+用户说："{user_message[:200]}"
+
+A: {reply_a}
+B: {reply_b}
+
+只回复A或B，不要其他内容。"""
     try:
         from ai_client import call_ai
         result = await call_ai(
