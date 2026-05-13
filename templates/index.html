@@ -2396,21 +2396,21 @@ function navigateTo(pageName) {
                         }).join('');
                     }
                 }
+
+                // 显示已绑定的 Telegram Chat ID
+                var chatIdInput = document.getElementById('telegram-chat-id-input');
+                var bindStatus = document.getElementById('telegram-bind-status');
+                if (chatIdInput && data.telegram_chat_id) {
+                    chatIdInput.value = data.telegram_chat_id;
+                    if (bindStatus) bindStatus.textContent = '已绑定 Telegram Chat ID: ' + data.telegram_chat_id;
+                    if (bindStatus) bindStatus.style.color = 'var(--success)';
+                }
             }).catch(function() {
                 var bindingsList = document.getElementById('character-bindings-list');
                 if (bindingsList) {
                     bindingsList.innerHTML = '<div class="settings-item"><span class="settings-icon">&#128100;</span><span class="settings-label">加载失败</span></div>';
                 }
             });
-    }
-
-    // 显示已绑定的 Telegram Chat ID
-    var chatIdInput = document.getElementById('telegram-chat-id-input');
-    var bindStatus = document.getElementById('telegram-bind-status');
-    if (chatIdInput && data.telegram_chat_id) {
-        chatIdInput.value = data.telegram_chat_id;
-        if (bindStatus) bindStatus.textContent = '已绑定 Telegram Chat ID: ' + data.telegram_chat_id;
-        if (bindStatus) bindStatus.style.color = 'var(--success)';
     }
 }
 
