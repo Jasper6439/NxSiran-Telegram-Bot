@@ -26,10 +26,9 @@ from config import (
     AI_API_KEY,
     AI_MODEL,
     GEMINI_API_KEY,
-    SYSTEM_PROMPT,
     YOUR_CHAT_ID,
 )
-from prompts import EMOTION_RESPONSE_GUIDE
+from prompts import EMOTION_RESPONSE_GUIDE, SYSTEM_PROMPT
 from memory_legacy import (
     get_long_term_memory,
     get_semantic_memory_context,
