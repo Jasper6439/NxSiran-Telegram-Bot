@@ -42,14 +42,15 @@ async def api_chat(request):
         if not user_id:
             user_id = 1
 
-        # 获取用户显示名（不使用 user_id 作为名字）
-        user_name = '完成者'
+        # 获取用户显示名（默认"学长"，与角色台词一致）
+        user_name = '学长'
         try:
             from auth import load_users
             users_data = load_users()
             users = users_data.get("users", {})
             user_info = users.get(str(user_id), {})
-            user_name = user_info.get('display_name') or user_info.get('username', '完成者')
+            # 优先使用用户自定义称呼，其次 display_name，最后默认"学长"
+            user_name = user_info.get('preferred_name') or user_info.get('display_name') or user_info.get('username', '学长')
         except Exception:
             pass
 

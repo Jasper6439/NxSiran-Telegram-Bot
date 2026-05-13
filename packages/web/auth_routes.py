@@ -225,11 +225,45 @@ async def api_user_profile(request):
             'email': user.get('email', ''),
             'is_admin': user.get('role') == 'admin',
             'display_name': user.get('display_name', user.get('username', '')),
+            'preferred_name': user.get('preferred_name', ''),
             'character_bindings': user.get('character_bindings', {}),
             'telegram_chat_id': user.get('telegram_chat_id', '')
         })
     except Exception as e:
         logging.error(f"[API用户资料] 错误: {e}")
+        return web.json_response({'success': False, 'error': str(e)}, status=500)
+
+
+async def api_update_preferred_name(request):
+    """更新用户自定义称呼（角色叫你什么）"""
+    try:
+        user_id = validate_session_token(request)
+        if not user_id:
+            return web.json_response({'success': False, 'error': '未登录'}, status=401)
+
+        data = await request.json()
+        preferred_name = data.get('preferred_name', '').strip()
+
+        if not preferred_name:
+            return web.json_response({'success': False, 'error': '称呼不能为空'})
+
+        if len(preferred_name) > 20:
+            return web.json_response({'success': False, 'error': '称呼最长20个字符'})
+
+        from auth import load_users, save_users
+        user_data = load_users()
+        users = user_data.get("users", {})
+        user = users.get(str(user_id))
+        if not user:
+            return web.json_response({'success': False, 'error': '用户不存在'})
+
+        user['preferred_name'] = preferred_name
+        user_data["users"] = users
+        save_users(user_data)
+
+        return web.json_response({'success': True, 'message': f'角色现在会叫你「{preferred_name}」', 'preferred_name': preferred_name})
+    except Exception as e:
+        logging.error(f"[API更新称呼] 错误: {e}")
         return web.json_response({'success': False, 'error': str(e)}, status=500)
 
 

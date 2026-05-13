@@ -42,6 +42,7 @@ __all__ = [
     "api_verify_reset_code",
     "api_reset_password",
     "api_user_profile",
+    "api_update_preferred_name",
     "api_bind_character",
     "api_get_character_bindings",
     "api_get_config",
@@ -119,6 +120,7 @@ def register_routes(app):
     app.router.add_get('/api/characters', api_list_characters)
     app.router.add_post('/api/characters/switch', api_switch_character)
     app.router.add_get('/api/user/profile', api_user_profile)
+    app.router.add_post('/api/user/preferred-name', api_update_preferred_name)
     app.router.add_post('/api/user/bind-telegram', api_bind_telegram)
 
     # Static files

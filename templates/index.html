@@ -1732,6 +1732,24 @@
                     <div class="profile-id" id="settings-userid">--</div>
                 </div>
 
+                <!-- 自定义称呼 -->
+                <div class="settings-group">
+                    <div class="settings-group-title">角色互动</div>
+                    <div class="settings-list">
+                        <div class="settings-item" style="flex-direction: column; align-items: stretch; cursor: default;">
+                            <div style="display: flex; align-items: center; gap: var(--space-3); margin-bottom: var(--space-2);">
+                                <span class="settings-icon">&#128172;</span>
+                                <span class="settings-label">角色叫你什么</span>
+                            </div>
+                            <div style="display: flex; gap: var(--space-2);">
+                                <input type="text" class="form-input" id="cfg-preferred-name" placeholder="默认：学长" maxlength="20" style="flex:1;">
+                                <button class="btn-primary" onclick="savePreferredName()" style="white-space:nowrap;">保存</button>
+                            </div>
+                            <div style="font-size:var(--font-size-xs);color:var(--text-tertiary);margin-top:4px;">设置后车如云会用这个称呼叫你</div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Admin Config (hidden by default) -->
                 <div class="settings-group" id="admin-config-group" style="display: none;">
                     <div class="settings-group-title">管理员配置</div>
@@ -2159,9 +2177,37 @@ async function loadUserProfile() {
             document.getElementById('home-username').textContent = name;
             document.getElementById('settings-username').textContent = name;
             document.getElementById('settings-userid').textContent = 'ID: ' + (data.chat_id || '--');
+            // 填充自定义称呼
+            if (data.preferred_name) {
+                document.getElementById('cfg-preferred-name').value = data.preferred_name;
+            }
         }
     } catch (e) {
         console.log('Failed to load user profile');
+    }
+}
+
+async function savePreferredName() {
+    const input = document.getElementById('cfg-preferred-name');
+    const name = input.value.trim();
+    if (!name) {
+        Toast.show('请输入称呼', 'warning');
+        return;
+    }
+    try {
+        const resp = await fetch('/api/user/preferred-name', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+            body: JSON.stringify({ preferred_name: name })
+        });
+        const data = await resp.json();
+        if (data.success) {
+            Toast.show(data.message, 'success');
+        } else {
+            Toast.show(data.error || '保存失败', 'error');
+        }
+    } catch (e) {
+        Toast.show('保存失败', 'error');
     }
 }
 
