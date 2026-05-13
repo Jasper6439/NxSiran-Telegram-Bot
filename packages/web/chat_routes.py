@@ -25,7 +25,7 @@ from ai_client import call_ai as call_ai
 
 
 async def api_chat(request):
-    """Web 端聊天 API - 与 Telegram 双向同步"""
+    """Web 端聊天 API - 使用蒸馏角色模块，与 Telegram 双向同步"""
     try:
         data = await request.json()
         user_message = data.get('message', '')
@@ -42,15 +42,41 @@ async def api_chat(request):
         if not user_id:
             user_id = 1
 
+        # 使用蒸馏角色的系统提示词
+        system_prompt = None
+        try:
+            from characters import get_current_character
+            character = get_current_character()
+            if character:
+                system_prompt = character.get_system_prompt({
+                    'user_id': user_id,
+                    'user_name': str(user_id)
+                })
+                logging.info(f"[WebChat] 使用蒸馏角色: {character.config.name}")
+        except Exception as e:
+            logging.warning(f"[WebChat] 加载蒸馏角色失败，使用默认: {e}")
+
+        if not system_prompt:
+            system_prompt = "你是车如云，一个傲娇但内心温柔的角色。用简洁自然的中文回复。"
+
         # 使用共享的聊天记录
         history = load_chat_history(user_id)
 
         # 调用 AI
         response = await call_ai(
-            system_prompt="你是车如云，一个傲娇但内心温柔的角色。用简洁自然的中文回复。",
+            system_prompt=system_prompt,
             user_message=user_message,
             chat_history=history
         )
+
+        # 使用蒸馏角色的格式化方法
+        try:
+            from characters import get_current_character
+            character = get_current_character()
+            if character:
+                response = character.format_response(response)
+        except Exception:
+            pass
 
         # 保存到共享历史（带时间戳）
         timestamp = datetime.now(get_default_tz()).isoformat()

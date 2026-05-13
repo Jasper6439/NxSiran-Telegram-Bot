@@ -1270,6 +1270,11 @@
                 <label class="form-label" for="auth-email">邮箱</label>
                 <input type="email" id="auth-email" class="form-input" placeholder="请输入邮箱" autocomplete="email">
             </div>
+            <div class="form-group" id="telegram-group" style="display: none;">
+                <label class="form-label" for="auth-telegram">Telegram Chat ID <span style="color:var(--danger);">*</span></label>
+                <input type="text" id="auth-telegram" class="form-input" placeholder="请输入 Telegram Chat ID（必填，用于角色对话）" autocomplete="off">
+                <div style="font-size:11px;color:var(--text-tertiary);margin-top:4px;">在 Telegram 中向 @userinfobot 发送消息可获取你的 Chat ID</div>
+            </div>
             <div class="form-group">
                 <label class="form-label" for="auth-username">用户名</label>
                 <input type="text" id="auth-username" class="form-input" placeholder="请输入用户名" required autocomplete="username">
@@ -1340,8 +1345,8 @@
                 <span class="nav-item-label">聊天</span>
             </div>
             <div class="nav-item" data-page="farm" onclick="navigateTo('farm')">
-                <span class="nav-item-icon">&#127806;</span>
-                <span class="nav-item-label">农场</span>
+                <span class="nav-item-icon">&#127918;</span>
+                <span class="nav-item-label">游戏</span>
             </div>
             <div class="nav-item" data-page="media" onclick="navigateTo('media')">
                 <span class="nav-item-icon">&#127916;</span>
@@ -1385,11 +1390,8 @@
                 <div class="welcome-card" id="home-welcome">
                     <div class="welcome-greeting">欢迎使用</div>
                     <div class="welcome-name" id="home-username">车如云</div>
-                    <!-- 名言显示区域 - 替换原来的静态文本 -->
                     <div class="welcome-message" id="home-quote-main" style="font-style:italic;min-height:20px;"></div>
                 </div>
-
-                <div id="home-quote" style="text-align:center;padding:12px 20px;font-size:13px;color:var(--text-secondary);font-style:italic;line-height:1.6;"></div>
 
                 <!-- Stats Grid with Character Selector -->
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:var(--space-2);">
@@ -1465,10 +1467,10 @@
 
             <!-- ===== Page: Farm ===== -->
             <div class="page page-farm" id="page-farm">
-                <!-- Tab Switch: 游戏页 / 农场页 (已互换) -->
+                <!-- Tab Switch: 农场页 / 数据页 -->
                 <div style="display:flex; gap:0; margin-bottom:var(--space-3); background:var(--bg-tertiary); border-radius:var(--radius-lg); padding:3px;">
-                    <button id="farm-tab-game" class="btn-secondary" style="flex:1; border-radius:var(--radius-md); border:none; padding:8px; font-size:var(--font-size-sm); cursor:pointer; background:var(--purple); color:#fff;" onclick="switchFarmTab('game')">🎮 游戏</button>
-                    <button id="farm-tab-data" class="btn-secondary" style="flex:1; border-radius:var(--radius-md); border:none; padding:8px; font-size:var(--font-size-sm); cursor:pointer; background:transparent; color:var(--text-secondary);" onclick="switchFarmTab('data')">🌾 农场</button>
+                    <button id="farm-tab-game" class="btn-secondary" style="flex:1; border-radius:var(--radius-md); border:none; padding:8px; font-size:var(--font-size-sm); cursor:pointer; background:var(--purple); color:#fff;" onclick="switchFarmTab('game')">🌾 农场</button>
+                    <button id="farm-tab-data" class="btn-secondary" style="flex:1; border-radius:var(--radius-md); border:none; padding:8px; font-size:var(--font-size-sm); cursor:pointer; background:transparent; color:var(--text-secondary);" onclick="switchFarmTab('data')">📊 数据</button>
                 </div>
 
                 <!-- Data View -->
@@ -1768,7 +1770,15 @@
                             <span class="settings-label">加载中...</span>
                         </div>
                     </div>
-                    <div style="padding: var(--space-3); font-size: var(--font-size-sm); color: var(--text-secondary);">
+                    <!-- Telegram Chat ID 绑定 -->
+                    <div style="padding: var(--space-3);">
+                        <div style="display:flex; gap:8px; align-items:center;">
+                            <input type="text" id="telegram-chat-id-input" class="form-input" placeholder="输入 Telegram Chat ID" style="flex:1; padding:8px 12px; border-radius:var(--radius-md); border:1px solid var(--border-color); background:var(--bg-tertiary); font-size:var(--font-size-sm);">
+                            <button onclick="bindTelegramChatId()" style="padding:8px 16px; border-radius:var(--radius-md); border:none; background:var(--purple); color:#fff; font-size:var(--font-size-sm); cursor:pointer; white-space:nowrap;">绑定</button>
+                        </div>
+                        <div id="telegram-bind-status" style="margin-top:6px; font-size:12px; color:var(--text-secondary);"></div>
+                    </div>
+                    <div style="padding: 0 var(--space-3) var(--space-3); font-size: var(--font-size-sm); color: var(--text-secondary);">
                         绑定角色的 Telegram Chat ID 后，可以通过 Telegram 与角色对话
                     </div>
                 </div>
@@ -1845,7 +1855,7 @@ let syncInterval = null;
 const PAGE_TITLES = {
     home: '首页',
     chat: '聊天',
-    farm: '农场',
+    farm: '游戏',
     game: '游戏',
     gallery: '多媒体',
     media: '多媒体',
@@ -1900,7 +1910,9 @@ function switchLoginTab(el, mode) {
     el.classList.add('active');
     document.getElementById('auth-submit-btn').textContent = isLoginMode ? '登录' : '注册';
     document.getElementById('email-group').style.display = isLoginMode ? 'none' : 'block';
+    document.getElementById('telegram-group').style.display = isLoginMode ? 'none' : 'block';
     document.getElementById('auth-email').required = !isLoginMode;
+    document.getElementById('auth-telegram').required = !isLoginMode;
     document.getElementById('auth-error').textContent = '';
 }
 
@@ -1946,6 +1958,17 @@ async function handleAuth(event) {
         errorEl.textContent = '请输入邮箱';
         return;
     }
+    if (!isLoginMode) {
+        const telegramId = document.getElementById('auth-telegram').value.trim();
+        if (!telegramId) {
+            errorEl.textContent = '请输入 Telegram Chat ID';
+            return;
+        }
+        if (!/^\d+$/.test(telegramId)) {
+            errorEl.textContent = 'Telegram Chat ID 必须是纯数字';
+            return;
+        }
+    }
 
     btn.disabled = true;
     btn.textContent = isLoginMode ? '登录中...' : '注册中...';
@@ -1954,7 +1977,7 @@ async function handleAuth(event) {
         const endpoint = isLoginMode ? '/api/login' : '/api/register';
         const body = isLoginMode
             ? { username, password, auto_login: autoLogin }
-            : { email, username, password };
+            : { email, username, password, telegram_chat_id: document.getElementById('auth-telegram').value.trim() };
         const response = await fetch(endpoint, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -2155,6 +2178,12 @@ async function loadHomeStats() {
             var mediaTotal = (data.selfie_count || 0) + (data.user_photo_count || 0);
             document.getElementById('stat-selfies').textContent = mediaTotal;
             document.getElementById('stat-intimacy').textContent = data.intimacy_score || 0;
+
+            // 首次加载后自动弹出总消息数详情
+            if (!window._hasAutoShownMsgDetail) {
+                window._hasAutoShownMsgDetail = true;
+                setTimeout(function() { showStatDetail('messages'); }, 600);
+            }
         }
     } catch (e) {
         console.log('Failed to load home stats');
@@ -2216,23 +2245,14 @@ function getDefaultQuotes() {
 }
 
 function showHomeQuote() {
-    // 显示在欢迎卡片中的名言
     var mainEl = document.getElementById('home-quote-main');
-    if (mainEl) {
-        if (homeQuotes.length === 0) {
-            loadQuotesFromCharacter();
-            return;
-        }
-        var q = homeQuotes[Math.floor(Math.random() * homeQuotes.length)];
-        mainEl.textContent = '「' + q + '」';
+    if (!mainEl) return;
+    if (homeQuotes.length === 0) {
+        loadQuotesFromCharacter();
+        return;
     }
-    
-    // 同时更新下方的名言区域（如果存在）
-    var el = document.getElementById('home-quote');
-    if (el && homeQuotes.length > 0) {
-        var q2 = homeQuotes[Math.floor(Math.random() * homeQuotes.length)];
-        el.textContent = '「' + q2 + '」';
-    }
+    var q = homeQuotes[Math.floor(Math.random() * homeQuotes.length)];
+    mainEl.textContent = '\u300C' + q + '\u300D';
 }
 
 /* ================================================================
@@ -2360,6 +2380,52 @@ function navigateTo(pageName) {
                 }
             });
     }
+
+    // 显示已绑定的 Telegram Chat ID
+    var chatIdInput = document.getElementById('telegram-chat-id-input');
+    var bindStatus = document.getElementById('telegram-bind-status');
+    if (chatIdInput && data.telegram_chat_id) {
+        chatIdInput.value = data.telegram_chat_id;
+        if (bindStatus) bindStatus.textContent = '已绑定 Telegram Chat ID: ' + data.telegram_chat_id;
+        if (bindStatus) bindStatus.style.color = 'var(--success)';
+    }
+}
+
+// 绑定 Telegram Chat ID
+async function bindTelegramChatId() {
+    var chatIdInput = document.getElementById('telegram-chat-id-input');
+    var bindStatus = document.getElementById('telegram-bind-status');
+    if (!chatIdInput) return;
+    
+    var chatId = chatIdInput.value.trim();
+    if (!chatId) {
+        if (bindStatus) { bindStatus.textContent = '请输入 Telegram Chat ID'; bindStatus.style.color = 'var(--danger)'; }
+        return;
+    }
+    
+    // 验证是否为数字
+    if (!/^\d+$/.test(chatId)) {
+        if (bindStatus) { bindStatus.textContent = 'Chat ID 必须是纯数字'; bindStatus.style.color = 'var(--danger)'; }
+        return;
+    }
+    
+    try {
+        var resp = await fetch('/api/user/bind-telegram', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + authToken },
+            body: JSON.stringify({ telegram_chat_id: chatId })
+        });
+        var data = await resp.json();
+        if (data.success) {
+            if (bindStatus) { bindStatus.textContent = '绑定成功！Chat ID: ' + chatId; bindStatus.style.color = 'var(--success)'; }
+            if (typeof showToast === 'function') showToast('Telegram Chat ID 绑定成功', 'success');
+        } else {
+            if (bindStatus) { bindStatus.textContent = data.error || '绑定失败'; bindStatus.style.color = 'var(--danger)'; }
+        }
+    } catch (e) {
+        if (bindStatus) { bindStatus.textContent = '网络错误'; bindStatus.style.color = 'var(--danger)'; }
+    }
+}
 
     if (pageName === 'skills') {
         if (window.SkillsPage && window.SkillsPage.onPageEnter) window.SkillsPage.onPageEnter();
@@ -2681,12 +2747,14 @@ async function uploadPhotos() {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${authToken}`
             },
-            body: JSON.stringify({ photos })
+            body: JSON.stringify({ photos, character_id: 'chayewoon' })
         });
         if (response.ok) {
             const data = await response.json();
             if (data.success) {
                 if (typeof showToast === 'function') showToast('上传成功', 'success');
+                // 上传成功后刷新相册
+                loadGalleryItems();
             } else {
                 if (typeof showToast === 'function') showToast(data.error || '上传失败', 'error');
             }
@@ -2860,7 +2928,7 @@ async function loadGalleryItems() {
     if (loading) loading.classList.add('active');
     grid.innerHTML = '';
     try {
-        const resp = await fetch('/api/selfies', { headers: { 'Authorization': `Bearer ${authToken}` } });
+        const resp = await fetch('/api/selfies?character_id=chayewoon', { headers: { 'Authorization': `Bearer ${authToken}` } });
         const data = await resp.json();
         if (loading) loading.classList.remove('active');
         const items = data.photos || data.items || [];

@@ -12,16 +12,23 @@ from auth import *
 
 
 async def api_register(request):
-    """用户注册API - v1.4.5: 邮箱注册，角色独立绑定Chat ID"""
+    """用户注册API - v1.4.12.1: 必须提供 Telegram Chat ID"""
     try:
         data = await request.json()
         email = data.get('email', '').strip().lower()
         username = data.get('username', '').strip()
         password = data.get('password', '')
+        telegram_chat_id = data.get('telegram_chat_id', '').strip()
 
         # 验证必填字段
         if not email or not username or not password:
             return web.json_response({'success': False, 'error': '邮箱、用户名和密码不能为空'})
+
+        # 验证 Telegram Chat ID（必填）
+        if not telegram_chat_id:
+            return web.json_response({'success': False, 'error': '请提供 Telegram Chat ID，用于与角色对话'})
+        if not telegram_chat_id.isdigit():
+            return web.json_response({'success': False, 'error': 'Telegram Chat ID 必须是纯数字'})
 
         # 验证邮箱格式
         if '@' not in email or '.' not in email.split('@')[-1]:
@@ -44,6 +51,11 @@ async def api_register(request):
             if u.get('username', '').lower() == username.lower():
                 return web.json_response({'success': False, 'error': '用户名已被使用'})
 
+        # 检查 Telegram Chat ID 是否已被绑定
+        for uid, u in users.items():
+            if u.get('telegram_chat_id') == telegram_chat_id:
+                return web.json_response({'success': False, 'error': '该 Telegram Chat ID 已被其他账号绑定'})
+
         # 创建用户
         from config import get_default_tz
         from datetime import datetime
@@ -64,13 +76,14 @@ async def api_register(request):
             "login_count": 0,
             "preferences": {"language": "zh-CN", "theme": "auto"},
             "character_bindings": {},
+            "telegram_chat_id": telegram_chat_id,
             "reset_code": None,
             "reset_code_expires": None
         }
         user_data["users"] = users
         save_users(user_data)
 
-        logging.info(f"[API注册] 新用户: {username} ({email}, role: {role})")
+        logging.info(f"[API注册] 新用户: {username} ({email}, telegram_chat_id: {telegram_chat_id}, role: {role})")
 
         # 注册成功后自动登录
         token = generate_session_token(username, user_id)
@@ -212,10 +225,47 @@ async def api_user_profile(request):
             'email': user.get('email', ''),
             'is_admin': user.get('role') == 'admin',
             'display_name': user.get('display_name', user.get('username', '')),
-            'character_bindings': user.get('character_bindings', {})
+            'character_bindings': user.get('character_bindings', {}),
+            'telegram_chat_id': user.get('telegram_chat_id', '')
         })
     except Exception as e:
         logging.error(f"[API用户资料] 错误: {e}")
+        return web.json_response({'success': False, 'error': str(e)}, status=500)
+
+
+async def api_bind_telegram(request):
+    """绑定 Telegram Chat ID"""
+    try:
+        user_id = validate_session_token(request)
+        if not user_id:
+            return web.json_response({'success': False, 'error': '未登录'}, status=401)
+
+        data = await request.json()
+        telegram_chat_id = data.get('telegram_chat_id', '').strip()
+
+        if not telegram_chat_id:
+            return web.json_response({'success': False, 'error': '请输入 Telegram Chat ID'})
+
+        if not telegram_chat_id.isdigit():
+            return web.json_response({'success': False, 'error': 'Chat ID 必须是纯数字'})
+
+        from auth import load_users, save_users
+        user_data = load_users()
+        users = user_data.get("users", {})
+        user = users.get(str(user_id))
+        if not user:
+            return web.json_response({'success': False, 'error': '用户不存在'})
+
+        # 保存 Telegram Chat ID
+        user['telegram_chat_id'] = telegram_chat_id
+        users[str(user_id)] = user
+        user_data["users"] = users
+        save_users(user_data)
+
+        logging.info(f"[API绑定Telegram] 用户 {user.get('username')} 绑定 Chat ID: {telegram_chat_id}")
+        return web.json_response({'success': True, 'message': '绑定成功'})
+    except Exception as e:
+        logging.error(f"[API绑定Telegram] 错误: {e}")
         return web.json_response({'success': False, 'error': str(e)}, status=500)
 
 
