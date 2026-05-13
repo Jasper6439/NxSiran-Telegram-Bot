@@ -18,8 +18,8 @@ from emotion import *
 import emotion  # needed for emotion._last_user_active_time
 from chat_history import *
 from image_gen import *
-from packages.commands.basic import selfie_cmd, reset, memory_cmd, stats_cmd
-from packages.commands.skills import sticker_cmd
+from packages.commands.basic import selfie_cmd, reset, memory_cmd
+from packages.commands.skills import sticker_cmd, stats_cmd
 from packages.commands.misc import anniversary_cmd
 
 # Lazy import for bot.call_ai (the high-level AI function with character/memory/emotion integration)
