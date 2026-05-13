@@ -166,7 +166,7 @@ async def _send_sovits_voice(app, chat_id: int, text: str, config: dict):
 # [Skill: TTS] 声音语料管理
 # ============================================================
 
-VM_BRIDGE_URL = os.environ.get("VM_BRIDGE_URL", "http://35.212.153.179:8080")
+VM_BRIDGE_URL = os.environ.get("VM_BRIDGE_URL", "")
 
 
 async def upload_voice_sample(audio_file_path: str, character_id: str = "chayewoon") -> dict:

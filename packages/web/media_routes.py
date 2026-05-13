@@ -382,7 +382,7 @@ async def api_start_voice_training(request):
 
         # 通过 VM Bridge 发送训练命令
         import aiohttp
-        VM_BRIDGE_URL = os.environ.get("VM_BRIDGE_URL", "http://35.212.153.179:8080")
+        VM_BRIDGE_URL = os.environ.get("VM_BRIDGE_URL", "")
 
         try:
             async with aiohttp.ClientSession() as session:
