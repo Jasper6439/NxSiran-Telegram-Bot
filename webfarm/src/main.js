@@ -1,10 +1,10 @@
 /**
  * main.js - Phaser 游戏主入口
  * 
- * v1.5.5 优化：
- * - WEBGL 渲染 + pixelArt 像素锐利
- * - 16:9 宽高比，消灭黑边
- * - ENVELOP 模式：画布填满屏幕，内容自适应
+ * v1.5.6 矢量扁平插画风
+ * - Nunito 圆润字体
+ * - 莫兰迪色系
+ * - 矢量图形绘制
  */
 
 const script = document.createElement('script');
@@ -14,57 +14,39 @@ document.head.appendChild(script);
 
 function initGame() {
     const config = {
-        // WEBGL 渲染，性能更好
-        type: Phaser.WEBGL,
+        // Canvas 渲染（矢量图形更适合）
+        type: Phaser.CANVAS,
         
-        // 16:9 宽高比基准分辨率
-        width: 720,
-        height: 405,
+        // 9:16 竖屏比例（移动端友好）
+        width: 360,
+        height: 640,
         
         parent: 'game-container',
         
-        // 背景色与 body 一致，消灭黑边
-        backgroundColor: '#4a7a2e',
+        // 背景透明（HTML 已有渐变）
+        backgroundColor: 'transparent',
         
         scene: [GameScene],
         
-        // 缩放配置
         scale: {
-            // ENVELOP：画布填满屏幕，内容等比缩放（无黑边）
             mode: Phaser.Scale.ENVELOP,
             autoCenter: Phaser.Scale.CENTER_BOTH,
         },
         
-        // 渲染配置
         render: {
-            // 像素艺术模式：关闭平滑缩放，像素锐利
-            pixelArt: true,
-            antialias: false,
-            roundPixels: true,
+            // 矢量风格：抗锯齿开启
+            antialias: true,
+            roundPixels: false,
             clearBeforeRender: true,
-            // 批处理优化（e2-micro 友好）
-            batchDraw: true,
         },
         
-        // 输入配置
         input: {
             activePointers: 2,
             touch: { capture: true }
-        },
-        
-        // 物理引擎（预留）
-        physics: {
-            default: 'arcade',
-            arcade: { debug: false }
         }
     };
     
     window.game = new Phaser.Game(config);
     
-    console.log('🎮 WebFarm v1.5.5 Initialized');
-    console.log('Screen:', window.innerWidth, 'x', window.innerHeight);
-    
-    window.addEventListener('resize', () => {
-        if (window.game) window.game.scale.refresh();
-    });
+    console.log('🎮 WebFarm v1.5.6 Initialized - Vector Flat Style');
 }
