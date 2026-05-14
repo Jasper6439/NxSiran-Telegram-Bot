@@ -9,7 +9,7 @@ from config import YOUR_CHAT_ID
 from packages.analysis.chatlog import (
     get_chat_analysis, parse_wechat_chatlog, analyze_chatlog_with_ai, save_chat_analysis,
 )
-from memory_legacy import save_memory_entry
+from characters.memory_legacy import save_memory_entry
 
 __all__ = [
     'pending_chat_imports',

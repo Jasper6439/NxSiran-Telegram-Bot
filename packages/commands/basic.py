@@ -25,14 +25,14 @@ from config import (
     load_json, get_user_selfie_dir,
 )
 from prompts import SELFIE_CAPTIONS
-from memory_legacy import (
+from characters.memory_legacy import (
     get_user_memory_file,
     categorize_memory, delete_semantic_memory, search_semantic_memory,
 )
-from stats import load_stats
-from anniversary import load_anniversaries, get_days_together
-from image_gen import get_selfie_count, get_saved_selfies, send_selfie_to_chat
-from chat_history import chat_histories, save_chat_history
+from characters.stats import load_stats
+from characters.anniversary import load_anniversaries, get_days_together
+from characters.image_gen import get_selfie_count, get_saved_selfies, send_selfie_to_chat
+from characters.chat_history import chat_histories, save_chat_history
 from characters import get_current_character
 from packages.commands.misc import auto_delete_messages
 
@@ -125,7 +125,7 @@ async def memory_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if YOUR_CHAT_ID != 0 and chat_id != YOUR_CHAT_ID:
         return
     
-    # [Skill: semantic-memory] 同时显示语义记忆
+    # 同时显示语义记忆
     semantic_memories = load_json(SEMANTIC_MEMORY_FILE, [])
     memories = load_json(get_user_memory_file(chat_id), [])
     
@@ -173,7 +173,7 @@ async def memory_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     await update.message.reply_text("\n\n".join(parts))
 
-# [Skill: semantic-memory] /forget 命令 - 删除特定记忆
+# /forget 命令 - 删除特定记忆
 @auto_delete_messages(delay=3)
 async def forget_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_chat.id
@@ -198,7 +198,7 @@ async def forget_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
         await update.message.reply_text(f"...没有找到关于「{keyword}」的记忆。")
 
-# [Skill: semantic-memory] /search 命令 - 搜索记忆
+# /search 命令 - 搜索记忆
 @auto_delete_messages(delay=3)
 async def search_memory_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_chat.id

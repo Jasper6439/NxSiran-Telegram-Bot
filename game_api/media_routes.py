@@ -1,4 +1,4 @@
-# 多媒体生成 API（v0.3）
+# 多媒体生成 API
 
 import logging
 import os
@@ -125,7 +125,7 @@ async def api_tts(request):
 
         # 使用 tts_engine 生成语音
         try:
-            from tts_engine import TTSEngine
+            from characters.tts_engine import TTSEngine
             tts = TTSEngine()
             audio_path = await tts.synthesize(text)
 

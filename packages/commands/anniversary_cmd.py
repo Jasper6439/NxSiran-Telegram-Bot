@@ -2,12 +2,12 @@ from telegram import Update
 from telegram.ext import ContextTypes
 
 from config import YOUR_CHAT_ID
-from anniversary import load_anniversaries, get_upcoming_anniversary, add_anniversary, delete_anniversary
+from characters.anniversary import load_anniversaries, get_upcoming_anniversary, add_anniversary, delete_anniversary
 from packages.commands.utils import auto_delete_messages
 
 
 # ============================================================
-# [Skill: 纪念日系统] /anniversary 命令
+# /anniversary 命令
 # ============================================================
 
 @auto_delete_messages(delay=3)

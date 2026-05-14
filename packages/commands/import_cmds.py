@@ -11,7 +11,7 @@ from telegram import Update
 from telegram.ext import ContextTypes
 
 from config import YOUR_CHAT_ID
-from memory_legacy import save_memory_entry
+from characters.memory_legacy import save_memory_entry
 from packages.analysis.chatlog import (
     parse_wechat_chatlog,
     analyze_chatlog_with_ai,

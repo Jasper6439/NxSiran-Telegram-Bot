@@ -71,7 +71,7 @@ async def call_gemini(prompt: str, image_data: str = None, model: str = "gemini-
                 },
             )
             if response.status_code != 200:
-                logging.warning(f"[Skill: gemini] Gemini API返回 {response.status_code}: {response.text[:200]}")
+                logging.warning(f"Gemini API返回 {response.status_code}: {response.text[:200]}")
                 return None
 
             data = response.json()
@@ -81,7 +81,7 @@ async def call_gemini(prompt: str, image_data: str = None, model: str = "gemini-
                 return text.strip() if text else None
             return None
     except Exception as e:
-        logging.error(f"[Skill: gemini] Gemini API调用失败: {e}")
+        logging.error(f"Gemini API调用失败: {e}")
         return None
 
 

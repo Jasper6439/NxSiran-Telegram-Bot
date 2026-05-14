@@ -18,7 +18,7 @@ def _get_call_ai():
     from bot import call_ai
     return call_ai
 
-from chat_history import get_history
+from characters.chat_history import get_history
 
 __all__ = ["button_callback"]
 

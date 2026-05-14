@@ -10,7 +10,7 @@ from packages.commands.utils import auto_delete_messages
 
 
 # ============================================================
-# [Skill: claw-summarize-pro] 摘要生成系统
+# 摘要生成系统
 # ============================================================
 
 async def fetch_url_content(url: str) -> str:

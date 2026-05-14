@@ -8,7 +8,7 @@ import logging
 from aiohttp import web
 
 from config import *
-from auth import *
+from system.auth import *
 from characters import (
     get_current_character,
     set_current_character,
@@ -36,7 +36,7 @@ async def api_bind_character(request):
         if ':' not in bot_token:
             return web.json_response({'success': False, 'error': 'Bot Token 格式不正确，应为 数字:字母数字混合'})
 
-        from auth import bind_character_bot_token
+        from system.auth import bind_character_bot_token
         success, message = bind_character_bot_token(user_id, character_id, bot_token)
 
         if success:
@@ -56,7 +56,7 @@ async def api_get_character_bindings(request):
         if not user_id:
             return web.json_response({'success': False, 'error': '未登录'}, status=401)
 
-        from auth import get_user_character_bindings
+        from system.auth import get_user_character_bindings
         bindings = get_user_character_bindings(user_id)
 
         return web.json_response({

@@ -6,7 +6,7 @@ from config import RELAY_API_KEY
 
 
 # ============================================================
-# [Skill: relay-for-telegram] Telegram消息历史搜索
+# Telegram消息历史搜索
 # ============================================================
 
 async def search_relay_messages(query: str, limit: int = 10) -> str:
@@ -28,7 +28,7 @@ async def search_relay_messages(query: str, limit: int = 10) -> str:
                 headers={"Authorization": f"Bearer {RELAY_API_KEY}"},
             )
             if response.status_code != 200:
-                logging.warning(f"[Skill: relay-for-telegram] 搜索API返回 {response.status_code}")
+                logging.warning(f"搜索API返回 {response.status_code}")
                 return f"搜索失败（HTTP {response.status_code}）"
 
             data = response.json()
@@ -47,7 +47,7 @@ async def search_relay_messages(query: str, limit: int = 10) -> str:
 
             return "\n".join(output_lines)
     except Exception as e:
-        logging.error(f"[Skill: relay-for-telegram] 搜索失败: {e}")
+        logging.error(f"搜索失败: {e}")
         return f"搜索出错：{e}"
 
 
@@ -66,7 +66,7 @@ async def list_relay_chats() -> str:
                 headers={"Authorization": f"Bearer {RELAY_API_KEY}"},
             )
             if response.status_code != 200:
-                logging.warning(f"[Skill: relay-for-telegram] 聊天列表API返回 {response.status_code}")
+                logging.warning(f"聊天列表API返回 {response.status_code}")
                 return f"获取聊天列表失败（HTTP {response.status_code}）"
 
             data = response.json()
@@ -91,5 +91,5 @@ async def list_relay_chats() -> str:
 
             return "\n".join(output_lines)
     except Exception as e:
-        logging.error(f"[Skill: relay-for-telegram] 获取聊天列表失败: {e}")
+        logging.error(f"获取聊天列表失败: {e}")
         return f"获取聊天列表出错：{e}"

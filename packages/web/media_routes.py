@@ -13,7 +13,7 @@ from datetime import datetime
 from aiohttp import web
 
 from config import *
-from auth import *
+from system.auth import *
 
 
 async def api_upload_selfies(request):
@@ -78,14 +78,14 @@ async def api_upload_selfies(request):
 async def api_generate_face(request):
     """Web 端 AI 换脸 API - 从用户已上传的照片生成新照片"""
     try:
-        from auth import validate_session_token, validate_api_token
+        from system.auth import validate_session_token, validate_api_token
         user_id = validate_session_token(request)
         if not user_id:
             user_id = validate_api_token(request)
         if not user_id:
             return web.json_response({'success': False, 'error': '未登录'}, status=401)
 
-        from image_gen import generate_face_from_user_photos
+        from characters.image_gen import generate_face_from_user_photos
         result = await generate_face_from_user_photos(str(user_id))
 
         if result.get("success"):

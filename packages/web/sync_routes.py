@@ -11,8 +11,8 @@ from datetime import datetime
 from aiohttp import web
 
 from config import *
-from auth import *
-from chat_history import *
+from system.auth import *
+from characters.chat_history import *
 from database import get_db
 from game_api import authenticate_request
 
@@ -176,7 +176,7 @@ async def api_send_message(request):
         telegram_id = user['telegram_id']
 
         # Save user message to chat history
-        from chat_history import get_history, save_chat_history
+        from characters.chat_history import get_history, save_chat_history
         history = get_history(telegram_id)
         history.append({"role": "user", "content": message})
         if len(history) > 100:
@@ -200,8 +200,8 @@ async def api_send_message(request):
 async def generate_ai_reply(telegram_id: int, user_message: str):
     """生成 AI 回复并保存到聊天记录"""
     try:
-        from ai_client import call_ai
-        from chat_history import load_chat_history, append_bot_message
+        from characters.ai_client import call_ai
+        from characters.chat_history import load_chat_history, append_bot_message
         from characters import get_current_character
 
         # Load recent chat history for context

@@ -10,8 +10,8 @@ import subprocess
 from aiohttp import web
 
 from config import *
-from auth import *
-from stats import load_quota_usage, check_quota_status, get_current_month, QUOTA_LIMITS
+from system.auth import *
+from characters.stats import load_quota_usage, check_quota_status, get_current_month, QUOTA_LIMITS
 from packages.web.skills_state import (
     _save_skills_state,
     is_skill_enabled_for_character,

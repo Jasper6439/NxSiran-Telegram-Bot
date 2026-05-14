@@ -12,12 +12,12 @@ from telegram.ext import ContextTypes
 
 from config import *
 from prompts import AUTO_STICKER_TRIGGERS, detect_sticker_mood, detect_music_request
-from memory_legacy import *
-from stats import *
-from emotion import *
-import emotion  # needed for emotion._last_user_active_time
-from chat_history import *
-from image_gen import *
+from characters.memory_legacy import *
+from characters.stats import *
+from characters.emotion import *
+from characters import emotion  # needed for emotion._last_user_active_time
+from characters.chat_history import *
+from characters.image_gen import *
 from packages.commands.basic import selfie_cmd, reset, memory_cmd
 from packages.commands.skills import sticker_cmd, stats_cmd
 from packages.commands.misc import anniversary_cmd
@@ -336,7 +336,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await asyncio.sleep(1)
         await update.message.chat.send_action("typing")
         try:
-            from music_skill import music_skill
+            from characters.music_skill import music_skill
             result = await music_skill.process_music_request(song_name)
             if result:
                 song = result['song']

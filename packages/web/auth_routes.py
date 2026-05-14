@@ -8,7 +8,7 @@ import logging
 from aiohttp import web
 
 from config import *
-from auth import *
+from system.auth import *
 
 
 async def api_register(request):
@@ -38,7 +38,7 @@ async def api_register(request):
             return web.json_response({'success': False, 'error': '密码长度至少6位'})
 
         # 检查邮箱是否已注册
-        from auth import load_users, save_users, hash_password
+        from system.auth import load_users, save_users, hash_password
         user_data = load_users()
         users = user_data.get("users", {})
         for u in users.values():
@@ -110,11 +110,11 @@ async def api_login(request):
         auto_login = data.get('auto_login', False)  # 是否记住登录
         auto_token = data.get('auto_token', '')  # 自动登录令牌
 
-        from auth import load_users, save_users, _verify_password, generate_auto_login_token
+        from system.auth import load_users, save_users, _verify_password, generate_auto_login_token
 
         # 如果有自动登录令牌，优先使用
         if auto_token:
-            from auth import validate_auto_login_token
+            from system.auth import validate_auto_login_token
             user_id = validate_auto_login_token(auto_token)
             if user_id:
                 user_data_loaded = load_users()
@@ -213,7 +213,7 @@ async def api_user_profile(request):
         token = auth[7:] if auth.startswith('Bearer ') else ''
 
         # 获取用户详细信息
-        from auth import load_users
+        from system.auth import load_users
         user_data = load_users()
         users = user_data.get("users", {})
         user = users.get(str(user_id), {})
@@ -250,7 +250,7 @@ async def api_update_preferred_name(request):
         if len(preferred_name) > 20:
             return web.json_response({'success': False, 'error': '称呼最长20个字符'})
 
-        from auth import load_users, save_users
+        from system.auth import load_users, save_users
         user_data = load_users()
         users = user_data.get("users", {})
         user = users.get(str(user_id))
@@ -283,7 +283,7 @@ async def api_bind_telegram(request):
         if not telegram_chat_id.isdigit():
             return web.json_response({'success': False, 'error': 'Chat ID 必须是纯数字'})
 
-        from auth import load_users, save_users
+        from system.auth import load_users, save_users
         user_data = load_users()
         users = user_data.get("users", {})
         user = users.get(str(user_id))
@@ -312,15 +312,15 @@ async def api_forgot_password(request):
         if not email_or_username:
             return web.json_response({'success': False, 'error': '请输入邮箱或用户名'})
 
-        from auth import generate_reset_code
+        from system.auth import generate_reset_code
         success, code, message = generate_reset_code(email_or_username)
 
         if success:
             # 尝试通过邮件发送验证码
-            from email_sender import is_smtp_configured, send_verification_code
+            from system.email_sender import is_smtp_configured, send_verification_code
             if is_smtp_configured():
                 # 获取用户邮箱
-                from auth import load_users
+                from system.auth import load_users
                 users_data = load_users()
                 users = users_data.get("users", {})
                 user_email = None
@@ -375,7 +375,7 @@ async def api_verify_reset_code(request):
         if not email_or_username or not code:
             return web.json_response({'success': False, 'error': '请输入邮箱/用户名和验证码'})
 
-        from auth import verify_reset_code
+        from system.auth import verify_reset_code
         success, user_id, message = verify_reset_code(email_or_username, code)
 
         if success:
@@ -405,7 +405,7 @@ async def api_reset_password(request):
         if len(new_password) < 6:
             return web.json_response({'success': False, 'error': '密码长度至少6位'})
 
-        from auth import reset_password
+        from system.auth import reset_password
         success, message = reset_password(user_id, new_password)
 
         if success:

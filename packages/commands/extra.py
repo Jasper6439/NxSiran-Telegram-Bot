@@ -5,7 +5,7 @@ from telegram import Update
 from telegram.ext import ContextTypes
 
 from config import YOUR_CHAT_ID, GEMINI_API_KEY
-from image_gen import analyze_image_with_gemini, ocr_document
+from characters.image_gen import analyze_image_with_gemini, ocr_document
 
 
 __all__ = [
@@ -17,10 +17,10 @@ __all__ = [
 
 
 # ============================================================
-# [Skill: vision-sandbox] /analyze_img 命令 - 图片深度分析
+# /analyze_img 命令 - 图片深度分析
 # ============================================================
 
-# [Skill: vision-sandbox] 记录待分析的图片
+# 记录待分析的图片
 _pending_analyze_img = {}  # chat_id -> image_data (base64)
 
 async def analyze_img_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -65,15 +65,15 @@ async def analyze_img_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
         else:
             await update.message.reply_text("...分析失败了。再试试。")
     except Exception as e:
-        logging.error(f"[Skill: vision-sandbox] /analyze_img失败: {e}")
+        logging.error(f"/analyze_img失败: {e}")
         await update.message.reply_text("...出错了。")
 
 
 # ============================================================
-# [Skill: deepread-ocr] /ocr 命令 - 文档OCR文字提取
+# /ocr 命令 - 文档OCR文字提取
 # ============================================================
 
-# [Skill: deepread-ocr] 记录待OCR的图片
+# 记录待OCR的图片
 _pending_ocr = {}  # chat_id -> True
 
 async def ocr_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -110,5 +110,5 @@ async def ocr_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
         else:
             await update.message.reply_text("...没识别出文字。图片太模糊或者没有文字。")
     except Exception as e:
-        logging.error(f"[Skill: deepread-ocr] /ocr失败: {e}")
+        logging.error(f"/ocr失败: {e}")
         await update.message.reply_text("...出错了。")

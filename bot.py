@@ -22,26 +22,26 @@ from aiohttp import web
 # ============================================================
 
 # TTS engine
-from tts_engine import TTSEngine
+from characters.tts_engine import TTSEngine
 
-from ai_client import call_ai as ai_client_call_ai
+from characters.ai_client import call_ai as ai_client_call_ai
 
 from config import *
-from auth import *
+from system.auth import *
 
 # Prompts and text processing
 from prompts import *
 
-from memory_legacy import *
-from weather import *
-from anniversary import *
-from emotion import *
-from stats import *
+from characters.memory_legacy import *
+from characters.weather import *
+from characters.anniversary import *
+from characters.emotion import *
+from characters.stats import *
 
-from image_gen import *
-from chat_history import *
+from characters.image_gen import *
+from characters.chat_history import *
 
-from novel_knowledge import init_novel_knowledge
+from characters.novel_knowledge import init_novel_knowledge
 
 # Character system
 from characters import (
@@ -101,8 +101,8 @@ from packages.analysis.chatlog import get_all_imported_relationships
 # Re-exports for backward compatibility
 # ============================================================
 
-from ai_core import call_ai, summarize_and_save_memory  # re-export for backward compatibility
-from scheduler import scheduler
+from characters.ai_core import call_ai, summarize_and_save_memory  # re-export for backward compatibility
+from system.scheduler import scheduler
 
 
 # ============================================================

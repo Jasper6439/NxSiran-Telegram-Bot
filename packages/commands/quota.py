@@ -2,9 +2,9 @@ from telegram import Update
 from telegram.ext import ContextTypes
 
 from config import YOUR_CHAT_ID, load_json
-from memory_legacy import CORRECTIONS_FILE
-from stats import format_quota_report, load_quota_usage, save_quota_usage
-import stats
+from characters.memory_legacy import CORRECTIONS_FILE
+from characters.stats import format_quota_report, load_quota_usage, save_quota_usage
+from characters import stats
 from packages.commands.utils import auto_delete_messages
 
 
@@ -39,7 +39,7 @@ async def quota_reset_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
 # ============================================================
-# [Skill: self-improving] /learned 命令 - 查看学到了什么
+# /learned 命令 - 查看学到了什么
 # ============================================================
 
 @auto_delete_messages(delay=3)

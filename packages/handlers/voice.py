@@ -13,17 +13,17 @@ from telegram import Update
 from telegram.ext import ContextTypes
 
 from config import *
-from tts_engine import TTSEngine
+from characters.tts_engine import TTSEngine
 
 # Lazy import for bot.call_ai
 def _get_call_ai():
     from bot import call_ai
     return call_ai
 
-from music_skill import music_skill
-from novel_knowledge import query_novel, init_novel_knowledge
-from qdrant_memory import search_memories
-from chat_history import load_chat_history, save_chat_history
+from characters.music_skill import music_skill
+from characters.novel_knowledge import query_novel, init_novel_knowledge
+from characters.qdrant_memory import search_memories
+from characters.chat_history import load_chat_history, save_chat_history
 
 tts = TTSEngine()
 

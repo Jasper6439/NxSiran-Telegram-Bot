@@ -11,7 +11,7 @@ from telegram.ext import ContextTypes
 
 from config import DATA_DIR, VIDEO_DIR, YOUR_CHAT_ID, AI_API_BASE, AI_API_KEY, AI_MODELS
 from config import load_json, save_json, get_default_tz
-from memory_legacy import save_memory_entry
+from characters.memory_legacy import save_memory_entry
 
 __all__ = [
     'pending_video_imports',

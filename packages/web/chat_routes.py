@@ -12,16 +12,16 @@ from datetime import datetime
 from aiohttp import web
 
 from config import *
-from auth import *
+from system.auth import *
 from prompts import *
-from memory_legacy import *
-from emotion import *
-from stats import *
-from image_gen import *
-from chat_history import *
+from characters.memory_legacy import *
+from characters.emotion import *
+from characters.stats import *
+from characters.image_gen import *
+from characters.chat_history import *
 
 # AI client - use the same alias as bot.py
-from ai_client import call_ai as call_ai
+from characters.ai_client import call_ai as call_ai
 
 
 async def api_chat(request):
@@ -45,7 +45,7 @@ async def api_chat(request):
         # 获取用户显示名（默认"学长"，与角色台词一致）
         user_name = '学长'
         try:
-            from auth import load_users
+            from system.auth import load_users
             users_data = load_users()
             users = users_data.get("users", {})
             user_info = users.get(str(user_id), {})
@@ -76,7 +76,7 @@ async def api_chat(request):
 
         # [AI竞争] 多模型竞争生成最佳回复
         try:
-            from ai_compete import compete_reply
+            from characters.ai_compete import compete_reply
             response = await compete_reply(
                 system_prompt=system_prompt,
                 user_message=user_message,
@@ -112,7 +112,7 @@ async def api_chat(request):
         selfie_generated = None
         if response and any(kw in response for kw in selfie_keywords):
             try:
-                from image_gen import generate_face_from_user_photos
+                from characters.image_gen import generate_face_from_user_photos
                 selfie_result = await generate_face_from_user_photos(str(user_id))
                 if selfie_result.get("success"):
                     selfie_generated = selfie_result["image_b64"]
@@ -121,7 +121,7 @@ async def api_chat(request):
 
         # [双向同步 v1.4.12.13] 通过角色绑定的 Bot Token 发送消息到用户的 Telegram
         try:
-            from auth import get_user_info, get_character_bot_token
+            from system.auth import get_user_info, get_character_bot_token
             user_info = get_user_info(user_id)
             telegram_chat_id = user_info.get('telegram_chat_id') if user_info else None
 

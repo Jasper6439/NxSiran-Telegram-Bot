@@ -8,7 +8,7 @@ from packages.commands.utils import call_gemini, web_search
 
 
 # ============================================================
-# [Skill: gemini-deep-research] 深度研究功能
+# 深度研究功能
 # ============================================================
 
 async def deep_research(topic: str, chat_id: int, context: ContextTypes.DEFAULT_TYPE) -> str:
@@ -100,5 +100,5 @@ async def deep_research(topic: str, chat_id: int, context: ContextTypes.DEFAULT_
         return report
 
     except Exception as e:
-        logging.error(f"[Skill: gemini-deep-research] 深度研究失败: {e}")
+        logging.error(f"深度研究失败: {e}")
         return None

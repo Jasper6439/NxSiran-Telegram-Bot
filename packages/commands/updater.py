@@ -18,7 +18,7 @@ from packages.commands.utils import auto_delete_messages
 
 
 # ============================================================
-# [Skill: auto-updater] 自动更新检查系统
+# 自动更新检查系统
 # ============================================================
 
 def calculate_bot_hash() -> str:

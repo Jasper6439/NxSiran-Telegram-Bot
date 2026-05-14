@@ -9,14 +9,14 @@ from telegram.ext import ContextTypes
 
 from config import YOUR_CHAT_ID, load_json
 from prompts import STICKER_PROMPTS, detect_sticker_mood
-from image_gen import generate_sticker_url, get_selfie_count
-from ai_client import call_ai
-from memory_legacy import get_user_memory_file
-from chat_history import append_bot_message
-from stats import load_stats
-from anniversary import load_anniversaries, get_days_together
-from chat_history import get_history
-from emotion import calculate_intimacy
+from characters.image_gen import generate_sticker_url, get_selfie_count
+from characters.ai_client import call_ai
+from characters.memory_legacy import get_user_memory_file
+from characters.chat_history import append_bot_message
+from characters.stats import load_stats
+from characters.anniversary import load_anniversaries, get_days_together
+from characters.chat_history import get_history
+from characters.emotion import calculate_intimacy
 from prompts import analyze_dialogue_patterns, get_relationship_advice
 from packages.commands.misc import auto_delete_messages
 
@@ -62,7 +62,7 @@ async def sticker_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("...生成失败了。再试试。")
 
 # ============================================================
-# [Skill: meeting-insights-analyzer] /analyze 对话分析命令
+# /analyze 对话分析命令
 # ============================================================
 
 @auto_delete_messages(delay=3)
@@ -115,7 +115,7 @@ async def analyze_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(report)
 
 # ============================================================
-# [Skill: 对话统计] /stats 命令
+# /stats 命令
 # ============================================================
 
 @auto_delete_messages(delay=3)

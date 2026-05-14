@@ -11,8 +11,8 @@ from telegram import Update
 from telegram.ext import ContextTypes
 
 from config import *
-from stats import *
-from image_gen import *
+from characters.stats import *
+from characters.image_gen import *
 from characters import get_current_character
 from packages.commands.extra import _pending_analyze_img, _pending_ocr
 from packages.commands.import_cmds import (

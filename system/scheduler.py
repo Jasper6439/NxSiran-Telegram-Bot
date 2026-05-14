@@ -21,9 +21,9 @@ from prompts import (
     WEATHER_CARE_MESSAGES,
     SELFIE_CAPTIONS,
 )
-from anniversary import get_upcoming_anniversary, get_random_life_event
-from weather import get_seoul_weather
-from image_gen import send_selfie_to_chat
+from characters.anniversary import get_upcoming_anniversary, get_random_life_event
+from characters.weather import get_seoul_weather
+from characters.image_gen import send_selfie_to_chat
 from packages.handlers.message import send_active_message
 
 

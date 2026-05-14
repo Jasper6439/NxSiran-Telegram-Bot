@@ -12,7 +12,7 @@ from datetime import datetime
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from config import USERS_FILE, get_default_tz
-from auth import hash_password, save_users
+from system.auth import hash_password, save_users
 
 def init_admin():
     """创建管理员账号"""
