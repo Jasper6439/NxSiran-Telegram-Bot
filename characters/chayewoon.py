@@ -244,8 +244,13 @@ class Character(CharacterBase):
     def format_response(self, text: str) -> str:
         """格式化回复，确保符合角色风格"""
         text = text.strip()
-        if not text:
-            return "……"
+        # 检查是否只有标点符号（如 "......" "..." "……"）
+        text_content = text.lstrip('.').lstrip('…').lstrip('。').strip()
+        if not text or len(text_content) < 2:
+            # 返回预设回复，而不是纯省略号
+            import random
+            fallbacks = ['……', '……学长。', '（低头）', '……随便。']
+            return random.choice(fallbacks)
         # 如果回复太长，截断（车如云话很少）
         if len(text) > 60:
             # 找最后一个句号或省略号截断

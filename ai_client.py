@@ -324,7 +324,10 @@ def _strip_thinking_content(content: str) -> str:
         
         # 策略G: 整个内容都是思考过程，没有最终回复，返回默认 fallback
         # 防止整段 reasoning 被原样发给用户
+        logger.warning(f"[_strip_thinking] 无法提取有效回复，使用fallback。原始内容: {content[:200]}...")
         fallbacks = ['...（沉默）', '...嗯。', '...我在。']
-        return random.choice(fallbacks)
+        result = random.choice(fallbacks)
+        logger.info(f"[_strip_thinking] fallback结果: {result}")
+        return result
     
     return content

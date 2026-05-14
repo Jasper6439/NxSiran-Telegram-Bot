@@ -1574,9 +1574,15 @@
                 </div>
 
                 <!-- Tab Switch: 上传 / 相册 -->
-                <div style="display:flex; gap:0; margin-bottom:var(--space-3); background:var(--bg-tertiary); border-radius:var(--radius-lg); padding:3px;">
+                <div id="media-tabs" style="display:flex; gap:0; margin-bottom:var(--space-3); background:var(--bg-tertiary); border-radius:var(--radius-lg); padding:3px;">
                     <button id="media-tab-upload" class="btn-secondary" style="flex:1; border-radius:var(--radius-md); border:none; padding:8px; font-size:var(--font-size-sm); cursor:pointer; background:var(--purple); color:#fff;" onclick="switchMediaTab('upload')">📤 上传</button>
                     <button id="media-tab-gallery" class="btn-secondary" style="flex:1; border-radius:var(--radius-md); border:none; padding:8px; font-size:var(--font-size-sm); cursor:pointer; background:transparent; color:var(--text-secondary);" onclick="switchMediaTab('gallery')">🖼️ 相册</button>
+                </div>
+
+                <!-- 全部角色提示 -->
+                <div id="all-characters-hint" style="display:none; margin-bottom:var(--space-3); background:var(--bg-tertiary); border-radius:var(--radius-lg); padding:var(--space-3); text-align:center; color:var(--text-secondary); font-size:var(--font-size-sm);">
+                    <div>👆 选择具体角色后可上传内容</div>
+                    <div style="font-size:var(--font-size-xs); margin-top:4px;">全部角色模式下仅可查看所有角色的学习资料</div>
                 </div>
 
                 <!-- Upload View -->
@@ -3150,10 +3156,30 @@ async function loadMediaCharacterSelector() {
 function onMediaCharacterChange() {
     const select = document.getElementById('media-character-select');
     const targetSpan = document.getElementById('upload-target-character');
+    const uploadView = document.getElementById('media-upload-view');
+    const galleryView = document.getElementById('media-gallery-view');
+    const tabsDiv = document.getElementById('media-tabs');
+    const hintDiv = document.getElementById('all-characters-hint');
+
     if (select && targetSpan) {
         const charName = select.value ? select.options[select.selectedIndex].text : '全部角色';
         targetSpan.textContent = charName;
     }
+
+    // 全部角色模式：隐藏上传，显示提示，自动切换到相册
+    if (!select || !select.value) {
+        if (uploadView) uploadView.style.display = 'none';
+        if (galleryView) galleryView.style.display = 'block';
+        if (tabsDiv) tabsDiv.style.display = 'none';
+        if (hintDiv) hintDiv.style.display = 'block';
+    } else {
+        // 具体角色模式：显示上传和标签页
+        if (uploadView) uploadView.style.display = 'block';
+        if (galleryView) galleryView.style.display = 'none';
+        if (tabsDiv) tabsDiv.style.display = 'flex';
+        if (hintDiv) hintDiv.style.display = 'none';
+    }
+
     // 刷新相册以显示选中角色的内容
     loadGalleryItems();
 }
@@ -3366,7 +3392,7 @@ function showStatDetail(type) {
     const content = document.getElementById('stat-detail-content');
     if (!modal) return;
     modal.style.display = 'block';
-    const titles = { messages: '💬 消息详情', selfies: '📷 照片详情', intimacy: '❤️ 亲密度详情' };
+    const titles = { messages: '💬 消息详情', selfies: '🎓 学习数据详情', intimacy: '❤️ 亲密度详情' };
     title.textContent = titles[type] || '详情';
     content.textContent = '加载中...';
     fetch('/api/stats', { headers: { 'Authorization': `Bearer ${authToken}` } })
@@ -3375,7 +3401,16 @@ function showStatDetail(type) {
             if (type === 'messages') {
                 content.innerHTML = `<div style="line-height:2">总消息: <b>${data.total_messages || 0}</b><br>今日: <b>${data.today_count || 0}</b><br>聊天天数: <b>${data.total_days || 0}</b><br>平均每日: <b>${data.avg_daily || '--'}</b><br>你的平均长度: <b>${data.user_avg_len || '--'}</b><br>主动发起: <b>${data.user_initiative || '--'}</b></div>`;
             } else if (type === 'selfies') {
-                content.innerHTML = `<div style="line-height:2">自拍照片: <b>${data.selfie_count || 0}</b><br>用户照片: <b>${data.user_photo_count || 0}</b></div>`;
+                // 学习数据：照片 + 视频 + 聊天记录
+                content.innerHTML = `<div style="line-height:2">
+                    <div style="margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--border-color);"><b>📷 照片</b></div>
+                    自拍照片: <b>${data.selfie_count || 0}</b><br>
+                    用户照片: <b>${data.user_photo_count || 0}</b><br><br>
+                    <div style="margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--border-color);"><b>🎬 视频</b></div>
+                    视频数量: <b>${data.video_count || 0}</b><br><br>
+                    <div style="margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--border-color);"><b>💬 聊天记录</b></div>
+                    导入记录: <b>${data.chatlog_count || 0}</b>
+                </div>`;
             } else if (type === 'intimacy') {
                 content.innerHTML = `<div style="line-height:2">亲密度: <b>${data.intimacy_score || 0}</b><br>等级: <b>${data.intimacy_level || '--'}</b><br>关心次数: <b>${data.caring_count || 0}</b><br>吃醋次数: <b>${data.jealous_count || 0}</b><br>温暖次数: <b>${data.warm_count || 0}</b></div>`;
             }
