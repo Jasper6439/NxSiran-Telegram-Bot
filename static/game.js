@@ -102,7 +102,361 @@ var COLORS = {
     barn: '#8B4513',
     barnDark: '#6B3410',
     barnRoof: '#A0522D',
-    barnDoor: '#5C3317'
+    barnDoor: '#5C3317',
+    /* Atmosphere colors */
+    skyDayTop: '#4a90d9',
+    skyDayBottom: '#b8e0f0',
+    mountainFar: '#3d2a5c',
+    mountainNear: '#2d5a3d',
+    treeTrunk: '#5a4030',
+    starColor: '#FFD700',
+    coinColor: '#FFD700',
+    dirtColor: '#8B6914',
+    seedColor: '#4A7A3A',
+    dustColor: 'rgba(200,180,150,0.4)'
+};
+
+/* ============================================================
+ * SECTION 1.5: PARALLAX BACKGROUND & ATMOSPHERE SYSTEM
+ * ============================================================ */
+
+var ParallaxBackground = {
+    layers: [],
+    initialized: false,
+    ambientLight: 1.0,
+    warmGlow: 0,
+
+    init: function() {
+        this.layers[0] = { offset: 0, speed: 0.1, elements: this._genMountains() };
+        this.layers[1] = { offset: 0, speed: 0.3, elements: this._genMidLayer() };
+        this.layers[2] = { offset: 0, speed: 1.0, elements: this._genNearLayer() };
+        this.initialized = true;
+    },
+
+    _genMountains: function() {
+        return [
+            {x:-100,y:140},{x:0,y:120},{x:60,y:130},{x:120,y:100},
+            {x:200,y:115},{x:280,y:95},{x:360,y:110},{x:440,y:90},
+            {x:520,y:105},{x:600,y:95},{x:700,y:120},{x:700,y:200},{x:-100,y:200}
+        ];
+    },
+
+    _genMidLayer: function() {
+        var els = [];
+        for (var i = 0; i < 12; i++) {
+            els.push({
+                type: Math.random() > 0.5 ? 'tree' : 'bush',
+                x: Math.random() * 600 - 30,
+                y: 155 + Math.random() * 25,
+                size: 0.6 + Math.random() * 0.5
+            });
+        }
+        return els;
+    },
+
+    _genNearLayer: function() {
+        var els = [];
+        for (var i = 0; i < 25; i++) {
+            els.push({
+                type: Math.random() > 0.7 ? 'flower' : 'grass',
+                x: Math.random() * 600,
+                y: 185 + Math.random() * 15,
+                size: 0.4 + Math.random() * 0.4,
+                color: Math.floor(Math.random() * 4)
+            });
+        }
+        return els;
+    },
+
+    update: function(dt) {
+        var hour = DayNight.hour;
+        if (hour >= 6 && hour < 20) {
+            this.ambientLight = 0.5 + Math.sin(((hour - 6) / 14) * Math.PI) * 0.5;
+        } else {
+            this.ambientLight = 0.35;
+        }
+        if ((hour >= 5 && hour < 7) || (hour >= 18 && hour < 20)) {
+            this.warmGlow = 0.3 + Math.sin((hour - 5) * Math.PI / 3) * 0.3;
+        } else {
+            this.warmGlow = 0;
+        }
+        var camX = Camera.x;
+        for (var i = 0; i < this.layers.length; i++) {
+            this.layers[i].offset = -camX * this.layers[i].speed;
+        }
+    },
+
+    _adjBri: function(hex, f) {
+        var r = parseInt(hex.slice(1, 3), 16);
+        var g = parseInt(hex.slice(3, 5), 16);
+        var b = parseInt(hex.slice(5, 7), 16);
+        return 'rgb(' + Math.floor(r * f) + ',' + Math.floor(g * f) + ',' + Math.floor(b * f) + ')';
+    },
+
+    draw: function(ctx, w, h, camX) {
+        if (!this.initialized) this.init();
+        var hour = DayNight.hour;
+        /* Sky gradient */
+        var grad = ctx.createLinearGradient(0, 0, 0, h * 0.6);
+        if (hour >= 5 && hour < 8) {
+            grad.addColorStop(0, '#1a0a2e'); grad.addColorStop(0.5, '#ff6b6b'); grad.addColorStop(1, '#ffa07a');
+        } else if (hour >= 8 && hour < 17) {
+            grad.addColorStop(0, '#4a90d9'); grad.addColorStop(1, '#b8e0f0');
+        } else if (hour >= 17 && hour < 20) {
+            grad.addColorStop(0, '#1a0a2e'); grad.addColorStop(0.4, '#ff4500'); grad.addColorStop(1, '#ffd700');
+        } else {
+            grad.addColorStop(0, '#0a0a1a'); grad.addColorStop(1, '#2a2a4e');
+        }
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, w, h * 0.6);
+
+        /* Sun or Moon */
+        if (hour >= 6 && hour < 20) {
+            var sunX = w * 0.75;
+            var sunY = h * 0.12 + Math.sin((hour - 6) / 14 * Math.PI) * h * 0.08;
+            var sg = ctx.createRadialGradient(sunX, sunY, 0, sunX, sunY, 35);
+            sg.addColorStop(0, 'rgba(255,230,100,0.9)'); sg.addColorStop(1, 'rgba(255,200,50,0)');
+            ctx.fillStyle = sg; ctx.fillRect(sunX - 40, sunY - 40, 80, 80);
+        } else {
+            var mx = w * 0.7; var my = h * 0.1;
+            ctx.fillStyle = '#f0f0ff'; ctx.beginPath(); ctx.arc(mx, my, 12, 0, Math.PI * 2); ctx.fill();
+            var mg = ctx.createRadialGradient(mx, my, 12, mx, my, 35);
+            mg.addColorStop(0, 'rgba(200,200,255,0.2)'); mg.addColorStop(1, 'rgba(200,200,255,0)');
+            ctx.fillStyle = mg; ctx.fillRect(mx - 40, my - 40, 80, 80);
+        }
+
+        /* Far mountains */
+        var layer = this.layers[0];
+        var ox = layer.offset;
+        ctx.fillStyle = this._adjBri('#3d2a5c', this.ambientLight);
+        ctx.beginPath();
+        ctx.moveTo(ox - 100, 140 + h * 0.35);
+        var pts = layer.elements;
+        for (var pi = 1; pi < pts.length; pi++) {
+            ctx.lineTo(pts[pi].x + ox, pts[pi].y + h * 0.35);
+        }
+        ctx.closePath(); ctx.fill();
+
+        /* Mid layer trees */
+        layer = this.layers[1]; ox = layer.offset;
+        for (var ti = 0; ti < layer.elements.length; ti++) {
+            var el = layer.elements[ti];
+            var sx = el.x + ox;
+            if (sx < -80 || sx > w + 80) continue;
+            if (el.type === 'tree') {
+                ctx.fillStyle = '#5a4030';
+                ctx.fillRect(sx - 2 * el.size, el.y + h * 0.3 - 15 * el.size, 4 * el.size, 15 * el.size);
+                ctx.fillStyle = 'hsl(120,40%,' + (22 * el.size) + '%)';
+                ctx.beginPath(); ctx.arc(sx, el.y + h * 0.3 - 22 * el.size, 14 * el.size, 0, Math.PI * 2); ctx.fill();
+            } else {
+                ctx.fillStyle = 'hsl(120,38%,' + (28 * el.size) + '%)';
+                ctx.beginPath(); ctx.arc(sx, el.y + h * 0.35, 10 * el.size, 0, Math.PI * 2); ctx.fill();
+            }
+        }
+
+        /* Night darkness overlay */
+        if (this.ambientLight < 0.95) {
+            ctx.fillStyle = 'rgba(10,10,30,' + ((1 - this.ambientLight) * 0.35) + ')';
+            ctx.fillRect(0, 0, w, h);
+        }
+
+        /* Warm glow at dawn/sunset */
+        if (this.warmGlow > 0.05) {
+            var wg = ctx.createLinearGradient(0, h * 0.3, 0, h);
+            wg.addColorStop(0, 'rgba(255,150,50,0)');
+            wg.addColorStop(1, 'rgba(255,100,50,' + (this.warmGlow * 0.25) + ')');
+            ctx.fillStyle = wg; ctx.fillRect(0, 0, w, h);
+        }
+    },
+
+    drawNearLayer: function(ctx, w, h, camX) {
+        var layer = this.layers[2];
+        var ox = layer.offset;
+        var colors = ['#FF6B8A', '#FFD93D', '#A86BC8', '#FF9F43'];
+        for (var fi = 0; fi < layer.elements.length; fi++) {
+            var el = layer.elements[fi];
+            var sx = el.x + ox;
+            if (sx < -20 || sx > w + 20) continue;
+            if (el.type === 'flower') {
+                ctx.fillStyle = colors[el.color];
+                ctx.beginPath(); ctx.arc(sx, el.y, 3 * el.size, 0, Math.PI * 2); ctx.fill();
+                ctx.fillStyle = '#FFD93D';
+                ctx.beginPath(); ctx.arc(sx, el.y, 1.5 * el.size, 0, Math.PI * 2); ctx.fill();
+            } else {
+                ctx.strokeStyle = '#5DAF60'; ctx.lineWidth = 1.5 * el.size;
+                ctx.beginPath(); ctx.moveTo(sx, el.y); ctx.lineTo(sx - 2 * el.size, el.y - 7 * el.size); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(sx, el.y); ctx.lineTo(sx + 2 * el.size, el.y - 5 * el.size); ctx.stroke();
+            }
+        }
+    }
+};
+
+/* ============================================================
+ * SECTION 1.6: PARTICLE SYSTEM
+ * ============================================================ */
+
+var ParticleSystem = {
+    particles: [],
+    maxParticles: 200,
+
+    init: function() { this.particles = []; },
+
+    emit: function(type, x, y, opts) {
+        opts = opts || {};
+        var count = opts.count || 8;
+        for (var ci = 0; ci < count; ci++) {
+            if (this.particles.length >= this.maxParticles) this.particles.shift();
+            this.particles.push({
+                type: type,
+                x: x + (Math.random() - 0.5) * (opts.spread || 20),
+                y: y + (Math.random() - 0.5) * (opts.spread || 10),
+                vx: (Math.random() - 0.5) * (opts.speed || 2),
+                vy: -(Math.random() * (opts.upSpeed || 2.5)),
+                life: 1.0,
+                decay: opts.decay || 0.025,
+                size: (opts.size || 4) * (0.5 + Math.random() * 0.5),
+                color: opts.color || '#FFD700',
+                gravity: opts.gravity !== undefined ? opts.gravity : 0.08,
+                rotation: Math.random() * Math.PI * 2,
+                rotSpeed: (Math.random() - 0.5) * 0.15
+            });
+        }
+    },
+
+    emitPlant: function(x, y) {
+        this.emit('dirt', x, y, {count: 6, speed: 1.2, upSpeed: 2, spread: 12, color: '#8B6914', size: 3, decay: 0.035, gravity: 0.15});
+        this.emit('seed', x, y - 5, {count: 1, speed: 0, upSpeed: 2.5, spread: 4, color: '#4A7A3A', size: 4, decay: 0.04, gravity: 0.2});
+    },
+
+    emitHarvest: function(x, y, emoji) {
+        this.emit('sparkle', x, y, {count: 12, speed: 2.5, upSpeed: 3.5, spread: 20, color: '#FFD700', size: 4, decay: 0.02, gravity: 0.05});
+        this.emit('emoji', x, y, {count: 1, speed: 0.4, upSpeed: 1.8, spread: 8, color: emoji || '\uD83C\uDF3E', size: 14, decay: 0.012, gravity: -0.015});
+        this.emit('coin', x, y, {count: 3, speed: 1.8, upSpeed: 1.8, spread: 15, color: '#FFD700', size: 3.5, decay: 0.025, gravity: 0.06});
+    },
+
+    emitWalk: function(x, y) {
+        if (Math.random() > 0.25) return;
+        this.emit('dust', x, y + 6, {count: 2, speed: 0.4, upSpeed: 0.2, spread: 4, color: 'rgba(200,180,150,0.35)', size: 2.5, decay: 0.06, gravity: -0.015});
+    },
+
+    update: function(dt) {
+        for (var pi = this.particles.length - 1; pi >= 0; pi--) {
+            var p = this.particles[pi];
+            p.x += p.vx * dt * 0.06;
+            p.y += p.vy * dt * 0.06;
+            p.vy += p.gravity * dt * 0.06;
+            p.rotation += p.rotSpeed * dt * 0.06;
+            p.life -= p.decay * dt * 0.06;
+            if (p.life <= 0) this.particles.splice(pi, 1);
+        }
+    },
+
+    draw: function(ctx, camX, camY) {
+        for (var di = 0; di < this.particles.length; di++) {
+            var p = this.particles[di];
+            var sx = p.x - camX;
+            var sy = p.y - camY;
+            if (sx < -40 || sx > 540 || sy < -40 || sy > 640) continue;
+            ctx.save();
+            ctx.globalAlpha = Math.max(0, p.life);
+            ctx.translate(sx, sy);
+            ctx.rotate(p.rotation);
+            if (p.type === 'sparkle' || p.type === 'coin') {
+                ctx.fillStyle = p.color;
+                ctx.beginPath();
+                for (var j = 0; j < 8; j++) {
+                    var r = j % 2 === 0 ? p.size : p.size * 0.4;
+                    var a = (j * Math.PI) / 4;
+                    if (j === 0) ctx.moveTo(r * Math.cos(a), r * Math.sin(a));
+                    else ctx.lineTo(r * Math.cos(a), r * Math.sin(a));
+                }
+                ctx.closePath(); ctx.fill();
+            } else if (p.type === 'emoji') {
+                ctx.font = Math.floor(p.size) + 'px serif';
+                ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                ctx.fillText(p.color, 0, 0);
+            } else if (p.type === 'dust') {
+                ctx.fillStyle = p.color;
+                ctx.beginPath(); ctx.arc(0, 0, p.size * (1 + p.life * 0.4), 0, Math.PI * 2); ctx.fill();
+            } else {
+                ctx.fillStyle = p.color;
+                ctx.beginPath(); ctx.arc(0, 0, p.size, 0, Math.PI * 2); ctx.fill();
+            }
+            ctx.restore();
+        }
+    }
+};
+
+/* ============================================================
+ * SECTION 1.7: CHARACTER STATE MACHINE
+ * ============================================================ */
+
+var CharacterState = {
+    state: 'idle',
+    timer: 0,
+    animPhase: 0,
+
+    setState: function(state) {
+        this.state = state;
+        this.timer = 0;
+        this.animPhase = 0;
+    },
+
+    update: function(dt) {
+        this.timer += dt;
+        if (this.state === 'plant') {
+            if (this.timer < 250) this.animPhase = this.timer / 250;
+            else if (this.timer < 500) this.animPhase = 1 - (this.timer - 250) / 250;
+            else this.state = 'idle';
+        } else if (this.state === 'harvest') {
+            if (this.timer < 180) this.animPhase = this.timer / 180;
+            else if (this.timer < 400) this.animPhase = 1 - (this.timer - 180) / 220;
+            else this.state = 'idle';
+        }
+    },
+
+    easeOutBounce: function(t) {
+        var n1 = 7.5625, d1 = 2.75;
+        if (t < 1 / d1) return n1 * t * t;
+        else if (t < 2 / d1) return n1 * (t -= 1.5 / d1) * t + 0.75;
+        else if (t < 2.5 / d1) return n1 * (t -= 2.25 / d1) * t + 0.9375;
+        return n1 * (t -= 2.625 / d1) * t + 0.984375;
+    },
+
+    easeOutBack: function(t) {
+        var c1 = 1.70158, c3 = c1 + 1;
+        return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
+    }
+};
+
+/* ============================================================
+ * SECTION 1.8: UI ANIMATION SYSTEM
+ * ============================================================ */
+
+var UIAnimation = {
+    seedBarY: 600,
+    seedBarTarget: 600,
+    seedBarVel: 0,
+
+    init: function() {
+        this.seedBarY = 600;
+        this.seedBarTarget = 600;
+    },
+
+    showSeedBar: function() { this.seedBarTarget = 480; this.seedBarVel = 6; },
+    hideSeedBar: function() { this.seedBarTarget = 600; },
+
+    update: function(dt) {
+        var force = (this.seedBarTarget - this.seedBarY) * 0.18;
+        this.seedBarVel += force;
+        this.seedBarVel *= 0.74;
+        this.seedBarY += this.seedBarVel;
+        if (Math.abs(this.seedBarY - this.seedBarTarget) < 0.5 && Math.abs(this.seedBarVel) < 0.5) {
+            this.seedBarY = this.seedBarTarget;
+        }
+    },
+
+    getSeedBarY: function() { return this.seedBarY; }
 };
 
 /* ============================================================
@@ -1712,7 +2066,8 @@ var SeedBar = {
     },
 
     draw: function(ctx, canvasW, canvasH) {
-        var barY = canvasH - 50;
+        var baseY = canvasH - 50;
+        var barY = UIAnimation.getSeedBarY();
         var barH = 50;
         var slotW = canvasW / SEEDS.length;
 
@@ -1782,6 +2137,10 @@ var CropSystem = {
             plantedAt: Date.now(),
             growthStage: 0
         };
+        /* Emit plant particles */
+        var tx = col * TILE + TILE / 2;
+        var ty = row * TILE + TILE / 2;
+        ParticleSystem.emitPlant(tx, ty);
     },
 
     getCrop: function(col, row) {
@@ -1930,11 +2289,14 @@ var Player = {
             this.x = Math.round(this.x);
             this.y = Math.round(this.y);
 
-            /* Animation */
+            /* Walk dust particles */
             this.animTimer += dt;
             if (this.animTimer >= this.animInterval) {
                 this.animTimer -= this.animInterval;
                 this.frame = (this.frame + 1) % 3;
+                if (Math.random() < 0.3) {
+                    ParticleSystem.emitWalk(this.x, this.y + this.height / 2);
+                }
             }
         } else {
             this.frame = 0;
@@ -2323,6 +2685,9 @@ Game.prototype._init = function() {
     Input.init(this.canvas);
     Weather.init();
     DayNight.update();
+    ParallaxBackground.init();
+    ParticleSystem.init();
+    UIAnimation.init();
 
     /* Seed bar touch handling */
     this.canvas.addEventListener('touchstart', function(e) {
@@ -2544,6 +2909,12 @@ Game.prototype._checkFarmInteraction = function() {
                 SeedBar.addCount(crop.seedId, 1); /* Return seed + crop */
                 Dialogue.show('系统', '收获了' + (seedData ? seedData.name : '作物') + '！');
 
+                /* Harvest animation & particles */
+                CharacterState.setState('harvest');
+                var hx = facing.col * TILE + TILE / 2;
+                var hy = facing.row * TILE + TILE / 2;
+                ParticleSystem.emitHarvest(hx, hy, seedData ? seedData.emoji : '🌾');
+
                 if (this._onHarvest) {
                     this._onHarvest({
                         cropType: crop.seedId,
@@ -2562,6 +2933,9 @@ Game.prototype._checkFarmInteraction = function() {
             CropSystem.plantCrop(facing.col, facing.row, selectedSeedId);
             var seedInfo = SeedBar.getSeedData(selectedSeedId);
             Dialogue.show('系统', '种下了' + (seedInfo ? seedInfo.name : '种子') + '！');
+
+            /* Plant animation */
+            CharacterState.setState('plant');
 
             if (this._onPlant) {
                 this._onPlant({
@@ -2750,6 +3124,11 @@ Game.prototype._update = function(dt) {
     /* Update crop growth */
     CropSystem.updateGrowth();
 
+    /* Atmosphere & effects systems */
+    ParallaxBackground.update(dt);
+    ParticleSystem.update(dt);
+    UIAnimation.update(dt);
+
     this._checkExits();
     this._checkInteraction();
 };
@@ -2764,6 +3143,9 @@ Game.prototype._render = function() {
 
     /* Disable smoothing for pixel art */
     ctx.imageSmoothingEnabled = false;
+
+    /* Parallax background (sky, sun/moon, mountains) */
+    ParallaxBackground.draw(ctx, w, h, Camera.x);
 
     /* Map */
     this._renderMap(ctx);
@@ -2791,6 +3173,12 @@ Game.prototype._render = function() {
 
     /* Seed bar (above joystick) */
     SeedBar.draw(ctx, w, h);
+
+    /* Parallax near layer (flowers, grass) */
+    ParallaxBackground.drawNearLayer(ctx, w, h, Camera.x);
+
+    /* Particle effects */
+    ParticleSystem.draw(ctx, Camera.x, Camera.y);
 
     /* Virtual joystick (on top of everything) */
     JoystickRenderer.draw(ctx, w, h);
