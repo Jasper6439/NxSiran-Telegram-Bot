@@ -22,16 +22,6 @@ class PlayerMixin:
     def get_player_position(self, user_id: int) -> Optional[Dict]:
         """获取玩家位置"""
         with self.get_connection() as conn:
-            # 创建表（如果不存在）
-            conn.execute("""
-                CREATE TABLE IF NOT EXISTS player_positions (
-                    user_id INTEGER PRIMARY KEY,
-                    x INTEGER DEFAULT 0,
-                    y INTEGER DEFAULT 0,
-                    direction TEXT DEFAULT 'down',
-                    updated_at TEXT
-                )
-            """)
             cursor = conn.execute("SELECT x, y, direction FROM player_positions WHERE user_id = ?", (user_id,))
             row = cursor.fetchone()
             return dict(row) if row else None

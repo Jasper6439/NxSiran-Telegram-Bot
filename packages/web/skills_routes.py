@@ -9,8 +9,8 @@ import subprocess
 
 from aiohttp import web
 
-from system.config import *
-from system.auth import *
+from system.config import SKILLS_REGISTRY, load_config
+from system.auth import is_admin_user, validate_session_token, validate_api_token
 from characters.stats import load_quota_usage, check_quota_status, get_current_month, QUOTA_LIMITS
 from packages.web.skills_state import (
     _save_skills_state,

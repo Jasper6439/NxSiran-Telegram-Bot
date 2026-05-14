@@ -152,7 +152,6 @@ def check_quota_status(usage: dict = None) -> str:
     if _quota_shutdown:
         return 'shutdown'
 
-    get_current_month()
     warnings = usage.get('warnings_sent', [])
 
     # 检查各项额度

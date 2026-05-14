@@ -3,7 +3,6 @@
 import logging
 from aiohttp import web
 from database.base import get_db
-from database.maps import MAPS
 from game_api.auth import authenticate_request
 
 logger = logging.getLogger(__name__)
@@ -78,10 +77,7 @@ async def api_switch_map(request):
         db = get_db()
         result = db.switch_map(user_id, map_id)
 
-        if result['success']:
-            return web.json_response(result)
-        else:
-            return web.json_response(result)
+        return web.json_response(result)
 
     except Exception as e:
         logger.error(f"[Map API] 切换地图失败: {e}")

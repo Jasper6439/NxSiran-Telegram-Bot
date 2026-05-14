@@ -154,9 +154,6 @@ def register_user(username, password, chat_id):
 
     返回: (success: bool, message: str)
     """
-    from system.config import get_default_tz
-    from datetime import datetime
-
     if not username or not password or not chat_id:
         return False, "用户名、密码和 Chat ID 不能为空"
 
@@ -218,9 +215,6 @@ def validate_user(username, password):
 
     返回: (success: bool, user_data: dict or None)
     """
-    from system.config import get_default_tz
-    from datetime import datetime
-
     users = _get_users_dict()
 
     # 查找用户（支持用户名或 chat_id）

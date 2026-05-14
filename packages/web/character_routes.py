@@ -7,8 +7,11 @@ import logging
 
 from aiohttp import web
 
-from system.config import *
-from system.auth import *
+from system.config import (
+    load_config, save_config,
+    TELEGRAM_TOKEN, YOUR_CHAT_ID, AI_API_KEY, AI_API_BASE,
+)
+from system.auth import validate_session_token, validate_api_token, is_admin_user
 from characters import (
     get_current_character,
     set_current_character,

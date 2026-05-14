@@ -33,5 +33,6 @@ async def authenticate_request(request) -> tuple:
         db = get_db()
         internal_id = db.get_or_create_user(int(user_id), f"user_{user_id}")
         return internal_id, None
-    except:
+    except Exception:
+        logging.exception("认证失败")
         return user_id, None

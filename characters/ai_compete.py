@@ -21,21 +21,18 @@ import time
 import asyncio
 from typing import Dict, List, Optional, Tuple
 
+from system.config import DATA_DIR, AI_MODELS
+
 logger = logging.getLogger(__name__)
 
-# 所有模型（4个免费模型，轮换参赛/评委）
-ALL_MODELS = [
-    "deepseek/deepseek-chat-v3-0324:free",
-    "minimax/minimax-m2.5:free",
-    "nousresearch/hermes-4-405b:free",
-    "google/gemma-4-31b-it:free",
-]
+# 所有模型（从 config 导入，与全局保持同步）
+ALL_MODELS = AI_MODELS
 
 # 轮换计数器
 _rotate_counter = 0
 
 # 权重持久化文件
-WEIGHTS_FILE = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "ai_weights.json")
+WEIGHTS_FILE = os.path.join(DATA_DIR, "ai_weights.json")
 
 # 缓存配置
 CACHE_SIMILARITY_THRESHOLD = 0.92
@@ -216,7 +213,7 @@ def get_model_weights() -> Dict[str, float]:
 async def _call_single_model(model: str, system_prompt: str, user_message: str,
                               chat_history: Optional[List[Dict]] = None) -> Optional[str]:
     try:
-        from ai_client import call_ai
+        from characters.ai_client import call_ai
         response = await call_ai(
             system_prompt=system_prompt,
             user_message=user_message,
@@ -241,7 +238,7 @@ async def _call_single_model(model: str, system_prompt: str, user_message: str,
 
 async def _search_cache(user_message: str) -> Optional[str]:
     try:
-        from qdrant_memory import QdrantMemoryManager
+        from characters.qdrant_memory import QdrantMemoryManager
         mgr = QdrantMemoryManager(collection_prefix="ai_cache")
         results = await mgr.search_memories(user_message, n_results=1)
         if results and results[0].get("distance", 1.0) < (1.0 - CACHE_SIMILARITY_THRESHOLD):
@@ -256,7 +253,7 @@ async def _search_cache(user_message: str) -> Optional[str]:
 
 async def _save_to_cache(user_message: str, best_reply: str, winning_model: str):
     try:
-        from qdrant_memory import QdrantMemoryManager
+        from characters.qdrant_memory import QdrantMemoryManager
         mgr = QdrantMemoryManager(collection_prefix="ai_cache")
         await mgr.add_memory(
             content=best_reply,
@@ -291,7 +288,7 @@ B: {reply_b}
 
 只回复A或B，不要其他内容。"""
     try:
-        from ai_client import call_ai
+        from characters.ai_client import call_ai
         result = await call_ai(
             system_prompt="你是一个客观的评委，只回复A或B。",
             user_message=prompt,

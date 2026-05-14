@@ -10,9 +10,16 @@ from datetime import datetime
 from telegram import Update
 from telegram.ext import ContextTypes
 
-from system.config import *
-from characters.stats import *
-from characters.image_gen import *
+from system.config import (
+    YOUR_CHAT_ID, TELEGRAM_TOKEN, GEMINI_API_KEY,
+    DATA_DIR, get_user_selfie_dir, get_user_dir,
+    get_user_memory_file, load_json,
+)
+from characters.stats import load_stats, save_stats, get_selfie_count
+from characters.image_gen import (
+    analyze_photo_with_ai, analyze_image_with_gemini, ocr_document,
+    get_photo_response_by_type, save_memory_entry,
+)
 from characters import get_current_character
 from packages.commands.extra import _pending_analyze_img, _pending_ocr
 from packages.commands.import_cmds import (

@@ -17,9 +17,6 @@ SQLite 数据库操作模块 - 支持农场经营 + 角色互动游戏
 
 from database.base import (
     GameDatabase as _Base,
-    DB_PATH,
-    SCHEMA_PATH,
-    KR_TZ,
     _get_thread_db,
     get_db as _get_db_func,
     init_game_db as _init_game_db_func,
@@ -53,7 +50,4 @@ __all__ = [
     'GameDatabase',
     'get_db',
     'init_game_db',
-    'DB_PATH',
-    'SCHEMA_PATH',
-    'KR_TZ',
 ]

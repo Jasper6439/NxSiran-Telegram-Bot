@@ -9,6 +9,22 @@ from game_api.auth import authenticate_request
 logger = logging.getLogger(__name__)
 
 
+def _calculate_harvest_rewards(db, user_id, crop_type, crop_info):
+    """计算收获时的概率奖励（15%返还种子，5%双倍收获）"""
+    rewards = []
+    if not crop_info:
+        return rewards
+    # 15% 概率返还1颗种子
+    if random.random() < 0.15:
+        db.add_item(user_id, 'seed', crop_type, 1)
+        rewards.append({'type': 'seed_return', 'crop': crop_type, 'message': f'获得 1 颗{crop_info["name"]}种子!'})
+    # 5% 概率双倍收获
+    if random.random() < 0.05:
+        db.add_item(user_id, 'crop', crop_type, 1)
+        rewards.append({'type': 'double_harvest', 'crop': crop_type, 'message': '🎉 双倍收获!'})
+    return rewards
+
+
 async def api_get_farm(request):
     """获取农场数据"""
     try:
@@ -73,8 +89,7 @@ async def api_plant_crop(request):
 
         # 检查背包是否有种子
         if not db.remove_item(user_id, 'seed', crop_type):
-            # 如果没有种子，自动给一个（测试用）
-            db.add_item(user_id, 'seed', crop_type, 1)
+            return web.json_response({'success': False, 'error': '背包中没有该种子'})
 
         # 种植
         success = db.plant_crop(farm['id'], x, y, crop_type)
@@ -130,17 +145,7 @@ async def api_harvest_crop(request):
             crop_info = db.get_crop_type(crop_type)
 
             # 概率奖励
-            rewards = []
-            if crop_info:
-                # 15% 概率返还1颗种子
-                if random.random() < 0.15:
-                    db.add_item(user_id, 'seed', crop_type, 1)
-                    rewards.append({'type': 'seed_return', 'crop': crop_type, 'message': f'获得 1 颗{crop_info["name"]}种子!'})
-
-                # 5% 概率双倍收获
-                if random.random() < 0.05:
-                    db.add_item(user_id, 'crop', crop_type, 1)
-                    rewards.append({'type': 'double_harvest', 'crop': crop_type, 'message': '🎉 双倍收获!'})
+            rewards = _calculate_harvest_rewards(db, user_id, crop_type, crop_info)
 
             # 记录事件
             db.log_game_event(user_id, 'harvest', {
@@ -199,16 +204,7 @@ async def api_bulk_harvest(request):
                     })
 
                     # 概率奖励
-                    if crop_info:
-                        # 15% 概率返还1颗种子
-                        if random.random() < 0.15:
-                            db.add_item(user_id, 'seed', result, 1)
-                            rewards.append({'type': 'seed_return', 'crop': result, 'message': f'获得 1 颗{crop_info["name"]}种子!'})
-
-                        # 5% 概率双倍收获
-                        if random.random() < 0.05:
-                            db.add_item(user_id, 'crop', result, 1)
-                            rewards.append({'type': 'double_harvest', 'crop': result, 'message': '🎉 双倍收获!'})
+                    rewards.extend(_calculate_harvest_rewards(db, user_id, result, crop_info))
 
         if harvested:
             db.log_game_event(user_id, 'harvest', {'crops': [h['type'] for h in harvested]}, 'web')

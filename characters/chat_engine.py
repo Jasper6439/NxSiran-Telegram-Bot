@@ -9,6 +9,7 @@ import logging
 from typing import Dict, Any, List, Optional
 
 from .ai_client import call_ai, MAX_HISTORY_MESSAGES
+from system.prompts import parse_dialogue_options
 
 logger = logging.getLogger(__name__)
 
@@ -90,7 +91,7 @@ class ChatEngine:
         awakening_triggered = None
         if self.awakening_detector:
             awakening_triggered = await self.awakening_detector.check(
-                character_id, user_id, new_emotion_values, user_message, ai_response
+                character_id, user_id, new_emotion_values
             )
 
         # 10. 保存对话记录
@@ -118,7 +119,7 @@ class ChatEngine:
         self._save_emotion_values(user_id, character_id, new_emotion_values)
 
         # 13. 解析对话选项（v0.3）
-        parsed = self.parse_dialogue_options(ai_response)
+        parsed = parse_dialogue_options(ai_response)
 
         return {
             'response': parsed['text'],
@@ -327,82 +328,6 @@ class ChatEngine:
             f"觉醒度: {awakening}/100（{awk_desc}）。"
         )
 
-    def parse_dialogue_options(self, response: str) -> Dict[str, Any]:
-        """
-        解析对话选项（v0.3）
-        
-        AI 回复中的选项格式：
-        【选项】
-        A. 选项文本 → +好感
-        B. 选项文本 → +觉醒
-        C. 选项文本 → +幸福
-        
-        Returns:
-            {
-                'text': str,  # 去除选项标记的纯文本
-                'options': [
-                    {'id': 'A', 'text': '选项文本', 'effects': {'affection': 5}},
-                    ...
-                ],
-                'has_options': bool
-            }
-        """
-        import re
-        
-        # 匹配选项块
-        option_pattern = r'【选项】\s*\n([\s\S]*?)(?=\n\n|\n*$|$)'
-        match = re.search(option_pattern, response)
-        
-        if not match:
-            return {'text': response, 'options': [], 'has_options': False}
-        
-        options_block = match.group(1)
-        options = []
-        
-        # 解析每个选项
-        option_line_pattern = r'([A-Z])\.\s*(.+?)(?:\s*→\s*(.+))?$'
-        for line in options_block.strip().split('\n'):
-            line = line.strip()
-            opt_match = re.match(option_line_pattern, line)
-            if opt_match:
-                opt_id = opt_match.group(1)
-                opt_text = opt_match.group(2).strip()
-                opt_effect = opt_match.group(3) or ''
-                
-                # 解析效果
-                effects = {}
-                if '好感' in opt_effect:
-                    effects['affection'] = 5
-                if '觉醒' in opt_effect:
-                    effects['awakening'] = 3
-                if '幸福' in opt_effect:
-                    effects['happiness'] = 5
-                if '+' in opt_effect:
-                    # 尝试解析数字
-                    num_match = re.search(r'\+(\d+)', opt_effect)
-                    if num_match:
-                        val = int(num_match.group(1))
-                        if '好感' in opt_effect:
-                            effects['affection'] = val
-                        elif '觉醒' in opt_effect:
-                            effects['awakening'] = val
-                        elif '幸福' in opt_effect:
-                            effects['happiness'] = val
-                
-                options.append({
-                    'id': opt_id,
-                    'text': opt_text,
-                    'effects': effects
-                })
-        
-        # 移除选项块，返回纯文本
-        clean_text = re.sub(option_pattern, '', response).strip()
-        
-        return {
-            'text': clean_text,
-            'options': options,
-            'has_options': len(options) > 0
-        }
 
 
 
@@ -416,7 +341,7 @@ def get_chat_engine() -> ChatEngine:
     if _engine_instance is None:
         # 注入 Qdrant 记忆系统
         try:
-            from qdrant_memory import get_memory
+            from characters.qdrant_memory import get_memory
             memory_mgr = get_memory()
         except Exception:
             memory_mgr = None

@@ -106,7 +106,6 @@ def register_routes(app):
     app.router.add_post('/api/analyze-video', api_analyze_video)
     app.router.add_post('/api/register', api_register)
     app.router.add_post('/api/login', api_login)
-    app.router.add_post('/api/auth/login', api_login)  # 兼容前端 /api/auth/login 路径
     app.router.add_post('/api/forgot-password', api_forgot_password)
     app.router.add_post('/api/verify-reset-code', api_verify_reset_code)
     app.router.add_post('/api/reset-password', api_reset_password)

@@ -140,8 +140,7 @@ class AwakeningDetector:
         return AWAKENING_STAGES.get(stage, AWAKENING_STAGES[1])
 
     async def check(self, character_id: str, user_id: int,
-                    new_emotions: Dict, user_message: str,
-                    ai_response: str) -> Optional[Dict]:
+                    new_emotions: Dict) -> Optional[Dict]:
         """
         检查觉醒条件
         

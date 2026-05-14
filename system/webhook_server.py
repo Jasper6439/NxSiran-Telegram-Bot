@@ -12,10 +12,8 @@
 """
 
 import asyncio
-import base64
 import hashlib
 import hmac
-import json
 import logging
 import os
 import subprocess
@@ -42,7 +40,7 @@ WEBHOOK_PORT = int(os.environ.get('WEBHOOK_PORT', 8082))
 WEBHOOK_SECRET = os.environ.get('GITHUB_WEBHOOK_SECRET', '')
 PROJECT_DIR = os.environ.get('PROJECT_DIR', '/root/NxSiran-Telegram-Bot')
 BOT_SERVICE = os.environ.get('BOT_SERVICE', 'nxsiran-bot.service')
-BRIDGE_TOKEN = os.environ.get('BRIDGE_TOKEN', 'nxsiran_bridge_2024')
+BRIDGE_TOKEN = os.environ.get('BRIDGE_TOKEN', '')
 
 # Bridge 命令队列
 pending_commands = {}  # {vm_id: [commands]}
@@ -207,7 +205,7 @@ async def manual_deploy(request):
     try:
         # 简单的 token 验证
         token = request.query.get('token', '')
-        if token != WEBHOOK_SECRET and token != 'nxsiran_deploy_2024':
+        if token != WEBHOOK_SECRET:
             return web.json_response({'error': 'auth failed'}, status=401)
 
         logger.info("手动触发部署")

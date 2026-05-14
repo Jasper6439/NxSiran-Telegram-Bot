@@ -248,7 +248,6 @@ class Character(CharacterBase):
         text_content = text.lstrip('.').lstrip('…').lstrip('。').strip()
         if not text or len(text_content) < 2:
             # 返回预设回复，而不是纯省略号
-            import random
             fallbacks = ['……', '……学长。', '（低头）', '……随便。']
             return random.choice(fallbacks)
         # 如果回复太长，截断（车如云话很少）

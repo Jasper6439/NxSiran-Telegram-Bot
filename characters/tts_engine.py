@@ -12,11 +12,12 @@
   audio_path = await tts.synthesize("你好呀~")
 """
 
-import asyncio
 import logging
 import os
 import tempfile
 from typing import Optional
+
+from system.config import DATA_DIR
 
 logger = logging.getLogger(__name__)
 
@@ -44,8 +45,6 @@ FISH_REFERENCE_ID = ""  # 克隆音色 ID
 # 留空则跳过 Fish Speech
 
 # --- 通用配置 ---
-DATA_DIR = os.environ.get("DATA_DIR", "/opt/NxSiran/data")
-os.makedirs(DATA_DIR, exist_ok=True)
 TTS_TEMP_DIR = os.path.join(DATA_DIR, "tts_cache")  # 音频缓存目录
 MAX_TEXT_LENGTH = 300  # 单次合成最大字符数
 DEFAULT_BACKEND = "auto"  # "auto" | "edge" | "sovits" | "fish"
@@ -314,4 +313,5 @@ async def test_tts():
         print("合成失败")
 
 if __name__ == "__main__":
+    import asyncio
     asyncio.run(test_tts())

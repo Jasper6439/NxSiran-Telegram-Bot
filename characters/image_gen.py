@@ -232,8 +232,7 @@ async def generate_face_from_user_photos(user_id, description: str = "自然微�
         return {"success": False, "error": "没有找到用户上传的照片"}
 
     # 随机选一张
-    import random as _random
-    photo_path = os.path.join(selfie_dir, _random.choice(photo_files))
+    photo_path = os.path.join(selfie_dir, random.choice(photo_files))
 
     with open(photo_path, 'rb') as f:
         photo_b64 = base64.b64encode(f.read()).decode('utf-8')

@@ -13,7 +13,6 @@ from aiohttp import web
 
 from system.config import *
 from system.auth import *
-from system.prompts import *
 from characters.memory_legacy import *
 from characters.emotion import *
 from characters.stats import *

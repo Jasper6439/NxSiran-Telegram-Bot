@@ -28,7 +28,7 @@ from system.config import (
     GEMINI_API_KEY,
     YOUR_CHAT_ID,
 )
-from system.prompts import EMOTION_RESPONSE_GUIDE, SYSTEM_PROMPT
+from system.prompts import EMOTION_RESPONSE_GUIDE
 from .memory_legacy import (
     get_long_term_memory,
     get_semantic_memory_context,
@@ -62,7 +62,7 @@ async def call_ai(user_message: str, chat_history: list = None, use_memory: bool
     if character:
         system_content = character.get_system_prompt({'user_name': '学长'})
     else:
-        system_content = SYSTEM_PROMPT
+        system_content = ""
     system_content += f"\n\n【实时信息】{time_info}"
 
     # [Skill: 亲密度系统] 注入关系状态
@@ -126,7 +126,7 @@ async def call_ai(user_message: str, chat_history: list = None, use_memory: bool
 
     # [AI竞争] 多模型竞争生成最佳回复
     try:
-        from ai_compete import compete_reply
+        from characters.ai_compete import compete_reply
         content = await compete_reply(
             system_prompt=system_content,
             user_message=final_user_message,

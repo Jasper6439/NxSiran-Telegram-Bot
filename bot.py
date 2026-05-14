@@ -6,7 +6,6 @@ Character modules in characters/, system modules in system/.
 """
 
 import asyncio
-import json
 import logging
 import os
 import threading
@@ -24,22 +23,12 @@ from aiohttp import web
 # TTS engine
 from characters.tts_engine import TTSEngine
 
-from characters.ai_client import call_ai as ai_client_call_ai
-
 from system.config import *
-from system.auth import *
 
-# Prompts and text processing
-from system.prompts import *
-
-from characters.memory_legacy import *
-from characters.weather import *
-from characters.anniversary import *
-from characters.emotion import *
-from characters.stats import *
-
-from characters.image_gen import *
-from characters.chat_history import *
+from characters.emotion import check_proactive_actions
+from characters.stats import load_stats
+from characters.anniversary import load_anniversaries
+from characters.image_gen import generate_face_image, get_selfie_count
 
 from characters.novel_knowledge import init_novel_knowledge
 

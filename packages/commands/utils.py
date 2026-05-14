@@ -9,6 +9,12 @@ from telegram.ext import ContextTypes
 from system.config import GEMINI_API_KEY
 
 
+def _get_call_ai():
+    """Lazy import for bot.call_ai (the high-level AI function with character/memory/emotion integration)."""
+    from bot import call_ai
+    return call_ai
+
+
 def auto_delete_messages(delay: int = 5):
     """装饰器：命令完成后自动删除用户命令和Bot回复，减少非真人聊天感"""
     def decorator(func):

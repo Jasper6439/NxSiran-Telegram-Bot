@@ -7,8 +7,8 @@ import logging
 
 from aiohttp import web
 
-from system.config import *
-from system.auth import *
+from system.config import load_config, get_default_tz
+from system.auth import validate_session_token, generate_session_token
 
 
 async def api_register(request):

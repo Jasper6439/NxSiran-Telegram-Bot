@@ -10,22 +10,28 @@ from datetime import datetime
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
 
-from system.config import *
-from system.prompts import AUTO_STICKER_TRIGGERS, detect_sticker_mood, detect_music_request
-from characters.memory_legacy import *
-from characters.stats import *
-from characters.emotion import *
+from system.config import load_config, PORT, YOUR_CHAT_ID, get_default_tz
+from system.prompts import (
+    AUTO_STICKER_TRIGGERS, detect_sticker_mood, detect_music_request,
+    parse_dialogue_options,
+)
+from characters.memory_legacy import detect_correction, learn_from_correction, save_semantic_memory, parse_memory_tags
+from characters.stats import record_request, update_stats_on_message
+from characters.emotion import detect_emotion, add_reaction
 from characters import emotion  # needed for emotion._last_user_active_time
-from characters.chat_history import *
-from characters.image_gen import *
+from characters.chat_history import (
+    get_history, save_chat_history, chat_histories, append_bot_message, human_typing_delay,
+)
+from characters.image_gen import (
+    get_saved_selfies, SELFIE_CAPTIONS, send_selfie_to_chat,
+    detect_scene, generate_scene_url, SCENE_PROMPTS, generate_sticker_url,
+)
 from packages.commands.basic import selfie_cmd, reset, memory_cmd
 from packages.commands.skills import sticker_cmd, stats_cmd
 from packages.commands.misc import anniversary_cmd
 
 # Lazy import for bot.call_ai (the high-level AI function with character/memory/emotion integration)
-def _get_call_ai():
-    from bot import call_ai
-    return call_ai
+from packages.commands.utils import _get_call_ai
 
 # Lazy import for summarize_and_save_memory (defined in bot.py, the entry point)
 def _get_summarize_func():
@@ -74,7 +80,6 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             result = await upload_voice_sample(tmp_path, "chayewoon")
 
             # 清理临时文件
-            import os
             os.unlink(tmp_path)
 
             if result.get('success'):
@@ -181,9 +186,6 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "🟠 ⚠️ 免费额度即将用完（超过95%）！\n"
             "建议减少使用频率，或使用 /quota 查看详情。"
         )
-    elif quota_status == 'warning':
-        # 只在第一次警告时提醒
-        pass  # 静默记录，不干扰对话
 
     # [Skill: 情绪识别] 检测用户情绪
     emotion = detect_emotion(user_text)

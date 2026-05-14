@@ -243,21 +243,6 @@ class RelationshipMixin:
     def get_awakening_events(self, character_id: str) -> List[Dict]:
         """获取角色的觉醒事件列表"""
         with self.get_connection() as conn:
-            conn.execute("""
-                CREATE TABLE IF NOT EXISTS awakening_events (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    character_id TEXT NOT NULL,
-                    stage INTEGER NOT NULL,
-                    stage_name TEXT NOT NULL,
-                    event_id TEXT NOT NULL,
-                    title TEXT,
-                    description TEXT,
-                    dialogue_content TEXT,
-                    emotion_bonus TEXT,
-                    unlocked_at TIMESTAMP,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )
-            """)
             cursor = conn.execute(
                 """SELECT * FROM awakening_events WHERE character_id = ? ORDER BY stage""",
                 (character_id,)

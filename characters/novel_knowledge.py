@@ -7,6 +7,8 @@ import os
 import logging
 from typing import List, Dict
 
+from system.config import DATA_DIR
+
 # LightRAG
 from lightrag import LightRAG, QueryParam
 from lightrag.utils import EmbeddingFunc
@@ -14,10 +16,7 @@ from lightrag.utils import EmbeddingFunc
 logger = logging.getLogger(__name__)
 
 # 数据存储路径
-DATA_DIR = os.path.join(os.path.dirname(__file__), 'data')
-KNOWLEDGE_DIR = os.path.join(os.path.dirname(__file__), 'knowledge')
-NOVEL_FILE = os.path.join(KNOWLEDGE_DIR, 'novel.txt')
-LIGHTRAG_DIR = os.path.join(DATA_DIR, 'lightrag_db')
+KNOWLEDGE_DIR = os.path.join(DATA_DIR, 'knowledge')
 
 
 class NovelKnowledge:

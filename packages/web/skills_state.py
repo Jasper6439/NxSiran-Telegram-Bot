@@ -31,10 +31,6 @@ def _save_skills_state():
     except Exception as e:
         logging.error(f"[skills-manager] 保存 skills 状态失败: {e}")
 
-def load_character_skill_overrides():
-    """Load character-specific skill overrides."""
-    pass  # Character skill overrides are handled by the characters module
-
 def is_skill_enabled_for_character(skill_id, character_id=None):
     """Check if a skill is enabled for a specific character."""
     if skill_id not in SKILLS_REGISTRY:
@@ -47,13 +43,5 @@ def set_skill_for_character(skill_id, character_id, enabled):
         SKILLS_REGISTRY[skill_id]['enabled'] = enabled
         _save_skills_state()
 
-
-def _get_skills_functions():
-    """Lazy import skills functions from bot module to avoid circular imports."""
-    import bot
-    return bot
-
-
 # 启动时加载 skills 持久化状态
 _load_skills_state()
-load_character_skill_overrides()

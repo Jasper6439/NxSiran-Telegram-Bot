@@ -12,13 +12,10 @@ import aiohttp
 from telegram import Update
 from telegram.ext import ContextTypes
 
-from system.config import *
+from system.config import YOUR_CHAT_ID
 from characters.tts_engine import TTSEngine
 
-# Lazy import for bot.call_ai
-def _get_call_ai():
-    from bot import call_ai
-    return call_ai
+from packages.commands.utils import auto_delete_messages, _get_call_ai
 
 from characters.music_skill import music_skill
 from characters.novel_knowledge import query_novel, init_novel_knowledge
@@ -110,7 +107,6 @@ async def _send_edge_tts_voice(app, chat_id: int, text: str, config: dict):
     try:
         import edge_tts
         import tempfile
-        import os
 
         voice = config.get("edge_voice", "ko-KR-InJoonNeural")
         communicate = edge_tts.Communicate(text, voice)
@@ -301,42 +297,8 @@ async def start_voice_training(character_id: str = "chayewoon") -> dict:
         return {"success": False, "error": str(e)}
 
 # ============================================================
-# 消息自动删除装饰器
-# ============================================================
-
-def auto_delete_messages(delay: int = 5):
-    """装饰器：命令完成后自动删除用户命令和Bot回复，减少非真人聊天感"""
-    def decorator(func):
-        async def wrapper(update: Update, context: ContextTypes.DEFAULT_TYPE):
-            user_msg_id = update.message.message_id if update.message else None
-            chat_id = update.effective_chat.id
-
-            try:
-                result = await func(update, context)
-
-                # 延迟删除消息
-                if user_msg_id and chat_id:
-                    try:
-                        await asyncio.sleep(delay)
-                        await context.bot.delete_message(chat_id, user_msg_id)
-                    except Exception:
-                        pass  # 消息可能已被删除或权限不足
-
-                return result
-            except Exception as e:
-                # 出错时也尝试删除用户消息
-                if user_msg_id and chat_id:
-                    try:
-                        await asyncio.sleep(delay)
-                        await context.bot.delete_message(chat_id, user_msg_id)
-                    except Exception:
-                        pass
-                raise
-        return wrapper
-    return decorator
-
-
 # Global state
+# ============================================================
 user_voice_enabled = {}  # {user_id: bool}
 
 @auto_delete_messages(delay=3)

@@ -12,8 +12,13 @@ from datetime import datetime
 
 from aiohttp import web
 
-from system.config import *
-from system.auth import *
+from system.config import (
+    load_config, get_user_selfie_dir, get_user_dir,
+    USER_PHOTOS_DIR, SELFIE_DIR, DATA_DIR,
+)
+from system.auth import (
+    validate_session_token, validate_api_token, validate_session_token_from_token,
+)
 
 
 async def api_upload_selfies(request):

@@ -37,9 +37,7 @@ from characters import get_current_character
 from packages.commands.misc import auto_delete_messages
 
 # Lazy import for bot.call_ai (high-level AI function with character/memory/emotion integration)
-def _get_call_ai():
-    from bot import call_ai
-    return call_ai
+from packages.commands.utils import _get_call_ai
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):

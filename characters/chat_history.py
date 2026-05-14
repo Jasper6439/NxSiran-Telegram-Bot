@@ -53,7 +53,7 @@ def append_bot_message(chat_id: int, content: str):
 
     # [Skill: ChromaDB记忆] 保存到向量数据库
     try:
-        from qdrant_memory import add_memory
+        from characters.qdrant_memory import add_memory
         add_memory(chat_id, content, {"role": "assistant"})
     except Exception:
         pass  # 静默失败

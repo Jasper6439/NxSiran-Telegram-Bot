@@ -1,8 +1,6 @@
 # 游戏 API 模块 - 农场经营 + 角色互动
 # 提供 Web/Mini App 端的游戏数据接口
 
-from aiohttp import web
-from game_api.auth import authenticate_request
 from game_api.farm_routes import (
     api_get_farm, api_plant_crop, api_harvest_crop,
     api_sell_crop, api_buy_seed, api_water_crop, api_move_player,

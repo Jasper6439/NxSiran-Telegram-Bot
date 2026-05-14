@@ -10,9 +10,11 @@ from datetime import datetime
 
 from aiohttp import web
 
-from system.config import *
-from system.auth import *
-from characters.chat_history import *
+from system.config import load_config, TELEGRAM_TOKEN
+from system.auth import validate_session_token, validate_api_token
+from characters.chat_history import (
+    load_chat_history, save_chat_history, get_history, append_bot_message,
+)
 from database import get_db
 from game_api import authenticate_request
 

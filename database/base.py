@@ -5,12 +5,11 @@ SQLite 数据库操作模块 - 支持农场经营 + 角色互动游戏
 """
 
 import sqlite3
-import json
 import os
 import logging
 import threading
 from datetime import datetime, timezone, timedelta
-from typing import Optional, Dict, List, Tuple
+from typing import Optional, Dict
 from contextlib import contextmanager
 
 from system.config import get_default_tz
@@ -20,9 +19,6 @@ logger = logging.getLogger(__name__)
 # 数据库文件路径
 DB_PATH = os.path.join(os.path.dirname(__file__), 'data', 'game.db')
 SCHEMA_PATH = os.path.join(os.path.dirname(__file__), 'data', 'game_schema.sql')
-
-# 韩国时区
-KR_TZ = timezone(timedelta(hours=9))
 
 # 线程本地数据库实例缓存
 _local = threading.local()

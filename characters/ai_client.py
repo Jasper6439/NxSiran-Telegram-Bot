@@ -15,7 +15,7 @@ import httpx
 logger = logging.getLogger(__name__)
 
 # 从 config 模块导入配置（统一管理）
-from system.config import AI_API_BASE, AI_API_KEY, AI_MODEL, AI_MODELS
+from system.config import AI_API_BASE, AI_API_KEY, AI_MODEL, AI_MODELS, DATA_DIR
 
 # ── 统一的模型列表（从 config 导入） ──────────────────────────
 FALLBACK_MODELS: List[str] = AI_MODELS
@@ -39,9 +39,7 @@ def _load_api_config() -> tuple:
 
     # 动态读取最新配置（兼容 DATA_DIR 下 config.json）
     try:
-        config_path = os.path.join(
-            os.environ.get('DATA_DIR', '/opt/NxSiran/data'), 'config.json'
-        )
+        config_path = os.path.join(DATA_DIR, 'config.json')
         if os.path.exists(config_path):
             with open(config_path, 'r') as f:
                 cfg = json.load(f)

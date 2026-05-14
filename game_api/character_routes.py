@@ -11,6 +11,11 @@ from game_api.auth import authenticate_request
 logger = logging.getLogger(__name__)
 
 
+def _validate_farm_coords(x, y, farm):
+    """校验农场坐标是否在合法范围内"""
+    return 0 <= x < farm.get('gridWidth', 12) and 0 <= y < farm.get('gridHeight', 8)
+
+
 async def api_get_character_location(request):
     """获取角色当前位置"""
     try:
@@ -67,11 +72,12 @@ async def api_interact_with_character(request):
         db = get_db()
 
         # 记录互动
-        db.add_relationship_history(
-            user_id, character_id,
-            interaction_type, content,
-            0  # hearts_delta
-        )
+        # TODO: add_relationship_history 方法不存在于 RelationshipMixin，需要实现或移除
+        # db.add_relationship_history(
+        #     user_id, character_id,
+        #     interaction_type, content,
+        #     0  # hearts_delta
+        # )
 
         # 获取更新后的关系
         relationship = db.get_relationship(user_id, character_id)
@@ -120,14 +126,15 @@ async def api_gift_to_character(request):
         hearts_delta = quantity * 5
 
         # 更新关系
-        db.update_relationship(user_id, character_id, hearts_delta)
+        db.update_hearts(user_id, character_id, hearts_delta)
 
         # 记录互动
-        db.add_relationship_history(
-            user_id, character_id,
-            'gift', f'赠送了 {quantity} 个 {item_id}',
-            hearts_delta
-        )
+        # TODO: add_relationship_history 方法不存在于 RelationshipMixin，需要实现或移除
+        # db.add_relationship_history(
+        #     user_id, character_id,
+        #     'gift', f'赠送了 {quantity} 个 {item_id}',
+        #     hearts_delta
+        # )
 
         # 获取更新后的关系
         relationship = db.get_relationship(user_id, character_id)
@@ -141,36 +148,6 @@ async def api_gift_to_character(request):
 
     except Exception as e:
         logger.error(f"[Game API] 赠送礼物失败: {e}")
-        return web.json_response({'success': False, 'error': str(e)})
-
-
-async def api_move_player(request):
-    """移动玩家位置"""
-    try:
-        user_id, err = await authenticate_request(request)
-        if err:
-            return err
-
-        data = await request.json()
-        x = data.get('x')
-        y = data.get('y')
-        direction = data.get('direction', 'down')
-        scene = data.get('scene', 'farm')
-
-        if x is None or y is None:
-            return web.json_response({'success': False, 'error': '缺少坐标'})
-
-        # 坐标范围校验
-        if not (0 <= x <= 1000 and 0 <= y <= 1000):
-            return web.json_response({'success': False, 'error': '坐标超出合理范围'})
-
-        db = get_db()
-        db.save_player_position(user_id, x, y, direction, scene)
-
-        return web.json_response({'success': True, 'x': x, 'y': y, 'direction': direction, 'scene': scene})
-
-    except Exception as e:
-        logger.error(f"[Game API] 移动失败: {e}")
         return web.json_response({'success': False, 'error': str(e)})
 
 
@@ -214,7 +191,7 @@ async def api_sync_actions(request):
                     seed_key = f"seed:{crop_type}"
 
                     # 坐标范围校验
-                    if not (0 <= x < farm.get('gridWidth', 12) and 0 <= y < farm.get('gridHeight', 8)):
+                    if not _validate_farm_coords(x, y, farm):
                         result['error'] = '坐标超出范围'
                         results.append(result)
                         failed += 1
@@ -250,7 +227,7 @@ async def api_sync_actions(request):
                     x, y = action.get('x'), action.get('y')
 
                     # 坐标范围校验
-                    if not (0 <= x < farm.get('gridWidth', 12) and 0 <= y < farm.get('gridHeight', 8)):
+                    if not _validate_farm_coords(x, y, farm):
                         result['error'] = '坐标超出范围'
                         results.append(result)
                         failed += 1
@@ -272,7 +249,7 @@ async def api_sync_actions(request):
                     # 验证：1)坐标合法 2)有作物
                     x, y = action.get('x'), action.get('y')
 
-                    if not (0 <= x < farm.get('gridWidth', 12) and 0 <= y < farm.get('gridHeight', 8)):
+                    if not _validate_farm_coords(x, y, farm):
                         result['error'] = '坐标超出范围'
                         results.append(result)
                         failed += 1
