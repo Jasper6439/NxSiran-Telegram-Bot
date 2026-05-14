@@ -196,44 +196,44 @@ var ParallaxBackground = {
     draw: function(ctx, w, h, camX) {
         if (!this.initialized) this.init();
         var hour = DayNight.hour;
-        /* Sky gradient */
-        var grad = ctx.createLinearGradient(0, 0, 0, h * 0.6);
+        /* Full canvas sky gradient - cover entire screen */
+        var grad = ctx.createLinearGradient(0, 0, 0, h);
         if (hour >= 5 && hour < 8) {
-            grad.addColorStop(0, '#1a0a2e'); grad.addColorStop(0.5, '#ff6b6b'); grad.addColorStop(1, '#ffa07a');
+            grad.addColorStop(0, '#1a0a2e'); grad.addColorStop(0.4, '#ff6b6b'); grad.addColorStop(0.7, '#ffa07a'); grad.addColorStop(1, '#87CEEB');
         } else if (hour >= 8 && hour < 17) {
-            grad.addColorStop(0, '#4a90d9'); grad.addColorStop(1, '#b8e0f0');
+            grad.addColorStop(0, '#4a90d9'); grad.addColorStop(0.5, '#87CEEB'); grad.addColorStop(1, '#b8e0f0');
         } else if (hour >= 17 && hour < 20) {
-            grad.addColorStop(0, '#1a0a2e'); grad.addColorStop(0.4, '#ff4500'); grad.addColorStop(1, '#ffd700');
+            grad.addColorStop(0, '#1a0a2e'); grad.addColorStop(0.3, '#ff4500'); grad.addColorStop(0.6, '#ffd700'); grad.addColorStop(1, '#87CEEB');
         } else {
-            grad.addColorStop(0, '#0a0a1a'); grad.addColorStop(1, '#2a2a4e');
+            grad.addColorStop(0, '#0a0a1a'); grad.addColorStop(0.5, '#1a1a3e'); grad.addColorStop(1, '#2a2a4e');
         }
         ctx.fillStyle = grad;
-        ctx.fillRect(0, 0, w, h * 0.6);
+        ctx.fillRect(0, 0, w, h);
 
         /* Sun or Moon */
         if (hour >= 6 && hour < 20) {
             var sunX = w * 0.75;
-            var sunY = h * 0.12 + Math.sin((hour - 6) / 14 * Math.PI) * h * 0.08;
-            var sg = ctx.createRadialGradient(sunX, sunY, 0, sunX, sunY, 35);
-            sg.addColorStop(0, 'rgba(255,230,100,0.9)'); sg.addColorStop(1, 'rgba(255,200,50,0)');
-            ctx.fillStyle = sg; ctx.fillRect(sunX - 40, sunY - 40, 80, 80);
+            var sunY = h * 0.15 + Math.sin((hour - 6) / 14 * Math.PI) * h * 0.1;
+            var sg = ctx.createRadialGradient(sunX, sunY, 0, sunX, sunY, 50);
+            sg.addColorStop(0, 'rgba(255,230,100,0.9)'); sg.addColorStop(0.5, 'rgba(255,200,50,0.4)'); sg.addColorStop(1, 'rgba(255,200,50,0)');
+            ctx.fillStyle = sg; ctx.fillRect(sunX - 55, sunY - 55, 110, 110);
         } else {
-            var mx = w * 0.7; var my = h * 0.1;
-            ctx.fillStyle = '#f0f0ff'; ctx.beginPath(); ctx.arc(mx, my, 12, 0, Math.PI * 2); ctx.fill();
-            var mg = ctx.createRadialGradient(mx, my, 12, mx, my, 35);
-            mg.addColorStop(0, 'rgba(200,200,255,0.2)'); mg.addColorStop(1, 'rgba(200,200,255,0)');
-            ctx.fillStyle = mg; ctx.fillRect(mx - 40, my - 40, 80, 80);
+            var mx = w * 0.7; var my = h * 0.12;
+            ctx.fillStyle = '#f0f0ff'; ctx.beginPath(); ctx.arc(mx, my, 15, 0, Math.PI * 2); ctx.fill();
+            var mg = ctx.createRadialGradient(mx, my, 15, mx, my, 45);
+            mg.addColorStop(0, 'rgba(200,200,255,0.3)'); mg.addColorStop(1, 'rgba(200,200,255,0)');
+            ctx.fillStyle = mg; ctx.fillRect(mx - 50, my - 50, 100, 100);
         }
 
-        /* Far mountains */
+        /* Far mountains - positioned in upper portion */
         var layer = this.layers[0];
         var ox = layer.offset;
         ctx.fillStyle = this._adjBri('#3d2a5c', this.ambientLight);
         ctx.beginPath();
-        ctx.moveTo(ox - 100, 140 + h * 0.35);
+        ctx.moveTo(ox - 100, h * 0.45);
         var pts = layer.elements;
         for (var pi = 1; pi < pts.length; pi++) {
-            ctx.lineTo(pts[pi].x + ox, pts[pi].y + h * 0.35);
+            ctx.lineTo(pts[pi].x + ox, pts[pi].y + h * 0.25);
         }
         ctx.closePath(); ctx.fill();
 
@@ -245,12 +245,12 @@ var ParallaxBackground = {
             if (sx < -80 || sx > w + 80) continue;
             if (el.type === 'tree') {
                 ctx.fillStyle = '#5a4030';
-                ctx.fillRect(sx - 2 * el.size, el.y + h * 0.3 - 15 * el.size, 4 * el.size, 15 * el.size);
+                ctx.fillRect(sx - 2 * el.size, el.y + h * 0.2 - 15 * el.size, 4 * el.size, 15 * el.size);
                 ctx.fillStyle = 'hsl(120,40%,' + (22 * el.size) + '%)';
-                ctx.beginPath(); ctx.arc(sx, el.y + h * 0.3 - 22 * el.size, 14 * el.size, 0, Math.PI * 2); ctx.fill();
+                ctx.beginPath(); ctx.arc(sx, el.y + h * 0.2 - 22 * el.size, 14 * el.size, 0, Math.PI * 2); ctx.fill();
             } else {
                 ctx.fillStyle = 'hsl(120,38%,' + (28 * el.size) + '%)';
-                ctx.beginPath(); ctx.arc(sx, el.y + h * 0.35, 10 * el.size, 0, Math.PI * 2); ctx.fill();
+                ctx.beginPath(); ctx.arc(sx, el.y + h * 0.25, 10 * el.size, 0, Math.PI * 2); ctx.fill();
             }
         }
 
@@ -262,7 +262,7 @@ var ParallaxBackground = {
 
         /* Warm glow at dawn/sunset */
         if (this.warmGlow > 0.05) {
-            var wg = ctx.createLinearGradient(0, h * 0.3, 0, h);
+            var wg = ctx.createLinearGradient(0, h * 0.4, 0, h);
             wg.addColorStop(0, 'rgba(255,150,50,0)');
             wg.addColorStop(1, 'rgba(255,100,50,' + (this.warmGlow * 0.25) + ')');
             ctx.fillStyle = wg; ctx.fillRect(0, 0, w, h);
@@ -273,19 +273,21 @@ var ParallaxBackground = {
         var layer = this.layers[2];
         var ox = layer.offset;
         var colors = ['#FF6B8A', '#FFD93D', '#A86BC8', '#FF9F43'];
+        var baseY = h * 0.85; /* Position near layer at bottom of screen */
         for (var fi = 0; fi < layer.elements.length; fi++) {
             var el = layer.elements[fi];
             var sx = el.x + ox;
             if (sx < -20 || sx > w + 20) continue;
+            var sy = baseY + el.y * 0.3;
             if (el.type === 'flower') {
                 ctx.fillStyle = colors[el.color];
-                ctx.beginPath(); ctx.arc(sx, el.y, 3 * el.size, 0, Math.PI * 2); ctx.fill();
+                ctx.beginPath(); ctx.arc(sx, sy, 3 * el.size, 0, Math.PI * 2); ctx.fill();
                 ctx.fillStyle = '#FFD93D';
-                ctx.beginPath(); ctx.arc(sx, el.y, 1.5 * el.size, 0, Math.PI * 2); ctx.fill();
+                ctx.beginPath(); ctx.arc(sx, sy, 1.5 * el.size, 0, Math.PI * 2); ctx.fill();
             } else {
                 ctx.strokeStyle = '#5DAF60'; ctx.lineWidth = 1.5 * el.size;
-                ctx.beginPath(); ctx.moveTo(sx, el.y); ctx.lineTo(sx - 2 * el.size, el.y - 7 * el.size); ctx.stroke();
-                ctx.beginPath(); ctx.moveTo(sx, el.y); ctx.lineTo(sx + 2 * el.size, el.y - 5 * el.size); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(sx - 2 * el.size, sy - 7 * el.size); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(sx + 2 * el.size, sy - 5 * el.size); ctx.stroke();
             }
         }
     }
