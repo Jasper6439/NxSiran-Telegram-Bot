@@ -1,34 +1,8 @@
 """
-车如云 Telegram Bot - Wispbyte 部署版
-=============================================
-Slim entry point - all command/handler logic extracted to packages/.
-
-功能：
-  [webhook] GitHub Webhook 自动部署（systemd 重启）
-  [ssh] SSH 密钥永久认证
-  [bridge] VM Bridge 命令桥接
-v3.5 Skill集成：
-  [agent-orchestration] 5层Prompt架构优化系统提示词
-  [gemini] Gemini API集成（备选AI + /gemini命令）
-  [vision-sandbox] 图片深度分析（Gemini Vision）
-  [deepread-ocr] 文档OCR文字提取（Gemini Vision替代）
-  [gemini-deep-research] 深度研究（/research命令）
-  [relay-for-telegram] Telegram消息历史搜索（/search_msg, /my_chats）
-v3.4 Skill集成：
-  [semantic-memory] 语义记忆系统（自动提取+搜索+删除）
-  [claw-summarize-pro] 摘要生成（文本/URL/回复消息）
-  [auto-updater] 自动更新检查（启动检测+版本管理）
-v3.2 新增：
-  [ui-ux-pro-max] 韩剧配色 Web 界面（聊天 + 仪表盘）
-v3.1 Skill整合：
-  [notebooklm] 从原作小说提取剧情/角色设定注入AI
-  [brainstorming] 深度角色设定 + OOC防护机制
-  [meeting-insights] /analyze 对话模式分析
-  [slack-gif-creator] /sticker 表情包生成
-v3.0 功能：
-  [情绪识别] [对话统计] [天气查询] [纪念日系统] [亲密度系统]
-  [生活事件] [表情反应] [打字模拟] [增强记忆] [个性化主动]
-原有功能：AI对话 + 6模型fallback + 长期记忆 + 主动消息 + 真人/AI自拍 + 场景生成 + 联网搜索 + 导出导入
+恋爱至上主义区域 - Telegram Bot 入口
+=====================================
+Slim entry point - command/handler logic extracted to packages/.
+Character modules in characters/, system modules in system/.
 """
 
 import asyncio
@@ -47,34 +21,29 @@ from aiohttp import web
 # Core imports
 # ============================================================
 
-# [Skill: TTS 语音合成]
+# TTS engine
 from tts_engine import TTSEngine
 
-# [统一 AI 调用模块]
 from ai_client import call_ai as ai_client_call_ai
 
-# [Phase 1 P0] 拆分模块
 from config import *
 from auth import *
 
-# [Phase 2] 提示词和文本处理
+# Prompts and text processing
 from prompts import *
 
-# [Phase 3] 拆分模块
 from memory_legacy import *
 from weather import *
 from anniversary import *
 from emotion import *
 from stats import *
 
-# [Phase 4] 拆分模块
 from image_gen import *
 from chat_history import *
 
-# [Skill: 小说知识库]
 from novel_knowledge import init_novel_knowledge
 
-# [角色系统] 支持多蒸馏角色动态加载
+# Character system
 from characters import (
     load_characters_from_dir,
     get_current_character,
@@ -122,12 +91,6 @@ from packages.handlers.message import (
 from packages.web.routes import register_routes
 
 # ============================================================
-# Package imports - Bridge routes
-# ============================================================
-
-
-
-# ============================================================
 # Package imports - Video import
 # ============================================================
 
@@ -135,7 +98,7 @@ from packages.importers.video import import_video_cmd, handle_video_import, get_
 from packages.analysis.chatlog import get_all_imported_relationships
 
 # ============================================================
-# Extracted modules (re-export for backward compatibility)
+# Re-exports for backward compatibility
 # ============================================================
 
 from ai_core import call_ai, summarize_and_save_memory  # re-export for backward compatibility
@@ -201,9 +164,9 @@ async def post_init(app: Application):
             logging.error(f"[Web Server] 启动失败: {e}", exc_info=True)
     asyncio.create_task(_safe_web_server())
     
-    # [Skill: proactive-agent] 启动主动行为后台任务
+    # 主动行为后台任务
     asyncio.create_task(check_proactive_actions(app))
-    # [Skill: auto-updater] 启动时检查更新
+    # 启动时检查更新
     async def _check_update_on_start():
         await asyncio.sleep(5)  # 等5秒让bot完全启动
         try:
@@ -222,7 +185,7 @@ async def post_init(app: Application):
         except Exception as e:
             logging.error(f"[自动更新] 启动检查失败: {e}")
     asyncio.create_task(_check_update_on_start())
-    # [Skill: TTS] 缓存清理
+    # TTS 缓存清理
     async def _cleanup_tts_cache():
         while True:
             await asyncio.sleep(3600)
@@ -297,7 +260,7 @@ def main():
 
     from config import BOT_VERSION, APP_NAME
     print(f"🚀 {APP_NAME} Telegram Bot v{BOT_VERSION} 启动中...")
-    print(f"📋 v{BOT_VERSION}: Webhook 自动部署 + systemd 服务管理")
+    print(f"📋 v{BOT_VERSION}: 角色扮演 + 游戏系统 + Web 界面")
 
     memory_count = len(load_json(get_user_memory_file(YOUR_CHAT_ID or 1), []))
     print(f"🧠 已加载 {memory_count} 条长期记忆")
@@ -350,9 +313,9 @@ def main():
 
     # Voice/Music/Novel commands
     app.add_handler(CommandHandler("voice", voice_cmd))
-    app.add_handler(CommandHandler("voicesample", voice_sample_cmd))  # [Skill: TTS v1.4.7.2] 上传声音语料
-    app.add_handler(CommandHandler("voicetrain", voice_train_cmd))    # [Skill: TTS v1.4.7.2] 训练声音模型
-    app.add_handler(CommandHandler("voicestatus", voice_status_cmd))  # [Skill: TTS v1.4.7.2] 查看训练状态
+    app.add_handler(CommandHandler("voicesample", voice_sample_cmd))
+    app.add_handler(CommandHandler("voicetrain", voice_train_cmd))
+    app.add_handler(CommandHandler("voicestatus", voice_status_cmd))
     app.add_handler(CommandHandler("music", music_cmd))
     app.add_handler(CommandHandler("novel", novel_cmd))
 
@@ -360,7 +323,7 @@ def main():
     app.add_handler(CommandHandler("learned", learned_cmd))
     app.add_handler(CommandHandler("forget", forget_cmd))
     app.add_handler(CommandHandler("search", search_memory_cmd))
-    app.add_handler(CommandHandler("semantic", qdrant_memory_cmd))  # [Skill: chromadb-memory] v1.4.7 语义记忆搜索
+    app.add_handler(CommandHandler("semantic", qdrant_memory_cmd))  # 语义记忆搜索
 
     # Summary commands
     app.add_handler(CommandHandler("summarize", summarize_cmd))
@@ -377,7 +340,7 @@ def main():
     app.add_handler(CommandHandler("tts", tts_voice_toggle))
     app.add_handler(CommandHandler("ttsstatus", tts_status_cmd))
 
-    # Face generation command (from image_gen)
+    # Face generation command
     app.add_handler(CommandHandler("genface", generate_face_image))
 
     # ============================================================
@@ -387,7 +350,7 @@ def main():
     app.add_handler(CallbackQueryHandler(button_callback))
     app.add_handler(MessageHandler(filters.PHOTO, handle_photo))
 
-    # Move to selfie command (inline definition - small enough to keep here)
+    # /toselfie 命令
     async def move_to_selfie(update: Update, context: ContextTypes.DEFAULT_TYPE):
         """将用户照片移到自拍相册"""
         chat_id = update.effective_chat.id
@@ -444,7 +407,7 @@ def main():
     print(f"📸 已加载 {count} 张自拍照片")
     print(f"🤖 AI模型: {AI_MODEL}")
 
-    # [Skill: LightRAG] 后台加载小说知识库
+    # 后台加载小说知识库
     def _init_knowledge_thread():
         try:
             loop = asyncio.new_event_loop()
