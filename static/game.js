@@ -3139,15 +3139,21 @@ Game.prototype._render = function() {
     var ctx = this.ctx;
     var w = this.canvasW;
     var h = this.canvasH;
+    var sc = this.sceneConfig;
 
-    /* Clear */
-    ctx.clearRect(0, 0, w, h);
+    /* Clear with dark color */
+    ctx.fillStyle = '#1a1a2e';
+    ctx.fillRect(0, 0, w, h);
 
     /* Disable smoothing for pixel art */
     ctx.imageSmoothingEnabled = false;
 
-    /* Parallax background (sky, sun/moon, mountains) */
-    ParallaxBackground.draw(ctx, w, h, Camera.x);
+    /* Calculate map bounds */
+    var mapW = sc ? sc.width * TILE : w;
+    var mapH = sc ? sc.height * TILE : h;
+
+    /* Parallax background - only within map bounds */
+    ParallaxBackground.draw(ctx, mapW, mapH, Camera.x);
 
     /* Map */
     this._renderMap(ctx);
@@ -3176,8 +3182,10 @@ Game.prototype._render = function() {
     /* Seed bar (above joystick) */
     SeedBar.draw(ctx, w, h);
 
-    /* Parallax near layer (flowers, grass) */
-    ParallaxBackground.drawNearLayer(ctx, w, h, Camera.x);
+    /* Parallax near layer (flowers, grass) - only within map bounds */
+    var mapW2 = sc ? sc.width * TILE : w;
+    var mapH2 = sc ? sc.height * TILE : h;
+    ParallaxBackground.drawNearLayer(ctx, mapW2, mapH2, Camera.x);
 
     /* Particle effects */
     ParticleSystem.draw(ctx, Camera.x, Camera.y);
