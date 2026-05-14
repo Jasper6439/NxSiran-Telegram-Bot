@@ -17,6 +17,30 @@ def _validate_farm_coords(x, y, farm):
     return 0 <= x < farm.get('gridWidth', 12) and 0 <= y < farm.get('gridHeight', 8)
 
 
+def _get_character_id(request) -> str:
+    """从请求中获取 character_id（query param > JSON body > 当前角色）"""
+    character = get_current_character()
+    default_id = character.config.id if character else 'chayewoon'
+
+    # 优先从 query param 获取
+    cid = request.query.get('character_id')
+    if cid:
+        return cid
+
+    # 其次从 JSON body 获取（仅 POST）
+    if request.body_exists:
+        try:
+            data = request.json()
+            if isinstance(data, dict):
+                cid = data.get('character_id')
+                if cid:
+                    return cid
+        except Exception:
+            pass
+
+    return default_id
+
+
 async def api_get_character_location(request):
     """获取角色当前位置"""
     try:
@@ -24,9 +48,7 @@ async def api_get_character_location(request):
         if err:
             return err
 
-        # 获取当前角色
-        character = get_current_character()
-        character_id = character.config.id if character else 'chayewoon'
+        character_id = _get_character_id(request)
 
         db = get_db()
 
@@ -65,10 +87,10 @@ async def api_interact_with_character(request):
         data = await request.json()
         interaction_type = data.get('type', 'chat')
         content = data.get('content', '')
+        character_id = data.get('character_id', _get_character_id(request))
 
-        # 获取当前角色
-        character = get_current_character()
-        character_id = character.config.id if character else 'chayewoon'
+        if not item_id:
+            return web.json_response({'success': False, 'error': '未指定物品'})
 
         db = get_db()
 
@@ -106,13 +128,7 @@ async def api_gift_to_character(request):
         data = await request.json()
         item_id = data.get('itemId')
         quantity = data.get('quantity', 1)
-
-        if not item_id:
-            return web.json_response({'success': False, 'error': '未指定物品'})
-
-        # 获取当前角色
-        character = get_current_character()
-        character_id = character.config.id if character else 'chayewoon'
+        character_id = data.get('character_id', _get_character_id(request))
 
         db = get_db()
 

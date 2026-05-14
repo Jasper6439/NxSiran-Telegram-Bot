@@ -6,7 +6,7 @@
 
 - **Name:** 恋爱至上主义区域 (Love Supremacy Zone)
 - **Type:** Telegram Bot + Web Game — 恋爱模拟 RPG
-- **Current Version:** v1.6.3
+- **Current Version:** v1.6.4
 - **Repository:** `Jasper6439/NxSiran-Telegram-Bot`
 - **Language:** Python 3.11+
 
@@ -127,12 +127,12 @@ bot.py                          # 唯一入口，python-telegram-bot Application
 | Version | Feature | Status |
 |---------|---------|--------|
 | v1.6.3 | Front-end/back-end game state sync | Done |
-| v1.6.4 | Multi-character support | Planned |
+| v1.6.4 | Multi-character support | Done |
 | v1.6.5 | Mobile touch controls | Planned |
 
 ## Key Design Decisions
 
-1. **Single character for now** — Only 车如云 (Cha Yeo-woon) is implemented. Multi-character architecture exists in `characters/base.py` but not yet activated.
+1. **Multi-character framework** — `characters/` 目录下每个子目录（含 `config.json`）自动发现并加载为独立角色。当前已实现：车如云。新增角色只需创建目录 + config.json + 可选的 `{char_id}.py`。`database._ensure_relationships()` 自动为所有已注册角色创建关系记录。
 2. **Dual prompt system** — `system/prompts.py` has legacy `SYSTEM_PROMPT`; `characters/chayewoon.py` has `get_system_prompt()` with awakening/world-level awareness. The chayewoon version is authoritative.
 3. **Web + Telegram dual interface** — `chat_engine.py` provides unified chat processing for both web and Telegram.
 4. **Qdrant for semantic memory** — Replaces ChromaDB. Remote Qdrant Cloud with LRU cache (500 entries).

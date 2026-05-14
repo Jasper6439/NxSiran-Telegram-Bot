@@ -6,7 +6,7 @@
 
 | 模块 | 职责 | 主要导出 |
 |------|------|----------|
-| `__init__.py` | 角色注册表，多蒸馏角色动态加载 | `get_current_character`, `set_current_character`, `list_characters` |
+| `__init__.py` | 角色注册表，多角色自动发现与动态加载 | `get_current_character`, `set_current_character`, `list_characters`, `get_all_character_ids`, `load_characters_from_dir` |
 | `base.py` | CharacterBase 抽象基类, CharacterConfig 数据类 | `CharacterBase`, `CharacterConfig` |
 | `chayewoon.py` | 车如云角色实现（完整蒸馏版） | `Character` |
 | `ai_client.py` | AI API 统一调用层, 模型 fallback 机制 | `call_ai`, `MAX_HISTORY_MESSAGES` |

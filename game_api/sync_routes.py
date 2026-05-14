@@ -91,9 +91,10 @@ async def api_get_emotion_values(request):
         if err:
             return err
 
-
-        character = get_current_character()
-        character_id = character.config.id if character else 'chayewoon'
+        character_id = request.query.get('character_id')
+        if not character_id:
+            character = get_current_character()
+            character_id = character.config.id if character else 'chayewoon'
 
         db = get_db()
         emotions = db.get_emotion_values(user_id, character_id)
@@ -116,9 +117,10 @@ async def api_check_awakening(request):
         if err:
             return err
 
-
-        character = get_current_character()
-        character_id = character.config.id if character else 'chayewoon'
+        character_id = request.query.get('character_id')
+        if not character_id:
+            character = get_current_character()
+            character_id = character.config.id if character else 'chayewoon'
 
         db = get_db()
         check_result = db.check_awakening_conditions(user_id, character_id)
@@ -147,9 +149,10 @@ async def api_trigger_awakening(request):
 
         data = await request.json()
         event_name = data.get('event_name', 'default_awakening')
-
-        character = get_current_character()
-        character_id = character.config.id if character else 'chayewoon'
+        character_id = data.get('character_id')
+        if not character_id:
+            character = get_current_character()
+            character_id = character.config.id if character else 'chayewoon'
 
         db = get_db()
         result = db.trigger_awakening(user_id, character_id, event_name)

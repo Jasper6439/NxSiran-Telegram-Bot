@@ -41,8 +41,13 @@ def _bump_version(user_id: int) -> int:
     return new_version
 
 
-def serialize_game_state(user_id: int) -> dict:
-    """序列化完整游戏状态（与 api_get_full_game_state 保持一致的数据结构）"""
+def serialize_game_state(user_id: int, character_id: str = None) -> dict:
+    """序列化完整游戏状态（与 api_get_full_game_state 保持一致的数据结构）
+
+    Args:
+        user_id: 用户 ID
+        character_id: 角色 ID（可选，默认使用当前角色）
+    """
     db = get_db()
 
     # 确保用户和农场存在
@@ -58,8 +63,9 @@ def serialize_game_state(user_id: int) -> dict:
     crop_types = db.get_crop_types()
 
     # 获取角色关系
-    character = get_current_character()
-    character_id = character.config.id if character else 'chayewoon'
+    if not character_id:
+        character = get_current_character()
+        character_id = character.config.id if character else 'chayewoon'
     relationship = db.get_relationship(user_id, character_id)
     emotion_values = db.get_emotion_values(user_id, character_id)
 

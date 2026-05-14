@@ -151,7 +151,10 @@ class GameDatabase:
                     "UPDATE users SET last_active = ?, username = ? WHERE id = ?",
                     (datetime.now(get_default_tz()).isoformat(), username, row['id'])
                 )
-                return row['id']
+                user_id = row['id']
+                # v1.6.4: 为新注册的角色补充关系记录
+                self._ensure_relationships(conn, user_id)
+                return user_id
 
             # 创建新用户
             now = datetime.now(get_default_tz()).isoformat()
@@ -168,16 +171,33 @@ class GameDatabase:
                 (user_id, now)
             )
 
-            # 创建与车如云的关系（初始化情感值）
-            conn.execute(
-                """INSERT INTO relationships (user_id, character_id, created_at,
-                                              affection, happiness, awakening, world_layer)
-                   VALUES (?, ?, ?, ?, ?, ?, ?)""",
-                (user_id, 'chayewoon', now, 0, 50, 0, 'normal')
-            )
+            # v1.6.4: 为所有已注册角色创建关系
+            self._ensure_relationships(conn, user_id)
 
             logger.info(f"[DB] 创建新用户: telegram_id={telegram_id}, user_id={user_id}")
             return user_id
+
+    def _ensure_relationships(self, conn, user_id: int):
+        """确保用户与所有已注册角色都有关系记录"""
+        try:
+            from characters import get_all_character_ids
+            character_ids = get_all_character_ids()
+        except Exception:
+            character_ids = ['chayewoon']
+
+        now = datetime.now(get_default_tz()).isoformat()
+        for char_id in character_ids:
+            cursor = conn.execute(
+                "SELECT 1 FROM relationships WHERE user_id = ? AND character_id = ?",
+                (user_id, char_id)
+            )
+            if not cursor.fetchone():
+                conn.execute(
+                    """INSERT INTO relationships (user_id, character_id, created_at,
+                                                  affection, happiness, awakening, world_layer)
+                       VALUES (?, ?, ?, ?, ?, ?, ?)""",
+                    (user_id, char_id, now, 0, 50, 0, 'normal')
+                )
 
     def get_user_by_telegram_id(self, telegram_id: int) -> Optional[Dict]:
         """通过 Telegram ID 获取用户"""
