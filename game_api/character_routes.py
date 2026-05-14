@@ -1,4 +1,4 @@
-# 角色互动 API
+# 角色互动 API - 修复版
 
 import logging
 from datetime import datetime
@@ -18,7 +18,6 @@ async def api_get_character_location(request):
         if err:
             return err
 
-
         # 获取当前角色
         character = get_current_character()
         character_id = character.config.id if character else 'chayewoon'
@@ -28,15 +27,21 @@ async def api_get_character_location(request):
         # 获取位置
         location = db.get_character_location(character_id)
 
-        # 获取关系
-        relationship = db.get_relationship(user_id, character_id) if user_id else None
+        if not location:
+            # 默认位置
+            return web.json_response({
+                'success': True,
+                'location': {
+                    'scene': 'farm',
+                    'x': 5,
+                    'y': 14,
+                    'direction': 'down'
+                }
+            })
 
         return web.json_response({
             'success': True,
-            'character_id': character_id,
-            'character_name': character.config.name if character else '车如云',
-            'location': location,
-            'relationship': relationship
+            'location': location
         })
 
     except Exception as e:
@@ -44,16 +49,16 @@ async def api_get_character_location(request):
         return web.json_response({'success': False, 'error': str(e)})
 
 
-async def api_get_relationship(request):
-    """获取玩家与角色的关系"""
+async def api_interact_with_character(request):
+    """与角色互动"""
     try:
         user_id, err = await authenticate_request(request)
         if err:
             return err
 
-
-        if not user_id:
-            return web.json_response({'success': False, 'error': '未登录'})
+        data = await request.json()
+        interaction_type = data.get('type', 'chat')
+        content = data.get('content', '')
 
         # 获取当前角色
         character = get_current_character()
@@ -61,125 +66,40 @@ async def api_get_relationship(request):
 
         db = get_db()
 
-        # 获取关系
-        relationship = db.get_relationship(user_id, character_id)
-
-        # 获取可触发事件
-        available_events = db.get_available_events(user_id, character_id)
-
-        return web.json_response({
-            'success': True,
-            'relationship': relationship,
-            'available_events': available_events
-        })
-
-    except Exception as e:
-        logger.error(f"[Game API] 获取关系失败: {e}")
-        return web.json_response({'success': False, 'error': str(e)})
-
-
-async def api_game_chat(request):
-    """游戏内与角色对话 (v0.2 - 使用 ChatEngine)"""
-    try:
-        user_id, err = await authenticate_request(request)
-        if err:
-            return err
-
-
-        data = await request.json()
-        message = data.get('message', '')
-        character_id = data.get('character_id', 'chayewoon')
-
-        if not message:
-            return web.json_response({'success': False, 'error': '消息不能为空'})
-
-        # 使用 ChatEngine
-        from chat_engine import chat_with_character
-        from database import get_db
-
-        db = get_db()
-        location = db.get_character_location(character_id)
-        location_text = location['location'] if location else ''
-
-        # 获取当前情感值
-        emotion_values = db.get_emotion_values(user_id, character_id)
-
-        result = await chat_with_character(
-            character_id=character_id,
-            user_id=user_id,
-            user_message=message,
-            context={
-                'platform': 'web',
-                'location': location_text,
-                'emotion_values': emotion_values,
-            }
+        # 记录互动
+        db.add_relationship_history(
+            user_id, character_id,
+            interaction_type, content,
+            0  # hearts_delta
         )
 
-        # 应用觉醒情感奖励
-        if result.get('awakening_triggered') and result['awakening_triggered'].get('emotion_bonus'):
-            bonus = result['awakening_triggered']['emotion_bonus']
-            for key, value in bonus.items():
-                result['emotion_changes'][key] = result['emotion_changes'].get(key, 0) + value
+        # 获取更新后的关系
+        relationship = db.get_relationship(user_id, character_id)
 
         return web.json_response({
             'success': True,
-            'response': result['response'],
-            'character_name': result['character_name'],
-            'character_id': result['character_id'],
-            'emotion_changes': result['emotion_changes'],
-            'awakening_triggered': result['awakening_triggered'],
-            'memory_saved': result['memory_saved'],
+            'hearts': relationship['hearts'] if relationship else 0,
+            'relationshipStatus': relationship['relationship_status'] if relationship else 'stranger'
         })
 
     except Exception as e:
-        logger.error(f"[Game API] 游戏对话失败: {e}")
+        logger.error(f"[Game API] 互动失败: {e}")
         return web.json_response({'success': False, 'error': str(e)})
 
 
-async def api_chat_history(request):
-    """获取对话历史 (v0.2)"""
+async def api_gift_to_character(request):
+    """赠送礼物给角色"""
     try:
         user_id, err = await authenticate_request(request)
         if err:
             return err
-        from database import get_db
-
-        character_id = request.query.get('character_id', 'chayewoon')
-        limit = int(request.query.get('limit', 50))
-
-        db = get_db()
-        history = db.get_chat_history(user_id, character_id, limit)
-
-        return web.json_response({'success': True, 'history': history})
-    except Exception as e:
-        return web.json_response({'success': False, 'error': str(e)})
-
-
-async def api_awakening_events(request):
-    """获取觉醒事件列表 (v0.2)"""
-    try:
-        character_id = request.query.get('character_id', 'chayewoon')
-
-        from awakening_detector import AwakeningDetector
-        detector = AwakeningDetector()
-        events = detector.get_all_events(character_id)
-
-        return web.json_response({'success': True, 'events': events})
-    except Exception as e:
-        return web.json_response({'success': False, 'error': str(e)})
-
-
-async def api_gift_character(request):
-    """给角色送礼物"""
-    try:
-        user_id, err = await authenticate_request(request)
-        if err:
-            return err
-
 
         data = await request.json()
-        item_type = data.get('item_type', 'crop')
-        item_id = data.get('item_id', '')
+        item_id = data.get('itemId')
+        quantity = data.get('quantity', 1)
+
+        if not item_id:
+            return web.json_response({'success': False, 'error': '未指定物品'})
 
         # 获取当前角色
         character = get_current_character()
@@ -188,120 +108,293 @@ async def api_gift_character(request):
         db = get_db()
 
         # 检查背包
-        if not db.remove_item(user_id, item_type, item_id):
-            return web.json_response({
-                'success': False,
-                'error': '背包里没有这个物品'
-            })
+        inventory_item = db.get_inventory_item(user_id, 'crop', item_id)
+        if not inventory_item or inventory_item['quantity'] < quantity:
+            return web.json_response({'success': False, 'error': '背包中物品不足'})
 
-        # 获取物品信息
-        item_info = db.get_crop_type(item_id) if item_type == 'crop' else None
-        item_name = item_info['name'] if item_info else item_id
+        # 扣除物品
+        if not db.remove_item(user_id, 'crop', item_id, quantity):
+            return web.json_response({'success': False, 'error': '扣除物品失败'})
 
-        # 判断喜好（简化版，实际应该从角色配置读取）
-        # 车如云喜欢：红豆相关、甜食
-        # 不喜欢：苦的、辣的
-        reaction = 'neutral'
-        hearts_change = 1
+        # 计算好感度变化
+        hearts_delta = quantity * 5
 
-        if item_id in ['strawberry', 'watermelon']:
-            reaction = 'like'
-            hearts_change = 2
-        elif 'tomato' in item_id:
-            reaction = 'neutral'
-            hearts_change = 1
-        else:
-            reaction = 'neutral'
-            hearts_change = 1
+        # 更新关系
+        db.update_relationship(user_id, character_id, hearts_delta)
 
-        # 更新心级
-        new_hearts = db.update_hearts(user_id, character_id, hearts_change)
+        # 记录互动
+        db.add_relationship_history(
+            user_id, character_id,
+            'gift', f'赠送了 {quantity} 个 {item_id}',
+            hearts_delta
+        )
 
-        # 记录礼物
-        now = datetime.now(get_default_tz()).isoformat()
-        with db.get_connection() as conn:
-            conn.execute(
-                """INSERT INTO gift_history (user_id, character_id, item_type, item_id, reaction, hearts_change, gifted_at)
-                   VALUES (?, ?, ?, ?, ?, ?, ?)""",
-                (user_id, character_id, item_type, item_id, reaction, hearts_change, now)
-            )
-
-        # 生成角色反应
-        reaction_prompts = {
-            'love': f"学长送了我最喜欢的{item_name}，用一句话害羞地回应，不超过15个字",
-            'like': f"学长送了我{item_name}，挺喜欢的，用一句话简短回应，不超过15个字",
-            'neutral': f"学长送了我{item_name}，用一句话简短回应，不超过15个字",
-            'dislike': f"学长送了我{item_name}，不太喜欢，用一句话简短回应，不超过15个字",
-        }
-
-        from ai_client import call_ai
-        response = await call_ai(reaction_prompts.get(reaction, reaction_prompts['neutral']))
-
-        # 记录事件
-        db.log_game_event(user_id, 'gift', {
-            'item_type': item_type,
-            'item_id': item_id,
-            'reaction': reaction,
-            'hearts_change': hearts_change
-        }, 'web')
+        # 获取更新后的关系
+        relationship = db.get_relationship(user_id, character_id)
 
         return web.json_response({
             'success': True,
-            'reaction': reaction,
-            'hearts_change': hearts_change,
-            'new_hearts': new_hearts,
-            'response': response
+            'hearts': relationship['hearts'],
+            'relationshipStatus': relationship['relationship_status'],
+            'heartsDelta': hearts_delta
         })
 
     except Exception as e:
-        logger.error(f"[Game API] 送礼失败: {e}")
+        logger.error(f"[Game API] 赠送礼物失败: {e}")
         return web.json_response({'success': False, 'error': str(e)})
 
 
-async def api_sync_actions(request):
-    """增量同步操作"""
+async def api_move_player(request):
+    """移动玩家位置"""
     try:
         user_id, err = await authenticate_request(request)
         if err:
             return err
 
+        data = await request.json()
+        x = data.get('x')
+        y = data.get('y')
+        direction = data.get('direction', 'down')
+        scene = data.get('scene', 'farm')
+
+        if x is None or y is None:
+            return web.json_response({'success': False, 'error': '缺少坐标'})
+
+        # 坐标范围校验
+        if not (0 <= x <= 1000 and 0 <= y <= 1000):
+            return web.json_response({'success': False, 'error': '坐标超出合理范围'})
+
+        db = get_db()
+        db.save_player_position(user_id, x, y, direction, scene)
+
+        return web.json_response({'success': True, 'x': x, 'y': y, 'direction': direction, 'scene': scene})
+
+    except Exception as e:
+        logger.error(f"[Game API] 移动失败: {e}")
+        return web.json_response({'success': False, 'error': str(e)})
+
+
+async def api_sync_actions(request):
+    """增量同步操作 - 服务器端验证版"""
+    try:
+        user_id, err = await authenticate_request(request)
+        if err:
+            return err
 
         data = await request.json()
         actions = data.get('actions', [])
+        client_timestamp = data.get('timestamp', 0)
+
+        # 时间戳校验（防止重放攻击，允许±5分钟误差）
+        server_time = datetime.now(get_default_tz()).timestamp()
+        if abs(server_time - client_timestamp) > 300:
+            return web.json_response({'success': False, 'error': '请求时间戳无效'}, status=400)
 
         db = get_db()
         processed = 0
+        failed = 0
+        results = []
+
+        # 获取农场和背包信息（用于验证）
+        farm = db.get_or_create_farm(user_id)
+        farm_id = farm['id']
+        inventory = {f"{item['item_type']}:{item['item_id']}": item['quantity']
+                     for item in db.get_inventory(user_id)}
 
         for action in actions:
             try:
                 action_type = action.get('type')
+                action_id = action.get('id', '')
+                result = {'id': action_id, 'type': action_type, 'success': False}
+
                 if action_type == 'plant':
-                    farm = db.get_farm(user_id)
-                    if farm:
-                        db.plant_crop(farm['id'], action['x'], action['y'], action['cropType'])
+                    # 验证：1)坐标合法 2)有种子 3)地块为空
+                    x, y = action.get('x'), action.get('y')
+                    crop_type = action.get('cropType')
+                    seed_key = f"seed:{crop_type}"
+
+                    # 坐标范围校验
+                    if not (0 <= x < farm.get('gridWidth', 12) and 0 <= y < farm.get('gridHeight', 8)):
+                        result['error'] = '坐标超出范围'
+                        results.append(result)
+                        failed += 1
+                        continue
+
+                    # 检查是否有种子
+                    if inventory.get(seed_key, 0) < 1:
+                        result['error'] = '背包中没有该种子'
+                        results.append(result)
+                        failed += 1
+                        continue
+
+                    # 检查地块是否已有作物
+                    existing_crops = db.get_crops(farm_id)
+                    if any(c['tile_x'] == x and c['tile_y'] == y for c in existing_crops):
+                        result['error'] = '该地块已有作物'
+                        results.append(result)
+                        failed += 1
+                        continue
+
+                    # 执行种植：扣除种子，添加作物
+                    if db.remove_item(user_id, 'seed', crop_type, 1):
+                        db.plant_crop(farm_id, x, y, crop_type)
+                        inventory[seed_key] = inventory.get(seed_key, 0) - 1
+                        result['success'] = True
+                        processed += 1
+                    else:
+                        result['error'] = '扣除种子失败'
+                        failed += 1
+
                 elif action_type == 'harvest':
-                    farm = db.get_farm(user_id)
-                    if farm:
-                        crop_type = db.harvest_crop(farm['id'], action['x'], action['y'])
-                        if crop_type:
-                            db.add_item(user_id, 'crop', crop_type, 1)
+                    # 验证：1)坐标合法 2)作物可收获
+                    x, y = action.get('x'), action.get('y')
+
+                    # 坐标范围校验
+                    if not (0 <= x < farm.get('gridWidth', 12) and 0 <= y < farm.get('gridHeight', 8)):
+                        result['error'] = '坐标超出范围'
+                        results.append(result)
+                        failed += 1
+                        continue
+
+                    # 收获作物（数据库会检查是否可收获）
+                    crop_type = db.harvest_crop(farm_id, x, y)
+                    if crop_type:
+                        # 添加作物到背包
+                        db.add_item(user_id, 'crop', crop_type, 1)
+                        result['success'] = True
+                        result['cropType'] = crop_type
+                        processed += 1
+                    else:
+                        result['error'] = '该作物不可收获或不存在'
+                        failed += 1
+
                 elif action_type == 'water':
-                    farm = db.get_farm(user_id)
-                    if farm:
-                        db.water_crop(farm['id'], action['x'], action['y'])
+                    # 验证：1)坐标合法 2)有作物
+                    x, y = action.get('x'), action.get('y')
+
+                    if not (0 <= x < farm.get('gridWidth', 12) and 0 <= y < farm.get('gridHeight', 8)):
+                        result['error'] = '坐标超出范围'
+                        results.append(result)
+                        failed += 1
+                        continue
+
+                    # 浇水
+                    if db.water_crop(farm_id, x, y):
+                        result['success'] = True
+                        processed += 1
+                    else:
+                        result['error'] = '浇水失败，可能该地块没有作物'
+                        failed += 1
+
                 elif action_type == 'buy_seed':
-                    # Already processed client-side
-                    pass
+                    # 服务器端验证购买
+                    crop_type = action.get('cropType')
+                    quantity = action.get('quantity', 1)
+                    price = action.get('price', 10) * quantity
+
+                    # 获取作物类型定义验证价格
+                    crop_types = {ct['id']: ct for ct in db.get_crop_types()}
+                    if crop_type not in crop_types:
+                        result['error'] = '无效的作物类型'
+                        results.append(result)
+                        failed += 1
+                        continue
+
+                    expected_price = crop_types[crop_type].get('seed_price', 10) * quantity
+                    if price != expected_price:
+                        result['error'] = '价格验证失败'
+                        results.append(result)
+                        failed += 1
+                        continue
+
+                    # 检查金币（从农场数据中获取）
+                    current_money = farm.get('money', 0)
+                    if current_money < price:
+                        result['error'] = '金币不足'
+                        results.append(result)
+                        failed += 1
+                        continue
+
+                    # 扣除金币，添加种子
+                    db.update_farm(user_id, money=current_money - price)
+                    db.add_item(user_id, 'seed', crop_type, quantity)
+                    farm['money'] = current_money - price
+                    inventory[f"seed:{crop_type}"] = inventory.get(f"seed:{crop_type}", 0) + quantity
+                    result['success'] = True
+                    result['money'] = farm['money']
+                    processed += 1
+
                 elif action_type == 'sell':
-                    # Already processed client-side
-                    pass
+                    # 服务器端验证出售
+                    item_type = action.get('itemType', 'crop')
+                    item_id = action.get('itemId')
+                    quantity = action.get('quantity', 1)
+                    price = action.get('price', 5) * quantity
+
+                    # 验证背包中有足够物品
+                    item_key = f"{item_type}:{item_id}"
+                    if inventory.get(item_key, 0) < quantity:
+                        result['error'] = '背包中物品数量不足'
+                        results.append(result)
+                        failed += 1
+                        continue
+
+                    # 获取作物类型定义验证价格
+                    crop_types = {ct['id']: ct for ct in db.get_crop_types()}
+                    expected_price = crop_types.get(item_id, {}).get('sell_price', 5) * quantity
+                    if price != expected_price:
+                        result['error'] = '价格验证失败'
+                        results.append(result)
+                        failed += 1
+                        continue
+
+                    # 扣除物品，添加金币
+                    if db.remove_item(user_id, item_type, item_id, quantity):
+                        current_money = farm.get('money', 0)
+                        db.update_farm(user_id, money=current_money + price)
+                        farm['money'] = current_money + price
+                        inventory[item_key] = inventory.get(item_key, 0) - quantity
+                        result['success'] = True
+                        result['money'] = farm['money']
+                        processed += 1
+                    else:
+                        result['error'] = '扣除物品失败'
+                        failed += 1
+
                 elif action_type == 'move':
-                    db.save_player_position(user_id, action['x'], action['y'], action.get('direction', 'down'))
-                processed += 1
+                    # 移动位置
+                    x, y = action.get('x'), action.get('y')
+                    direction = action.get('direction', 'down')
+
+                    # 坐标范围校验
+                    if not (0 <= x <= 1000 and 0 <= y <= 1000):
+                        result['error'] = '坐标超出合理范围'
+                        results.append(result)
+                        failed += 1
+                        continue
+
+                    db.save_player_position(user_id, x, y, direction)
+                    result['success'] = True
+                    processed += 1
+
+                else:
+                    result['error'] = '未知的动作类型'
+                    failed += 1
+
+                results.append(result)
+
             except Exception as e:
                 logger.warning(f"[Game API] 同步操作失败: {action_type} - {e}")
+                results.append({'id': action_id, 'type': action_type, 'success': False, 'error': str(e)})
+                failed += 1
 
-        return web.json_response({'success': True, 'processed': processed})
+        return web.json_response({
+            'success': True,
+            'processed': processed,
+            'failed': failed,
+            'results': results,
+            'money': farm.get('money', 0)
+        })
 
     except Exception as e:
         logger.error(f"[Game API] 同步失败: {e}")

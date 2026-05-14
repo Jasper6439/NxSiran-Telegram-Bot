@@ -2,6 +2,7 @@
 /**
  * NxSiran Game - State Machine
  * Reducer + Publish/Subscribe pattern (inspired by Sunflower Land)
+ * Architecture: Stateless Server + Data-Driven Frontend
  */
 (function () {
     'use strict';
@@ -11,6 +12,167 @@
     var CROP_GROWTH_TIMES = {
         tomato: 180, corn: 240, strawberry: 300, pumpkin: 360,
         watermelon: 420, potato: 120, carrot: 150, cabbage: 180
+    };
+
+    // ── LocalStorage Keys ──────────────────────────────────────
+    var STORAGE_KEYS = {
+        GAME_STATE: 'nxsiran_game_state',
+        FARM_DATA: 'nxsiran_farm_data',
+        INVENTORY: 'nxsiran_inventory',
+        LAST_SYNC: 'nxsiran_last_sync',
+        PENDING_ACTIONS: 'nxsiran_pending_actions'
+    };
+
+    // ── FarmModel: Data Management Layer ───────────────────────
+    var FarmModel = {
+        // 作物配置表 (Config Table)
+        cropTypes: {},
+
+        // 地块状态机
+        crops: {},
+
+        // 农场元数据
+        farmMeta: {
+            id: 0, name: '我的农场', money: 500,
+            level: 1, exp: 0, gridWidth: 12, gridHeight: 8
+        },
+
+        // 初始化
+        init: function(cropTypes, farmMeta) {
+            this.cropTypes = cropTypes || {};
+            this.farmMeta = farmMeta || this.farmMeta;
+            this.loadFromStorage();
+        },
+
+        // 计算作物生长阶段 (客户端实时计算)
+        calculateGrowthStage: function(crop) {
+            var now = Date.now();
+            var growthTime = (CROP_GROWTH_TIMES[crop.type] || 180) * 1000;
+            var elapsed = now - crop.plantedAt;
+
+            // 浇水加速 (每级25%)
+            var speedMultiplier = 1 + (crop.waterLevel || 0) * 0.25;
+            var effectiveElapsed = elapsed * speedMultiplier;
+
+            if (effectiveElapsed >= growthTime) return 3; // 成熟
+            if (effectiveElapsed >= growthTime * 0.6) return 2; // 生长中
+            if (effectiveElapsed >= growthTime * 0.2) return 1; // 发芽
+            return 0; // 种子
+        },
+
+        // 获取作物完整状态
+        getCropState: function(x, y) {
+            var key = x + ',' + y;
+            var crop = this.crops[key];
+            if (!crop) return null;
+
+            var stage = this.calculateGrowthStage(crop);
+            return {
+                x: x, y: y,
+                type: crop.type,
+                stage: stage,
+                harvestable: stage === 3,
+                waterLevel: crop.waterLevel || 0,
+                plantedAt: crop.plantedAt,
+                progress: Math.min(1, (Date.now() - crop.plantedAt) / ((CROP_GROWTH_TIMES[crop.type] || 180) * 1000))
+            };
+        },
+
+        // 种植
+        plant: function(x, y, cropType) {
+            var key = x + ',' + y;
+            if (this.crops[key]) return false; // 已有作物
+
+            this.crops[key] = {
+                type: cropType,
+                plantedAt: Date.now(),
+                waterLevel: 0
+            };
+            this.saveToStorage();
+            return true;
+        },
+
+        // 收获
+        harvest: function(x, y) {
+            var key = x + ',' + y;
+            var crop = this.crops[key];
+            if (!crop) return null;
+
+            var stage = this.calculateGrowthStage(crop);
+            if (stage < 3) return null; // 未成熟
+
+            var cropType = crop.type;
+            delete this.crops[key];
+            this.saveToStorage();
+            return cropType;
+        },
+
+        // 浇水
+        water: function(x, y) {
+            var key = x + ',' + y;
+            var crop = this.crops[key];
+            if (!crop) return false;
+            if (crop.waterLevel >= 3) return false; // 已满
+
+            crop.waterLevel = (crop.waterLevel || 0) + 1;
+            this.saveToStorage();
+            return true;
+        },
+
+        // 获取所有作物状态
+        getAllCrops: function() {
+            var result = [];
+            for (var key in this.crops) {
+                var parts = key.split(',');
+                result.push(this.getCropState(parseInt(parts[0]), parseInt(parts[1])));
+            }
+            return result;
+        },
+
+        // 从 LocalStorage 加载
+        loadFromStorage: function() {
+            try {
+                var saved = localStorage.getItem(STORAGE_KEYS.FARM_DATA);
+                if (saved) {
+                    var data = JSON.parse(saved);
+                    this.crops = data.crops || {};
+                    this.farmMeta = data.farmMeta || this.farmMeta;
+                }
+            } catch (e) {
+                console.warn('[FarmModel] 加载本地数据失败:', e);
+            }
+        },
+
+        // 保存到 LocalStorage
+        saveToStorage: function() {
+            try {
+                var data = {
+                    crops: this.crops,
+                    farmMeta: this.farmMeta,
+                    savedAt: Date.now()
+                };
+                localStorage.setItem(STORAGE_KEYS.FARM_DATA, JSON.stringify(data));
+            } catch (e) {
+                console.warn('[FarmModel] 保存本地数据失败:', e);
+            }
+        },
+
+        // 从服务器同步数据
+        syncFromServer: function(serverData) {
+            if (serverData.crops) {
+                this.crops = serverData.crops;
+            }
+            if (serverData.farm) {
+                this.farmMeta = serverData.farm;
+            }
+            this.saveToStorage();
+        },
+
+        // 导出待同步的操作
+        getPendingSync: function() {
+            // 返回需要同步到服务器的变更
+            return this.getAllCrops();
+        }
     };
 
     // ── Initial State ──────────────────────────────────────────
@@ -388,11 +550,46 @@
         });
     }
 
+    // ── LocalStorage Persistence ───────────────────────────────
+    function loadStateFromStorage() {
+        try {
+            var saved = localStorage.getItem(STORAGE_KEYS.GAME_STATE);
+            if (saved) {
+                var data = JSON.parse(saved);
+                // 只恢复游戏状态，不覆盖服务器数据
+                if (data.pendingActions) {
+                    _state.pendingActions = data.pendingActions;
+                }
+                if (data.lastSave) {
+                    _state.lastSave = data.lastSave;
+                }
+            }
+        } catch (e) {
+            console.warn('[GameState] 加载本地状态失败:', e);
+        }
+    }
+
+    function saveStateToStorage() {
+        try {
+            _state.lastSave = Date.now();
+            localStorage.setItem(STORAGE_KEYS.GAME_STATE, JSON.stringify({
+                pendingActions: _state.pendingActions,
+                lastSave: _state.lastSave
+            }));
+        } catch (e) {
+            console.warn('[GameState] 保存本地状态失败:', e);
+        }
+    }
+
+    // 定期保存到本地
+    setInterval(saveStateToStorage, 30000); // 每30秒保存一次
+
     // ── Export ─────────────────────────────────────────────────
     window.GameState = {
         INITIAL_STATE: INITIAL_STATE,
         CROP_STAGES: CROP_STAGES,
         CROP_GROWTH_TIMES: CROP_GROWTH_TIMES,
+        FarmModel: FarmModel,  // 统一数据管理类
         dispatch: dispatch,
         subscribe: subscribe,
         getState: getState,
@@ -402,6 +599,8 @@
         getCropName: getCropName,
         getCropEmoji: getCropEmoji,
         deepClone: deepClone,
+        loadFromStorage: loadStateFromStorage,
+        saveToStorage: saveStateToStorage,
         // 世界观相关方法
         getEmotionValues: getEmotionValues,
         updateEmotionValues: updateEmotionValues,
