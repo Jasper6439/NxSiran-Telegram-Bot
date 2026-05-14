@@ -23,9 +23,58 @@ const PAGE_TITLES = {
 };
 
 /* ================================================================
+   Telegram WebApp Integration
+   ================================================================ */
+const tg = window.Telegram?.WebApp;
+let tgUser = null;
+
+// 初始化 Telegram WebApp
+function initTelegramWebApp() {
+    if (!tg) {
+        console.log('Not running in Telegram WebApp');
+        return false;
+    }
+    
+    // 初始化
+    tg.ready();
+    tg.expand();
+    
+    // 设置颜色主题
+    try {
+        tg.setHeaderColor('#7B2D8E');
+        tg.setBackgroundColor('#EDE7F6');
+    } catch (e) {
+        console.log('Telegram theme setup failed:', e);
+    }
+    
+    // 获取用户信息
+    tgUser = tg.initDataUnsafe?.user;
+    if (tgUser) {
+        console.log('Telegram user:', tgUser.username || tgUser.id);
+        // 自动填充用户名
+        localStorage.setItem('telegram_user', JSON.stringify(tgUser));
+    }
+    
+    return true;
+}
+
+/* ================================================================
    Initialization
    ================================================================ */
 document.addEventListener('DOMContentLoaded', async () => {
+    // 初始化 Telegram WebApp
+    const isTelegram = initTelegramWebApp();
+    
+    // 如果在 Telegram 中且有用户信息，尝试自动登录
+    if (isTelegram && tgUser) {
+        // 使用 Telegram 用户 ID 作为用户标识
+        const telegramId = tgUser.id.toString();
+        // 尝试自动登录或注册
+        await tryTelegramAuth(telegramId);
+        return;
+    }
+    
+    // 普通登录流程
     if (authToken) {
         const isValid = await validateToken();
         if (isValid) {
@@ -39,6 +88,68 @@ document.addEventListener('DOMContentLoaded', async () => {
         showLogin();
     }
 });
+
+/* ================================================================
+   Telegram Auth
+   ================================================================ */
+async function tryTelegramAuth(telegramId) {
+    try {
+        // 尝试用 Telegram ID 登录
+        const response = await fetch('/api/auth/telegram', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                telegram_id: telegramId,
+                username: tgUser.username || tgUser.first_name,
+                first_name: tgUser.first_name,
+                last_name: tgUser.last_name
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success && data.token) {
+            authToken = data.token;
+            localStorage.setItem('auth_token', authToken);
+            showApp();
+        } else {
+            // 自动注册
+            await registerWithTelegram(telegramId);
+        }
+    } catch (e) {
+        console.error('Telegram auth failed:', e);
+        showLogin();
+    }
+}
+
+async function registerWithTelegram(telegramId) {
+    try {
+        const response = await fetch('/api/auth/register', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                username: tgUser.username || `tg_${telegramId}`,
+                password: telegramId, // 使用 Telegram ID 作为初始密码
+                telegram_id: telegramId,
+                telegram_username: tgUser.username,
+                auto_login: true
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success && data.token) {
+            authToken = data.token;
+            localStorage.setItem('auth_token', authToken);
+            showApp();
+        } else {
+            showLogin();
+        }
+    } catch (e) {
+        console.error('Telegram register failed:', e);
+        showLogin();
+    }
+}
 
 /* ================================================================
    Auth Functions
