@@ -1,0 +1,186 @@
+/*
+ * v1.6.5 — 移动端触控优化 CSS
+ * 补充 globals.css 中未覆盖的触控场景
+ */
+
+/* ─── 触控目标最小尺寸（WCAG 2.5.5: 44x44px） ──────────────────────── */
+.touch-target {
+    min-width: 44px;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* ─── 虚拟方向键（D-Pad） ────────────────────────────────────────────── */
+.dpad-container {
+    position: fixed;
+    bottom: 80px;
+    left: 24px;
+    width: 140px;
+    height: 140px;
+    z-index: 100;
+    pointer-events: none;
+}
+
+.dpad-btn {
+    position: absolute;
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.25);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    color: rgba(255, 255, 255, 0.8);
+    pointer-events: auto;
+    touch-action: none;
+    transition: transform 0.1s ease, background 0.1s ease;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+.dpad-btn:active,
+.dpad-btn.pressed {
+    transform: scale(0.9);
+    background: rgba(255, 255, 255, 0.45);
+}
+
+.dpad-up { top: 0; left: 50%; transform: translateX(-50%); }
+.dpad-down { bottom: 0; left: 50%; transform: translateX(-50%); }
+.dpad-left { left: 0; top: 50%; transform: translateY(-50%); }
+.dpad-right { right: 0; top: 50%; transform: translateY(-50%); }
+
+.dpad-up:active { transform: translateX(-50%) scale(0.9); }
+.dpad-down:active { transform: translateX(-50%) scale(0.9); }
+.dpad-left:active { transform: translateY(-50%) scale(0.9); }
+.dpad-right:active { transform: translateY(-50%) scale(0.9); }
+
+/* ─── 操作按钮（收获/浇水/种植） ─────────────────────────────────────── */
+.action-bar {
+    position: fixed;
+    bottom: 80px;
+    right: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    z-index: 100;
+}
+
+.action-btn {
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.25);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    pointer-events: auto;
+    touch-action: none;
+    transition: transform 0.1s ease;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+.action-btn:active,
+.action-btn.pressed {
+    transform: scale(0.88);
+    background: rgba(255, 255, 255, 0.45);
+}
+
+.action-btn.selected {
+    background: rgba(138, 43, 226, 0.5);
+    border-color: rgba(138, 43, 226, 0.6);
+    box-shadow: 0 0 12px rgba(138, 43, 226, 0.3);
+}
+
+/* ─── 触控反馈动画 ──────────────────────────────────────────────────── */
+@keyframes touch-ripple {
+    0% {
+        transform: scale(0);
+        opacity: 0.5;
+    }
+    100% {
+        transform: scale(2.5);
+        opacity: 0;
+    }
+}
+
+.touch-ripple {
+    position: absolute;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.4);
+    animation: touch-ripple 0.4s ease-out forwards;
+    pointer-events: none;
+}
+
+/* ─── Phaser 画布移动端适配 ──────────────────────────────────────────── */
+.phaser-container canvas {
+    touch-action: none;
+    -webkit-touch-callout: none;
+    image-rendering: pixelated;
+    image-rendering: -moz-crisp-edges;
+}
+
+/* ─── 防止 iOS 弹性滚动（游戏场景） ─────────────────────────────────── */
+.no-bounce {
+    overscroll-behavior: none;
+    -webkit-overflow-scrolling: auto;
+}
+
+/* ─── 长按菜单禁用 ──────────────────────────────────────────────────── */
+.no-context-menu {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+}
+
+/* ─── 移动端底部安全区域适配 ──────────────────────────────────────────── */
+@media (max-width: 640px) {
+    .dpad-container {
+        bottom: calc(80px + env(safe-area-inset-bottom, 0px));
+    }
+    .action-bar {
+        bottom: calc(80px + env(safe-area-inset-bottom, 0px));
+    }
+}
+
+/* ─── 横屏适配 ──────────────────────────────────────────────────────── */
+@media (orientation: landscape) and (max-height: 500px) {
+    .dpad-container {
+        bottom: 16px;
+        left: 16px;
+        width: 120px;
+        height: 120px;
+    }
+    .action-bar {
+        bottom: 16px;
+        right: 16px;
+        flex-direction: row;
+    }
+    .action-btn {
+        width: 44px;
+        height: 44px;
+        font-size: 18px;
+    }
+}
+
+/* ─── 触控手势提示 ──────────────────────────────────────────────────── */
+.swipe-hint {
+    animation: swipe-hint-fade 2s ease-in-out infinite;
+}
+
+@keyframes swipe-hint-fade {
+    0%, 100% { opacity: 0.3; }
+    50% { opacity: 0.8; }
+}

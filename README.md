@@ -218,6 +218,11 @@ sudo bash tools/optimize_e2micro.sh
 | `/api/chat` | POST | 发送聊天消息 |
 | `/api/characters` | GET | 角色列表 |
 | `/api/characters/switch` | POST | 切换角色 |
+| `/api/game/state/sse` | GET | SSE 实时状态推送 |
+| `/api/game/state/diff` | GET | 增量状态差异 |
+| `/api/mobile/dpad` | POST | 移动端方向键移动 |
+| `/api/mobile/tap` | POST | 移动端点击交互 |
+| `/api/mobile/swipe` | POST | 移动端滑动手势 |
 | `/api/upload-selfies` | POST | 上传照片 |
 | `/api/generate-face` | POST | AI 换脸 |
 

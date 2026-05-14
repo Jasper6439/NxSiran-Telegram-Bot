@@ -15,6 +15,7 @@ from packages.web.auth_routes import *
 from packages.web.character_routes import *
 from packages.web.skills_routes import *
 from packages.web.sync_routes import *
+from packages.web.mobile_routes import *
 
 
 __all__ = [
@@ -61,6 +62,11 @@ __all__ = [
     "api_send_message",
     "cors_middleware",
     "register_routes",
+    # v1.6.5 — 移动端触控 API
+    "api_mobile_dpad_move",
+    "api_mobile_tap_interact",
+    "api_mobile_swipe",
+    "api_mobile_config",
 ]
 
 
@@ -123,6 +129,12 @@ def register_routes(app):
     app.router.add_get('/api/user/profile', api_user_profile)
     app.router.add_post('/api/user/preferred-name', api_update_preferred_name)
     app.router.add_post('/api/user/bind-telegram', api_bind_telegram)
+
+    # v1.6.5 — 移动端触控 API
+    app.router.add_post('/api/mobile/dpad', api_mobile_dpad_move)
+    app.router.add_post('/api/mobile/tap', api_mobile_tap_interact)
+    app.router.add_post('/api/mobile/swipe', api_mobile_swipe)
+    app.router.add_get('/api/mobile/config', api_mobile_config)
 
     # Static files
     app.router.add_static('/static', os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), 'static'))
