@@ -9,9 +9,10 @@ from game_api.farm_routes import (
     api_bulk_harvest,
 )
 from game_api.character_routes import (
-    api_get_character_location, api_get_relationship,
-    api_game_chat, api_chat_history, api_awakening_events,
-    api_gift_character, api_sync_actions,
+    api_get_character_location,
+    api_interact_with_character,
+    api_gift_to_character,
+    api_sync_actions,
 )
 from game_api.cooking_routes import (
     api_get_recipes, api_cook, api_daily_reward, api_check_daily,
@@ -53,11 +54,8 @@ def register_game_routes(app):
 
     # 角色互动
     app.router.add_get("/api/game/character/location", api_get_character_location)
-    app.router.add_get("/api/game/relationship", api_get_relationship)
-    app.router.add_post("/api/game/chat", api_game_chat)
-    app.router.add_get("/api/game/chat/history", api_chat_history)
-    app.router.add_get("/api/game/awakening/events", api_awakening_events)
-    app.router.add_post("/api/game/gift", api_gift_character)
+    app.router.add_post("/api/game/character/interact", api_interact_with_character)
+    app.router.add_post("/api/game/gift", api_gift_to_character)
 
     # 心级事件
     app.router.add_get("/api/game/events/heart", api_check_heart_events)
