@@ -148,6 +148,31 @@ async def deploy():
             return
         logger.info(f"git pull: {result.stdout.strip()}")
 
+        # 2.5 构建 web-v2 (如果存在 web-v2 目录且没有 dist)
+        web_v2_dir = os.path.join(PROJECT_DIR, 'web-v2')
+        web_v2_dist = os.path.join(web_v2_dir, 'dist', 'index.html')
+        if os.path.isdir(web_v2_dir) and not os.path.exists(web_v2_dist):
+            logger.info("检测到 web-v2 无构建产物，执行 npm install && npm run build...")
+            npm_install = subprocess.run(
+                ['npm', 'install'],
+                cwd=web_v2_dir,
+                capture_output=True, text=True, timeout=120
+            )
+            if npm_install.returncode != 0:
+                logger.error(f"web-v2 npm install 失败: {npm_install.stderr}")
+            else:
+                npm_build = subprocess.run(
+                    ['npm', 'run', 'build'],
+                    cwd=web_v2_dir,
+                    capture_output=True, text=True, timeout=120
+                )
+                if npm_build.returncode != 0:
+                    logger.error(f"web-v2 npm run build 失败: {npm_build.stderr}")
+                else:
+                    logger.info("✅ web-v2 构建完成")
+        elif os.path.exists(web_v2_dist):
+            logger.info("web-v2 dist 已存在，跳过构建")
+
         # 3. 重启 bot 服务
         logger.info(f"重启服务: {BOT_SERVICE}")
         result = subprocess.run(
