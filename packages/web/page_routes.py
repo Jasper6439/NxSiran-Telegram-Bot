@@ -38,16 +38,7 @@ async def serve_index(request):
     if html:
         return web.Response(text=html, content_type='text/html')
 
-    # 降级：尝试旧版 templates/index.html.deprecated
-    try:
-        old_path = os.path.join(_get_workspace_root(), 'templates', 'index.html.deprecated')
-        if os.path.exists(old_path):
-            with open(old_path, 'r', encoding='utf-8') as f:
-                return web.Response(text=f.read(), content_type='text/html')
-    except Exception:
-        pass
-
-    # 最终降级：简单提示页
+    # web-v2 不可用时返回提示页
     return web.Response(
         text="""<!DOCTYPE html>
 <html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">

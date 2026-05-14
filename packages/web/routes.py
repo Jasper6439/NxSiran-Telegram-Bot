@@ -125,7 +125,7 @@ def register_routes(app):
     app.router.add_post('/api/user/preferred-name', api_update_preferred_name)
     app.router.add_post('/api/user/bind-telegram', api_bind_telegram)
 
-    # Static files (旧版已废弃，保留 _deprecated 目录不对外暴露)
+    # Static files
     app.router.add_static('/static', os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), 'static'))
 
     # web-v2 静态资源 (Vite 构建产物: JS/CSS/images)
