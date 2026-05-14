@@ -1,28 +1,28 @@
-# NxSiran - 恋爱至上主义区域
+# NxSiran — 恋爱至上主义区域
 
-> AI 角色扮演对话系统，基于 Telegram Bot + Web，支持多角色、多模型竞争、语义记忆、情绪系统。
+> AI 角色扮演恋爱模拟 RPG，基于 Telegram Bot + Web，支持多模型竞争、语义记忆、情绪系统、农场经营。
 
 ## 架构概览
 
 ```
 ┌─────────────────────────────────────────────────────┐
 │                    用户界面层                         │
-│  Telegram Bot  │  Web App  │  Telegram Mini App     │
-└────────┬────────┴─────┬────┴───────────┬────────────┘
-         │              │                │
-┌────────▼──────────────▼────────────────▼────────────┐
+│  Telegram Bot  │  Web App (React)  │  Mini App      │
+└────────┬────────┴─────┬────────────┴───────────────┘
+         │              │
+┌────────▼──────────────▼────────────────────────────┐
 │                   API 路由层                          │
 │  认证 │ 聊天 │ 角色 │ 媒体 │ 游戏 │ 技能 │ 分析      │
-└────────┬──────────────┬────────────────┬────────────┘
-         │              │                │
-┌────────▼──────────────▼────────────────▼────────────┐
+└────────┬──────────────┬────────────────────────────┘
+         │              │
+┌────────▼──────────────▼────────────────────────────┐
 │                   核心引擎层                          │
-│  AI竞争 │ 规则引擎 │ 角色系统 │ 情绪系统 │ 记忆系统  │
-└────────┬──────────────┬────────────────┬────────────┘
-         │              │                │
-┌────────▼──────────────▼────────────────▼────────────┐
+│  AI竞争 │ 角色系统 │ 情绪系统 │ 记忆系统 │ TTS      │
+└────────┬──────────────┬────────────────────────────┘
+         │              │
+┌────────▼──────────────▼────────────────────────────┐
 │                   基础设施层                          │
-│  OpenRouter AI │ Qdrant │ SQLite │ Gmail SMTP       │
+│  OpenRouter AI │ Qdrant Cloud │ SQLite │ Gmail SMTP │
 └─────────────────────────────────────────────────────┘
 ```
 
@@ -49,7 +49,7 @@
 | 配置项 | 说明 |
 |--------|------|
 | `persona.md` | 分层角色设定（世界观→硬规则→身份→风格→情感→关系） |
-| `config.json` | 角色属性、情绪默认值、觉醒条件、**AI 规则** |
+| `config.json` | 角色属性、情绪默认值、觉醒条件、AI 规则 |
 | `memories.md` | 共同记忆、关系时间线、偏好习惯 |
 | `ai_rules` | 规则引擎配置（长度、格式、语言、禁用词等） |
 
@@ -58,7 +58,7 @@
 ### 记忆系统
 
 - **长期记忆**：JSON 持久化，支持搜索/删除/导出
-- **语义记忆**：Qdrant 向量数据库，语义相似度搜索
+- **语义记忆**：Qdrant Cloud 向量数据库，语义相似度搜索
 - **自我改进**：用户纠正 → 学习 → 更新行为模式
 - **小说知识库**：LightRAG + 原作小说文本
 
@@ -72,87 +72,91 @@
 
 - **AI 换脸**：Gemini 2.5 Flash，用户上传照片 → AI 生成角色自拍
 - **表情包生成**：Pollinations AI
-- **TTS 语音合成**：韩语男声 + 声音克隆
+- **TTS 语音合成**：Edge TTS / GPT-SoVITS / Fish Speech
 - **图片分析**：Gemini Vision
 - **OCR**：文档文字识别
 
 ### 农场游戏
 
-DOM 渲染的农场经营小游戏，与角色互动：
+Phaser.js 渲染的农场经营小游戏，与角色互动：
 
 - 种植/收获/烹饪系统
-- 多地图探索
+- 6 地图探索（好感度解锁）
 - 角色位置追踪
 - 觉醒事件触发
 - 每日签到
 
 ### Bridge 远程命令执行
 
-通过 webhook_server 的 Bridge 功能，可从外部向 VM 发送命令执行：
+通过 Webhook 服务的 Bridge 功能，可从外部向 VM 发送命令：
 
 ```
 外部 (SOLO) → POST /bridge/send → VM 端轮询客户端 → 执行 → 回传结果
 ```
 
-- **统一端口 8082**：与 Webhook 服务共用，无需额外端口
-- **VM 客户端轮询**：systemd 服务运行，每 5 秒轮询一次
-- **结果回传**：命令执行结果可通过 API 查询
+- **统一端口 8082**：与 Webhook 服务共用
 - **安全认证**：Token 验证，仅授权请求可执行
-
-用途：远程调试、内存优化、服务重启等运维操作。
 
 ## 技术栈
 
 | 组件 | 技术 |
 |------|------|
-| 后端 | Python 3.10+ / aiohttp |
+| 后端 | Python 3.11+ / python-telegram-bot / aiohttp |
 | AI | OpenRouter（多模型）/ Gemini 2.5 Flash |
-| 向量数据库 | Qdrant |
+| 向量数据库 | Qdrant Cloud |
 | 关系数据库 | SQLite |
-| 前端 | 原生 HTML/CSS/JS + Telegram Mini App |
-| 部署 | Docker / systemd / Webhook 自动部署 |
-| 邮件 | Gmail SMTP |
+| 前端 | React + TypeScript + Vite + Tailwind + Zustand + Phaser.js |
+| 部署 | GCP e2-micro / systemd / Cloudflare Tunnel |
+| CI/CD | GitHub Webhook → git pull + systemctl restart |
 
 ## 项目结构
 
 ```
-├── bot.py                  # Telegram Bot 主入口
-├── ai_compete.py           # AI 多模型竞争引擎（规则引擎 + 按需互评）
-├── ai_client.py            # AI API 调用封装
-├── ai_core.py              # AI 对话核心
-├── image_gen.py            # 图片生成（换脸/表情包）
-├── auth.py                 # 用户认证系统
-├── config.py               # 全局配置
-├── webhook_server.py       # Webhook + Bridge 统一服务（端口 8082）
-├── characters/             # 角色系统
-│   ├── base.py             # 角色基类 + 配置数据类
-│   ├── __init__.py         # 角色注册表
-│   ├── chayewoon/          # 车如云角色数据
-│   │   ├── config.json     # 角色配置（含 ai_rules）
-│   │   ├── persona.md      # 分层角色设定
-│   │   └── memories.md     # 共同记忆
-│   └── templates/          # 新角色模板
-├── packages/
-│   ├── web/                # Web API 路由
-│   ├── commands/           # Telegram 命令
-│   ├── handlers/           # 消息处理器
-│   ├── bridge/             # VM Bridge（模块版，可选）
-│   └── analysis/           # 聊天记录分析
-├── game_api/               # 农场游戏 API
-├── database/               # SQLite 数据层
-├── static/                 # 静态资源（游戏/Mini App）
-├── templates/              # HTML 模板
-├── knowledge/              # 小说知识库
-├── tools/                  # 工具脚本
-│   ├── bridge_client.py    # VM 端 Bridge 客户端
-│   ├── optimize_e2micro.sh # e2-micro 内存优化脚本
-│   ├── create_character.py # 角色创建工具
-│   └── version_manager.py  # 版本管理
-├── email_sender.py         # Gmail SMTP 邮件发送
-├── qdrant_memory.py        # Qdrant 语义记忆
-├── tts_engine.py           # 语音合成
-├── emotion.py              # 情绪系统
-└── bridge_server.py        # Bridge 独立服务（已弃用，统一至 webhook_server）
+bot.py                          # 唯一入口
+├── system/                     # 系统级模块
+│   ├── config.py               # 全局配置、环境变量、版本号
+│   ├── prompts.py              # 系统提示词、模板、文本处理
+│   ├── auth.py                 # 用户认证
+│   ├── scheduler.py            # 后台定时任务
+│   ├── email_sender.py         # Gmail SMTP
+│   ├── webhook_server.py       # Webhook + Bridge 服务 (port 8082)
+│   └── *.service / *.sh        # systemd 服务 + 运维脚本
+├── characters/                 # 角色系统
+│   ├── base.py                 # CharacterBase 抽象基类
+│   ├── chayewoon.py            # 车如云角色
+│   ├── ai_client.py            # AI API 统一调用层
+│   ├── ai_core.py              # call_ai + 记忆提取
+│   ├── ai_compete.py           # 多模型竞争选优
+│   ├── chat_engine.py          # 统一对话引擎
+│   ├── chat_history.py         # 聊天历史
+│   ├── emotion.py              # 情绪系统
+│   ├── image_gen.py            # 图片生成
+│   ├── memory_legacy.py        # JSON 长期记忆
+│   ├── qdrant_memory.py        # Qdrant 向量记忆
+│   ├── tts_engine.py           # TTS 语音合成
+│   └── ...                     # weather, music, novel, anniversary, stats
+├── game_api/                   # 游戏 HTTP API
+│   ├── farm_routes.py          # 农场种植/收获
+│   ├── map_routes.py           # 多地图系统
+│   ├── character_routes.py     # 角色互动
+│   ├── sync_routes.py          # 游戏同步
+│   └── ...                     # cooking, heart, media, auth, awakening
+├── database/                   # SQLite（Mixin 模式）
+│   ├── base.py                 # 连接管理 + Schema
+│   ├── farm.py                 # 农场 CRUD
+│   ├── relationship.py         # 关系/情感/觉醒
+│   └── ...                     # maps, inventory, cooking, chat, player, events
+├── packages/                   # Telegram Bot 子包
+│   ├── handlers/               # 消息处理（text/photo/callback/voice）
+│   ├── commands/               # Bot 命令
+│   ├── web/                    # Web HTTP API 路由
+│   ├── bridge/                 # VM 桥接
+│   ├── analysis/               # 聊天记录分析
+│   └── importers/              # 数据导入
+├── web-v2/                     # React 前端
+├── tools/                      # 工具脚本
+├── knowledge/                  # LightRAG 知识库
+└── data/                       # 运行时数据
 ```
 
 ## 快速开始
@@ -162,7 +166,6 @@ DOM 渲染的农场经营小游戏，与角色互动：
 - Python 3.10+
 - Telegram Bot Token（从 [@BotFather](https://t.me/BotFather) 获取）
 - OpenRouter API Key（从 [openrouter.ai](https://openrouter.ai) 获取，免费）
-- Qdrant（Docker 一键部署）
 
 ### 安装
 
@@ -170,40 +173,8 @@ DOM 渲染的农场经营小游戏，与角色互动：
 git clone https://github.com/Jasper6439/NxSiran-Telegram-Bot.git
 cd NxSiran-Telegram-Bot
 pip install -r requirements.txt
-```
-
-### 配置
-
-1. 复制配置模板：
-```bash
-cp config.example.json data/config.json
-```
-
-2. 编辑 `data/config.json`：
-```json
-{
-    "telegram_token": "YOUR_BOT_TOKEN",
-    "chat_id": "YOUR_TELEGRAM_CHAT_ID",
-    "ai_api_key": "YOUR_OPENROUTER_KEY",
-    "ai_api_base": "https://openrouter.ai/api/v1"
-}
-```
-
-3. （可选）配置 Gmail SMTP 用于发送验证码邮件：
-```json
-{
-    "smtp_email": "your@gmail.com",
-    "smtp_password": "your-app-specific-password"
-}
-```
-
-### 启动
-
-```bash
-# 启动 Qdrant
-docker run -d -p 6333:6333 qdrant/qdrant
-
-# 启动 Bot
+cp .env.example .env
+# 编辑 .env 填入 TELEGRAM_TOKEN, AI_API_KEY 等
 python bot.py
 ```
 
@@ -215,25 +186,11 @@ docker-compose up -d
 
 ### e2-micro (1GB RAM) 优化
 
-针对 GCP e2-micro 等低配 VM 的优化：
-
 ```bash
-# 执行内存优化脚本（创建 2GB swap + systemd 内存控制）
 sudo bash tools/optimize_e2micro.sh
-
-# 安装 Bridge 客户端（用于远程命令执行）
-sudo apt install python3-requests -y
-sudo cp tools/nxsiran-bridge-client.service /etc/systemd/system/
-sudo systemctl daemon-reload
-sudo systemctl enable nxsiran-bridge-client
-sudo systemctl start nxsiran-bridge-client
 ```
 
-优化内容：
-- **2GB Swap**：缓解物理内存不足
-- **swappiness=60**：积极使用 swap，不活跃进程自动换出
-- **systemd 内存控制**：Bot 主进程优先保留物理内存，Qdrant 等可进 swap
-- **Bridge 客户端**：50MB 内存限制，允许 swap
+- 2GB Swap + swappiness=60 + systemd 内存控制
 
 ## Telegram 命令
 
@@ -251,41 +208,7 @@ sudo systemctl start nxsiran-bridge-client
 | `/novel` | 小说知识查询 |
 | `/version` | 版本信息 |
 
-## 添加新角色
-
-1. 使用模板创建角色目录：
-```bash
-python tools/create_character.py --id my_character --name "角色名"
-```
-
-2. 编辑 `characters/my_character/` 下的配置文件：
-   - `config.json` — 角色属性 + `ai_rules` 规则引擎配置
-   - `persona.md` — 分层角色设定
-   - `memories.md` — 共同记忆
-
-3. 在 `characters/my_character.py` 实现角色类（继承 `CharacterBase`）
-
-### ai_rules 配置示例
-
-```json
-{
-    "ai_rules": {
-        "max_length": 80,
-        "require_ellipsis": true,
-        "require_action_parentheses": true,
-        "disqualify_positive_emotions": true,
-        "positive_emotions": ["我好喜欢你", "我爱你"],
-        "disallow_emoji": true,
-        "min_cjk_ratio": 0.2,
-        "languages": ["zh", "ko"],
-        "judge_prompt_extra": "该角色是傲娇性格，话极少"
-    }
-}
-```
-
 ## Web API
-
-### 应用 API
 
 | 端点 | 方法 | 说明 |
 |------|------|------|
@@ -296,7 +219,6 @@ python tools/create_character.py --id my_character --name "角色名"
 | `/api/characters/switch` | POST | 切换角色 |
 | `/api/upload-selfies` | POST | 上传照片 |
 | `/api/generate-face` | POST | AI 换脸 |
-| `/api/config` | GET/POST | 管理员配置 |
 
 ### Bridge API（端口 8082）
 
@@ -304,7 +226,6 @@ python tools/create_character.py --id my_character --name "角色名"
 |------|------|------|
 | `/bridge/send` | POST | 发送命令到 VM |
 | `/bridge/poll` | POST | VM 轮询获取命令 |
-| `/bridge/result` | POST | VM 回传执行结果 |
 | `/bridge/result/{id}` | GET | 查询命令执行结果 |
 | `/deploy` | GET/POST | 手动触发部署 |
 | `/health` | GET | 健康检查 |

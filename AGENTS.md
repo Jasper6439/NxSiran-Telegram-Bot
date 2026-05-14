@@ -20,6 +20,7 @@ After completing a task:
 2. **Verify syntax** — `python -m py_compile <file>` for every modified `.py` file.
 3. **Atomic commit** — Single commit per task unit with conventional prefix (`feat:`, `fix:`, `refactor:`, `docs:`, `chore:`).
 4. **Provide verification steps** — After each feature implementation, output a minimal manual test procedure (e.g., "send /command X in Telegram, observe Y") or a lightweight verification script that can be run via Bridge without restarting the entire service. The project has Bridge (port 8082) and Webhook services for remote execution.
+5. **Root README check** — After any task that modifies project structure (new files, moved files, new features, version changes), evaluate whether `README.md` at project root needs updating. If the README describes files, directories, or features that no longer match the current state, update it accordingly.
 
 ## Rollback Safety
 
