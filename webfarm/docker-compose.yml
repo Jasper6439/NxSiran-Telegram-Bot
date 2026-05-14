@@ -1,0 +1,50 @@
+# WebFarm Docker Compose
+# 用于本地开发和部署
+
+version: '3.8'
+
+services:
+  webfarm:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    container_name: webfarm
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      - PORT=8080
+      - PYTHONUNBUFFERED=1
+    volumes:
+      # 数据持久化
+      - ./data:/app/data
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/api/farm?user_id=health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+    # e2-micro 资源限制
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+
+# 可选：使用 Nginx 反向代理
+#   nginx:
+#     image: nginx:alpine
+#     container_name: webfarm-nginx
+#     restart: unless-stopped
+#     ports:
+#       - "80:80"
+#       - "443:443"
+#     volumes:
+#       - ./nginx.conf:/etc/nginx/nginx.conf:ro
+#       - ./ssl:/etc/nginx/ssl:ro
+#     depends_on:
+#       - webfarm
