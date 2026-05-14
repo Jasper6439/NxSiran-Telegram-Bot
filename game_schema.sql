@@ -132,7 +132,8 @@ CREATE TABLE IF NOT EXISTS crop_types (
     gift_preference TEXT,             -- 角色喜好: chayewoon:love, chayewoon:like
     emoji TEXT DEFAULT '🌱',
     description TEXT,
-    level_required INTEGER DEFAULT 1    -- 种植所需农场等级
+    level_required INTEGER DEFAULT 1,   -- 种植所需农场等级
+    tier INTEGER DEFAULT 0              -- 作物等级层级
 );
 
 -- 玩家背包表
@@ -274,6 +275,7 @@ INSERT OR IGNORE INTO crop_types (id, name, name_ko, growth_time, sell_price, se
 
 -- v1.4.10 新增作物 - 进阶系统
 -- 快速作物 (1-30分钟) - 新手友好
+INSERT OR IGNORE INTO crop_types (id, name, name_ko, growth_time, sell_price, seed_price, seasons, emoji, description, tier) VALUES
 ('sunflower', '向日葵', '해바라기', 5, 15, 5, '["spring", "summer"]', '🌻', '阳光的向日葵', 1),
 ('wheat', '小麦', '밀', 10, 20, 8, '["autumn"]', '🌾', '金黄的小麦', 1),
 ('radish', '萝卜', '무', 20, 25, 10, '["spring", "autumn"]', '🫚', '脆甜的萝卜', 1),
