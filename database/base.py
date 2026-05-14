@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 # 数据库文件路径
 DB_PATH = os.path.join(os.path.dirname(__file__), 'data', 'game.db')
-SCHEMA_PATH = os.path.join(os.path.dirname(__file__), 'game_schema.sql')
+SCHEMA_PATH = os.path.join(os.path.dirname(__file__), 'data', 'game_schema.sql')
 
 # 韩国时区
 KR_TZ = timezone(timedelta(hours=9))
