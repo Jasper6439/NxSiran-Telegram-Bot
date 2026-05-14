@@ -6,7 +6,7 @@ import httpx
 from telegram import Update
 from telegram.ext import ContextTypes
 
-from config import GEMINI_API_KEY
+from system.config import GEMINI_API_KEY
 
 
 def auto_delete_messages(delay: int = 5):

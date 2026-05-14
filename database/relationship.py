@@ -5,7 +5,7 @@ import logging
 from datetime import datetime
 from typing import Optional, Dict, List
 
-from config import get_default_tz
+from system.config import get_default_tz
 
 logger = logging.getLogger(__name__)
 

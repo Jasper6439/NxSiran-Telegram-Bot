@@ -1,7 +1,7 @@
 from telegram import Update
 from telegram.ext import ContextTypes
 
-from config import YOUR_CHAT_ID, load_json
+from system.config import YOUR_CHAT_ID, load_json
 from characters.memory_legacy import CORRECTIONS_FILE
 from characters.stats import format_quota_report, load_quota_usage, save_quota_usage
 from characters import stats

@@ -3,7 +3,7 @@ import logging
 import re
 from datetime import datetime
 
-from config import CHAT_IMPORT_FILE, load_json, save_json, get_default_tz, AI_API_BASE, AI_API_KEY, AI_MODELS
+from system.config import CHAT_IMPORT_FILE, load_json, save_json, get_default_tz, AI_API_BASE, AI_API_KEY, AI_MODELS
 
 
 __all__ = [

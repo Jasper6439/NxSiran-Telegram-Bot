@@ -2,7 +2,7 @@ import logging
 
 import httpx
 
-from config import RELAY_API_KEY
+from system.config import RELAY_API_KEY
 
 
 # ============================================================

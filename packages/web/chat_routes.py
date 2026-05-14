@@ -11,9 +11,9 @@ from datetime import datetime
 
 from aiohttp import web
 
-from config import *
+from system.config import *
 from system.auth import *
-from prompts import *
+from system.prompts import *
 from characters.memory_legacy import *
 from characters.emotion import *
 from characters.stats import *

@@ -6,7 +6,7 @@ Skills 状态管理模块
 import os
 import logging
 
-from config import SKILLS_REGISTRY, SKILLS_STATE_FILE, load_json, save_json
+from system.config import SKILLS_REGISTRY, SKILLS_STATE_FILE, load_json, save_json
 
 
 def _load_skills_state():

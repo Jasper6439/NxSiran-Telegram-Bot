@@ -19,12 +19,12 @@ from PIL import Image
 from telegram import Update
 from telegram.ext import ContextTypes
 
-from config import (
+from system.config import (
     AI_API_BASE, AI_API_KEY, GEMINI_API_KEY,
     YOUR_CHAT_ID,
     get_user_selfie_dir,
 )
-from prompts import (
+from system.prompts import (
     SELFIE_PROMPTS, SELFIE_CAPTIONS,
     SCENE_PROMPTS, SCENE_KEYWORDS, STICKER_PROMPTS,
 )

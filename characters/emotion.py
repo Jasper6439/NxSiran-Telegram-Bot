@@ -9,7 +9,7 @@ import logging
 import random
 from datetime import datetime
 
-from prompts import (
+from system.prompts import (
     EMOTION_PATTERNS,
     REACTION_MAP,
     EMOTION_REACTIONS,
@@ -17,7 +17,7 @@ from prompts import (
     PROACTIVE_MISS_MESSAGES,
     PROACTIVE_GOODNIGHT_MESSAGES,
 )
-from config import YOUR_CHAT_ID, get_default_tz
+from system.config import YOUR_CHAT_ID, get_default_tz
 
 from telegram import Update
 

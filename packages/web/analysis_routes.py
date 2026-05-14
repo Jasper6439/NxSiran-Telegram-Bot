@@ -10,7 +10,7 @@ from datetime import datetime
 
 from aiohttp import web
 
-from config import *
+from system.config import *
 
 from packages.analysis.chatlog import (
     parse_wechat_chatlog,

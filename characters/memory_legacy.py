@@ -13,12 +13,12 @@ import os
 import logging
 from datetime import datetime
 
-from config import (
+from system.config import (
     DATA_DIR, YOUR_CHAT_ID,
     SEMANTIC_MEMORY_FILE, get_default_tz,
     get_user_memory_file, save_json, load_json, _migrate_user_data,
 )
-from prompts import AI_PATTERN_REPLACEMENTS, MEMORY_CATEGORIES
+from system.prompts import AI_PATTERN_REPLACEMENTS, MEMORY_CATEGORIES
 
 # ============================================================
 # [Skill: self-improving] 自我改进系统

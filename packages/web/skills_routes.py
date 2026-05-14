@@ -9,7 +9,7 @@ import subprocess
 
 from aiohttp import web
 
-from config import *
+from system.config import *
 from system.auth import *
 from characters.stats import load_quota_usage, check_quota_status, get_current_month, QUOTA_LIMITS
 from packages.web.skills_state import (

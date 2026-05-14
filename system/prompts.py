@@ -742,7 +742,7 @@ def analyze_dialogue_patterns(chat_id: int) -> dict:
     from characters.chat_history import get_history
     from characters.emotion import detect_emotion, calculate_intimacy
     from characters.stats import load_stats
-    from config import DATA_DIR, save_json
+    from .config import DATA_DIR, save_json
     import os
 
     ANALYSIS_FILE = os.path.join(DATA_DIR, "dialogue_analysis.json")

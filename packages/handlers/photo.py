@@ -10,7 +10,7 @@ from datetime import datetime
 from telegram import Update
 from telegram.ext import ContextTypes
 
-from config import *
+from system.config import *
 from characters.stats import *
 from characters.image_gen import *
 from characters import get_current_character

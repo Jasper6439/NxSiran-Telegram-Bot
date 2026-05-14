@@ -13,7 +13,7 @@ from datetime import datetime, timezone, timedelta
 from typing import Optional, Dict, List, Tuple
 from contextlib import contextmanager
 
-from config import get_default_tz
+from system.config import get_default_tz
 
 logger = logging.getLogger(__name__)
 

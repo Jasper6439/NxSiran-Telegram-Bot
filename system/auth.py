@@ -11,7 +11,7 @@ import os
 import secrets
 from datetime import datetime, timedelta
 
-from config import USERS_FILE, load_config, get_default_tz
+from system.config import USERS_FILE, load_config, get_default_tz
 
 
 # ============================================================
@@ -154,7 +154,7 @@ def register_user(username, password, chat_id):
 
     返回: (success: bool, message: str)
     """
-    from config import get_default_tz
+    from system.config import get_default_tz
     from datetime import datetime
 
     if not username or not password or not chat_id:
@@ -218,7 +218,7 @@ def validate_user(username, password):
 
     返回: (success: bool, user_data: dict or None)
     """
-    from config import get_default_tz
+    from system.config import get_default_tz
     from datetime import datetime
 
     users = _get_users_dict()

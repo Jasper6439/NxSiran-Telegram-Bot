@@ -5,7 +5,7 @@ import logging
 from telegram import Update
 from telegram.ext import ContextTypes
 
-from config import YOUR_CHAT_ID
+from system.config import YOUR_CHAT_ID
 from packages.analysis.chatlog import (
     get_chat_analysis, parse_wechat_chatlog, analyze_chatlog_with_ai, save_chat_analysis,
 )

@@ -7,8 +7,8 @@ __all__ = [
 from telegram import Update
 from telegram.ext import ContextTypes
 
-from config import YOUR_CHAT_ID, load_json
-from prompts import STICKER_PROMPTS, detect_sticker_mood
+from system.config import YOUR_CHAT_ID, load_json
+from system.prompts import STICKER_PROMPTS, detect_sticker_mood
 from characters.image_gen import generate_sticker_url, get_selfie_count
 from characters.ai_client import call_ai
 from characters.memory_legacy import get_user_memory_file
@@ -17,7 +17,7 @@ from characters.stats import load_stats
 from characters.anniversary import load_anniversaries, get_days_together
 from characters.chat_history import get_history
 from characters.emotion import calculate_intimacy
-from prompts import analyze_dialogue_patterns, get_relationship_advice
+from system.prompts import analyze_dialogue_patterns, get_relationship_advice
 from packages.commands.misc import auto_delete_messages
 
 

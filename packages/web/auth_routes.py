@@ -7,7 +7,7 @@ import logging
 
 from aiohttp import web
 
-from config import *
+from system.config import *
 from system.auth import *
 
 
@@ -57,7 +57,7 @@ async def api_register(request):
                     return web.json_response({'success': False, 'error': '该 Telegram Chat ID 已被其他账号绑定'})
 
         # 创建用户
-        from config import get_default_tz
+        from system.config import get_default_tz
         from datetime import datetime
         import uuid
 
@@ -171,7 +171,7 @@ async def api_login(request):
 
         # 更新登录信息
         from datetime import datetime
-        from config import get_default_tz
+        from system.config import get_default_tz
         user_data['last_login'] = datetime.now(get_default_tz()).isoformat()
         user_data['login_count'] = user_data.get('login_count', 0) + 1
         users[user_id] = user_data

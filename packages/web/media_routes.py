@@ -12,7 +12,7 @@ from datetime import datetime
 
 from aiohttp import web
 
-from config import *
+from system.config import *
 from system.auth import *
 
 

@@ -19,12 +19,12 @@ from datetime import datetime
 from telegram import Update, BotCommand, ReplyKeyboardMarkup, KeyboardButton
 from telegram.ext import ContextTypes
 
-from config import (
+from system.config import (
     YOUR_CHAT_ID, MEMORY_FILE, HISTORY_FILE, ANNIVERSARY_FILE,
     STATS_FILE, SEMANTIC_MEMORY_FILE,
     load_json, get_user_selfie_dir,
 )
-from prompts import SELFIE_CAPTIONS
+from system.prompts import SELFIE_CAPTIONS
 from characters.memory_legacy import (
     get_user_memory_file,
     categorize_memory, delete_semantic_memory, search_semantic_memory,

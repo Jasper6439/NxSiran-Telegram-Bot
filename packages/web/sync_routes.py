@@ -10,7 +10,7 @@ from datetime import datetime
 
 from aiohttp import web
 
-from config import *
+from system.config import *
 from system.auth import *
 from characters.chat_history import *
 from database import get_db
@@ -272,7 +272,7 @@ def build_web_chat_system_prompt(char):
 async def push_to_telegram(telegram_id: int, message: str):
     """将 AI 回复推送到 Telegram"""
     try:
-        from config import TELEGRAM_TOKEN
+        from system.config import TELEGRAM_TOKEN
         import aiohttp
 
         if not TELEGRAM_TOKEN:

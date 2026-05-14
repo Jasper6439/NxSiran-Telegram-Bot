@@ -12,12 +12,12 @@
 import random
 from datetime import datetime
 
-from config import (
+from system.config import (
     YOUR_CHAT_ID, get_default_tz,
     ANNIVERSARY_FILE,
     get_user_stats_file, save_json, load_json, _migrate_user_data,
 )
-from prompts import LIFE_EVENTS
+from system.prompts import LIFE_EVENTS
 
 
 def load_anniversaries() -> list:

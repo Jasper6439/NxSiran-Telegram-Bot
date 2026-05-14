@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 def get_smtp_config():
     """从配置文件获取 SMTP 设置"""
-    from config import load_config
+    from system.config import load_config
     config = load_config()
     return {
         'smtp_email': config.get('smtp_email', ''),

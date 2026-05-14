@@ -1,7 +1,7 @@
 from telegram import Update
 from telegram.ext import ContextTypes
 
-from config import YOUR_CHAT_ID
+from system.config import YOUR_CHAT_ID
 from characters.anniversary import load_anniversaries, get_upcoming_anniversary, add_anniversary, delete_anniversary
 from packages.commands.utils import auto_delete_messages
 

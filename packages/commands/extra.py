@@ -4,7 +4,7 @@ import logging
 from telegram import Update
 from telegram.ext import ContextTypes
 
-from config import YOUR_CHAT_ID, GEMINI_API_KEY
+from system.config import YOUR_CHAT_ID, GEMINI_API_KEY
 from characters.image_gen import analyze_image_with_gemini, ocr_document
 
 

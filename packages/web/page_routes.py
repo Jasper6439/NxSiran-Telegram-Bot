@@ -27,7 +27,7 @@ def _get_web_v2_index():
 
 
 async def health_check(request):
-    from config import BOT_VERSION, APP_NAME
+    from system.config import BOT_VERSION, APP_NAME
     return web.Response(text=f"🟢 {APP_NAME}在线 v{BOT_VERSION}")
 
 

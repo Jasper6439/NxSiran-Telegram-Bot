@@ -5,7 +5,7 @@ import logging
 from datetime import datetime
 from aiohttp import web
 from database import get_db
-from config import get_default_tz
+from system.config import get_default_tz
 from characters import get_current_character
 from game_api.auth import authenticate_request
 

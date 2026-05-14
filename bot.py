@@ -26,11 +26,11 @@ from characters.tts_engine import TTSEngine
 
 from characters.ai_client import call_ai as ai_client_call_ai
 
-from config import *
+from system.config import *
 from system.auth import *
 
 # Prompts and text processing
-from prompts import *
+from system.prompts import *
 
 from characters.memory_legacy import *
 from characters.weather import *
@@ -232,8 +232,8 @@ def init_characters():
 def main():
     # 初始化配置（必须在其他操作之前）
     init_config()
-    # 同步 config 模块中的全局变量到 bot 模块（from config import * 是绑定副本）
-    import config
+    # 同步 config 模块中的全局变量到 bot 模块（from system.config import * 是绑定副本）
+    import system.config as config
     global TELEGRAM_TOKEN, YOUR_CHAT_ID, AI_API_BASE, AI_API_KEY
     TELEGRAM_TOKEN = config.TELEGRAM_TOKEN
     YOUR_CHAT_ID = config.YOUR_CHAT_ID
@@ -258,7 +258,7 @@ def main():
         print("❌ 请设置TELEGRAM_TOKEN环境变量")
         return
 
-    from config import BOT_VERSION, APP_NAME
+    from system.config import BOT_VERSION, APP_NAME
     print(f"🚀 {APP_NAME} Telegram Bot v{BOT_VERSION} 启动中...")
     print(f"📋 v{BOT_VERSION}: 角色扮演 + 游戏系统 + Web 界面")
 

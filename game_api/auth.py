@@ -3,7 +3,7 @@
 import logging
 from aiohttp import web
 from database import get_db
-from config import load_config
+from system.config import load_config
 from system.auth import validate_session_token, validate_api_token
 
 logger = logging.getLogger(__name__)

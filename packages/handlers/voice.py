@@ -12,7 +12,7 @@ import aiohttp
 from telegram import Update
 from telegram.ext import ContextTypes
 
-from config import *
+from system.config import *
 from characters.tts_engine import TTSEngine
 
 # Lazy import for bot.call_ai

@@ -359,7 +359,7 @@ async def deploy_status(request):
         version = BOT_VERSION
         try:
             result = subprocess.run(
-                ['python3', '-c', 'from config import BOT_VERSION; print(BOT_VERSION)'],
+                ['python3', '-c', 'from system.config import BOT_VERSION; print(BOT_VERSION)'],
                 cwd=PROJECT_DIR,
                 capture_output=True,
                 text=True,

@@ -6,7 +6,7 @@
 
 from datetime import datetime
 
-from config import (
+from system.config import (
     QUOTA_FILE,
     get_user_stats_file,
     get_user_memory_file,

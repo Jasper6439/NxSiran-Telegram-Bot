@@ -5,7 +5,7 @@ import httpx
 from telegram import Update
 from telegram.ext import ContextTypes
 
-from config import AI_API_BASE, AI_API_KEY, AI_MODELS, YOUR_CHAT_ID
+from system.config import AI_API_BASE, AI_API_KEY, AI_MODELS, YOUR_CHAT_ID
 from packages.commands.utils import auto_delete_messages
 
 

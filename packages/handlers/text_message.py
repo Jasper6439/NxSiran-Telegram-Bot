@@ -10,8 +10,8 @@ from datetime import datetime
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
 
-from config import *
-from prompts import AUTO_STICKER_TRIGGERS, detect_sticker_mood, detect_music_request
+from system.config import *
+from system.prompts import AUTO_STICKER_TRIGGERS, detect_sticker_mood, detect_music_request
 from characters.memory_legacy import *
 from characters.stats import *
 from characters.emotion import *

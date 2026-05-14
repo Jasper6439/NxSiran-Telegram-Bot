@@ -11,7 +11,7 @@ from datetime import datetime
 # 添加项目根目录到路径
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from config import USERS_FILE, get_default_tz
+from system.config import USERS_FILE, get_default_tz
 from system.auth import hash_password, save_users
 
 def init_admin():

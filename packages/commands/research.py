@@ -3,7 +3,7 @@ import logging
 
 from telegram.ext import ContextTypes
 
-from config import GEMINI_API_KEY
+from system.config import GEMINI_API_KEY
 from packages.commands.utils import call_gemini, web_search
 
 

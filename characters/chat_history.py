@@ -6,7 +6,7 @@
 import asyncio
 import random
 
-from config import (
+from system.config import (
     get_user_history_file,
     save_json,
     load_json,

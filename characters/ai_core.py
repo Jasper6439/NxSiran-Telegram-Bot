@@ -18,7 +18,7 @@ import httpx
 # ============================================================
 
 from .ai_client import call_ai as ai_client_call_ai
-from config import (
+from system.config import (
     get_default_tz,
     get_user_memory_file,
     load_json,
@@ -28,7 +28,7 @@ from config import (
     GEMINI_API_KEY,
     YOUR_CHAT_ID,
 )
-from prompts import EMOTION_RESPONSE_GUIDE, SYSTEM_PROMPT
+from system.prompts import EMOTION_RESPONSE_GUIDE, SYSTEM_PROMPT
 from .memory_legacy import (
     get_long_term_memory,
     get_semantic_memory_context,

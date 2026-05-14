@@ -12,8 +12,8 @@ import logging
 import random
 from datetime import datetime
 
-from config import get_default_tz, YOUR_CHAT_ID
-from prompts import (
+from system.config import get_default_tz, YOUR_CHAT_ID
+from system.prompts import (
     MORNING_MESSAGES,
     NIGHT_MESSAGES,
     MISS_YOU_MESSAGES,

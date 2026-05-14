@@ -6,7 +6,7 @@ from datetime import datetime
 from telegram import Update
 from telegram.ext import ContextTypes
 
-from config import (
+from system.config import (
     BOT_VERSION,
     VERSION_FILE,
     YOUR_CHAT_ID,

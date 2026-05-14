@@ -11,7 +11,7 @@ from datetime import datetime
 from aiohttp import web
 
 from system.auth import validate_session_token, validate_api_token
-from config import load_config
+from system.config import load_config
 from characters.chat_history import load_chat_history
 
 # 存储待处理的命令和文件

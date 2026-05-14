@@ -8,7 +8,7 @@ import urllib.parse
 from datetime import datetime
 from aiohttp import web
 from database import get_db
-from prompts import SELFIE_PROMPTS, STICKER_PROMPTS, SCENE_PROMPTS
+from system.prompts import SELFIE_PROMPTS, STICKER_PROMPTS, SCENE_PROMPTS
 from game_api.auth import authenticate_request
 
 logger = logging.getLogger(__name__)
