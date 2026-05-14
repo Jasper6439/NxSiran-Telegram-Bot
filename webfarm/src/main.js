@@ -1,88 +1,70 @@
 /**
  * main.js - Phaser 游戏主入口
  * 
- * 配置 Phaser 3 游戏引擎，重点优化移动端适配
+ * v1.5.5 优化：
+ * - WEBGL 渲染 + pixelArt 像素锐利
+ * - 16:9 宽高比，消灭黑边
+ * - ENVELOP 模式：画布填满屏幕，内容自适应
  */
 
-// 动态加载 Phaser
 const script = document.createElement('script');
 script.src = 'https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js';
 script.onload = initGame;
 document.head.appendChild(script);
 
 function initGame() {
-    // 游戏配置
     const config = {
-        type: Phaser.AUTO,
+        // WEBGL 渲染，性能更好
+        type: Phaser.WEBGL,
         
-        // 画布尺寸
-        width: 414,
-        height: 896,
+        // 16:9 宽高比基准分辨率
+        width: 720,
+        height: 405,
         
-        // 父容器
         parent: 'game-container',
         
-        // 背景色
-        backgroundColor: '#6b8e23',
+        // 背景色与 body 一致，消灭黑边
+        backgroundColor: '#4a7a2e',
         
-        // 场景
         scene: [GameScene],
         
-        // 缩放配置 - 关键！
+        // 缩放配置
         scale: {
-            // FIT 模式：保持宽高比，填满屏幕
-            mode: Phaser.Scale.FIT,
-            
-            // 水平和垂直居中
+            // ENVELOP：画布填满屏幕，内容等比缩放（无黑边）
+            mode: Phaser.Scale.ENVELOP,
             autoCenter: Phaser.Scale.CENTER_BOTH,
-            
-            // 最小/最大缩放
-            min: {
-                width: 320,
-                height: 480
-            },
-            max: {
-                width: 414,
-                height: 896
-            }
         },
         
         // 渲染配置
         render: {
-            // 像素艺术模式（关闭平滑缩放）
-            pixelArt: false,
-            
-            // 抗锯齿
-            antialias: true,
-            
-            // 是否清除画布背景
-            clearBeforeRender: true
+            // 像素艺术模式：关闭平滑缩放，像素锐利
+            pixelArt: true,
+            antialias: false,
+            roundPixels: true,
+            clearBeforeRender: true,
+            // 批处理优化（e2-micro 友好）
+            batchDraw: true,
         },
         
         // 输入配置
         input: {
-            // 触摸优先级
-            activePointers: 1,
-            
-            // 防止浏览器默认触摸行为
-            touch: {
-                capture: true
-            }
+            activePointers: 2,
+            touch: { capture: true }
+        },
+        
+        // 物理引擎（预留）
+        physics: {
+            default: 'arcade',
+            arcade: { debug: false }
         }
     };
     
-    // 创建游戏实例
     window.game = new Phaser.Game(config);
     
-    // 输出日志
-    console.log('🎮 WebFarm Game Initialized');
+    console.log('🎮 WebFarm v1.5.5 Initialized');
     console.log('Screen:', window.innerWidth, 'x', window.innerHeight);
     
-    // 监听窗口大小变化
     window.addEventListener('resize', () => {
-        if (window.game) {
-            window.game.scale.refresh();
-            console.log('Game resized:', window.innerWidth, 'x', window.innerHeight);
-        }
+        if (window.game) window.game.scale.refresh();
     });
 }

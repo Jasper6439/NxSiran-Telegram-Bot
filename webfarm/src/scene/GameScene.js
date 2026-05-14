@@ -1,399 +1,428 @@
 /**
  * GameScene.js - Phaser 3 游戏主场景
  * 
- * 特性：
- * 1. 移动端适配 (ScaleManager FIT 模式)
- * 2. 5x5 地块网格渲染
- * 3. 作物生长阶段显示
- * 4. 触摸/鼠标交互
- * 5. 客户端实时计算生长进度
+ * v1.5.5 优化：
+ * - HUD 风格 UI（圆角、阴影、半透明）
+ * - 光标反馈：悬停显示操作图标
+ * - 呼吸动画：作物轻微起伏
+ * - 成熟闪光特效
+ * - 16:9 适配布局
  */
 
 class GameScene extends Phaser.Scene {
     constructor() {
         super({ key: 'GameScene' });
         
-        // 引用
         this.farmModel = null;
         this.plotSprites = [];
-        this.selectedTool = 'hoe'; // hoe, seed, water
+        this.selectedTool = 'hoe';
         this.selectedCrop = 'corn';
-        this.uiContainer = null;
         this.goldText = null;
+        this.cursorIcon = null;
+        this.tooltipBg = null;
+        this.tooltipText = null;
+        this.W = 720;  // 设计宽度
+        this.H = 405;  // 设计高度
     }
 
-    /**
-     * 创建场景
-     */
     create() {
-        // 初始化农场模型
         this.farmModel = new FarmModel();
         this.farmModel.addListener(this.onModelUpdate.bind(this));
         
-        // 加载数据
         this.loadGameData();
-        
-        // 绘制背景
         this.drawBackground();
-        
-        // 绘制地块网格
         this.drawPlotGrid();
-        
-        // 创建 UI
-        this.createUI();
-        
-        // 设置输入
+        this.createHUD();
+        this.setupCursor();
         this.setupInput();
         
-        // 启动更新循环
+        // 每秒更新生长
         this.time.addEvent({
             delay: 1000,
             callback: this.updateGrowth,
             callbackScope: this,
             loop: true
         });
-    }
-
-    /**
-     * 加载游戏数据
-     */
-    async loadGameData() {
-        // 先尝试本地缓存
-        if (this.farmModel.plots.length > 0) {
-            this.syncPlotsToGraphics();
-        }
         
-        // 异步从服务器加载
-        await this.farmModel.loadFromServer();
-        this.syncPlotsToGraphics();
-        this.updateGoldDisplay();
+        // 呼吸动画循环
+        this.time.addEvent({
+            delay: 2000,
+            callback: this.breatheCrops,
+            callbackScope: this,
+            loop: true
+        });
     }
 
-    /**
-     * 绘制背景
-     */
+    // ============== 背景 ==============
     drawBackground() {
-        // 草地背景
         const bg = this.add.graphics();
-        bg.fillStyle(0x6b8e23, 1); // 草地绿
-        bg.fillRect(0, 0, this.scale.width, this.scale.height);
+        // 渐变草地
+        bg.fillGradientStyle(0x5a8e32, 0x5a8e32, 0x3d6b22, 0x3d6b22, 1);
+        bg.fillRect(0, 0, this.W, this.H);
         
-        // 添加一些草地纹理
-        for (let i = 0; i < 50; i++) {
-            const x = Phaser.Math.Between(0, this.scale.width);
-            const y = Phaser.Math.Between(0, this.scale.height);
-            bg.fillStyle(0x5a7a1e, 0.3);
-            bg.fillCircle(x, y, Phaser.Math.Between(2, 5));
+        // 草地纹理点缀
+        for (let i = 0; i < 80; i++) {
+            const x = Phaser.Math.Between(0, this.W);
+            const y = Phaser.Math.Between(0, this.H);
+            bg.fillStyle(Phaser.Math.Between(0x4a7a2e, 0x6a9e42), 0.4);
+            bg.fillCircle(x, y, Phaser.Math.Between(1, 4));
+        }
+        
+        // 装饰：小路
+        bg.fillStyle(0x8B7355, 0.3);
+        bg.fillRect(this.W / 2 - 15, this.H * 0.55, 30, this.H * 0.45);
+        
+        // 装饰：栅栏（顶部）
+        bg.lineStyle(3, 0x6B4226, 0.6);
+        bg.strokeRect(10, 8, this.W - 20, 4);
+        for (let x = 30; x < this.W - 20; x += 40) {
+            bg.fillStyle(0x6B4226, 0.5);
+            bg.fillRect(x - 2, 2, 4, 16);
         }
     }
 
-    /**
-     * 绘制地块网格
-     */
+    // ============== 地块网格 ==============
     drawPlotGrid() {
         const gridSize = 5;
-        const margin = 40; // 边距
-        const spacing = Math.min(
-            (this.scale.width - margin * 2) / gridSize,
-            (this.scale.height - margin * 2 - 120) / gridSize // 减去底部工具栏
-        );
+        const plotSize = 52;
+        const gap = 6;
+        const gridW = gridSize * plotSize + (gridSize - 1) * gap;
+        const gridH = gridW;
+        const startX = (this.W - gridW) / 2;
+        const startY = 35;
         
-        const gridWidth = spacing * gridSize;
-        const gridHeight = spacing * gridSize;
-        const startX = (this.scale.width - gridWidth) / 2;
-        const startY = (this.scale.height - gridHeight - 100) / 2; // 居中
-        
-        // 存储网格信息
-        this.gridInfo = {
-            size: gridSize,
-            spacing: spacing,
-            startX: startX,
-            startY: startY
-        };
-        
-        // 创建地块容器
+        this.gridInfo = { size: gridSize, plotSize, gap, startX, startY };
         this.plotContainer = this.add.container(0, 0);
         
-        // 绘制每个地块
-        for (let y = 0; y < gridSize; y++) {
-            for (let x = 0; x < gridSize; x++) {
-                const plotX = startX + x * spacing + spacing / 2;
-                const plotY = startY + y * spacing + spacing / 2;
-                const plotId = y * gridSize + x;
-                
-                this.createPlotSprite(plotId, plotX, plotY, spacing - 4);
+        for (let row = 0; row < gridSize; row++) {
+            for (let col = 0; col < gridSize; col++) {
+                const px = startX + col * (plotSize + gap) + plotSize / 2;
+                const py = startY + row * (plotSize + gap) + plotSize / 2;
+                const plotId = row * gridSize + col;
+                this.createPlotSprite(plotId, px, py, plotSize);
             }
         }
     }
 
-    /**
-     * 创建单个地块 Sprite
-     */
     createPlotSprite(plotId, x, y, size) {
         const container = this.add.container(x, y);
         
         // 地块背景
         const bg = this.add.graphics();
-        bg.fillStyle(0x8B6914, 1); // 土壤色
-        bg.fillRoundedRect(-size/2, -size/2, size, size, 8);
-        bg.lineStyle(2, 0x6B4F0E, 1);
-        bg.strokeRoundedRect(-size/2, -size/2, size, size, 8);
-        
+        this.drawPlotBg(bg, size, 'empty');
         container.add(bg);
         
-        // 作物显示区域
-        const cropSprite = this.add.graphics();
-        cropSprite.plotId = plotId;
-        container.add(cropSprite);
+        // 作物层
+        const cropGfx = this.add.graphics();
+        container.add(cropGfx);
         
-        // 进度条背景
+        // 进度条
         const progressBg = this.add.graphics();
-        progressBg.fillStyle(0x000000, 0.3);
-        progressBg.fillRoundedRect(-size/2 + 4, size/2 - 12, size - 8, 6, 3);
         progressBg.setVisible(false);
         container.add(progressBg);
         
-        // 进度条
         const progressBar = this.add.graphics();
         progressBar.setVisible(false);
         container.add(progressBar);
         
-        // 存储引用
-        const plotData = {
-            container,
-            bg,
-            cropSprite,
-            progressBg,
-            progressBar,
-            size,
-            plotId
-        };
+        // 成熟闪光层
+        const sparkle = this.add.graphics();
+        sparkle.setVisible(false);
+        container.add(sparkle);
         
-        this.plotSprites.push(plotData);
+        const ps = { container, bg, cropGfx, progressBg, progressBar, sparkle, size, plotId };
+        this.plotSprites.push(ps);
         
-        // 使可交互
-        const hitArea = this.add.rectangle(0, 0, size, size, 0x000000, 0);
-        hitArea.setInteractive({ useHandCursor: true });
-        container.add(hitArea);
+        // 交互区域
+        const hit = this.add.rectangle(0, 0, size, size, 0x000000, 0);
+        hit.setInteractive({ useHandCursor: true });
+        container.add(hit);
         
-        // 点击事件
-        hitArea.on('pointerdown', () => this.onPlotClick(plotId));
-        hitArea.on('pointerover', () => this.onPlotHover(plotId, true));
-        hitArea.on('pointerout', () => this.onPlotHover(plotId, false));
-        
-        return plotData;
+        hit.on('pointerdown', () => this.onPlotClick(plotId));
+        hit.on('pointerover', () => this.onPlotHover(plotId, true));
+        hit.on('pointerout', () => this.onPlotHover(plotId, false));
     }
 
-    /**
-     * 同步地块数据到图形
-     */
-    syncPlotsToGraphics() {
+    drawPlotBg(gfx, size, state) {
+        gfx.clear();
+        const half = size / 2;
+        const colors = {
+            empty:   { fill: 0x9B8B6B, stroke: 0x8B7B5B, lw: 1 },
+            tilled:  { fill: 0x6B4F0E, stroke: 0x5A3E0A, lw: 2 },
+            planted: { fill: 0x5A3E0A, stroke: 0x4A2E00, lw: 2 },
+            mature:  { fill: 0xFFD700, stroke: 0xFFA500, lw: 2 }
+        };
+        const c = colors[state] || colors.empty;
+        
+        // 阴影
+        gfx.fillStyle(0x000000, 0.15);
+        gfx.fillRoundedRect(-half + 2, -half + 2, size, size, 6);
+        
+        // 主体
+        gfx.fillStyle(c.fill, 1);
+        gfx.fillRoundedRect(-half, -half, size, size, 6);
+        
+        // 内部纹理（土壤颗粒感）
+        if (state === 'tilled' || state === 'planted') {
+            for (let i = 0; i < 6; i++) {
+                gfx.fillStyle(0x4A2E00, 0.3);
+                const dx = Phaser.Math.Between(-half + 4, half - 4);
+                const dy = Phaser.Math.Between(-half + 4, half - 4);
+                gfx.fillCircle(dx, dy, 1.5);
+            }
+        }
+        
+        // 边框
+        gfx.lineStyle(c.lw, c.stroke, 0.8);
+        gfx.strokeRoundedRect(-half, -half, size, size, 6);
+    }
+
+    // ============== 作物绘制 ==============
+    drawCrop(gfx, plot, size) {
+        if (!plot.cropId) return;
+        const stage = plot.getGrowthStage();
+        const s = size * 0.35 * (0.5 + stage * 0.2);
+        
+        const palettes = {
+            corn:   { stem: 0x228B22, fruit: 0xFFD700, leaf: 0x32CD32 },
+            wheat:  { stem: 0xDAA520, fruit: 0xF0C040, leaf: 0x8B7355 },
+            tomato: { stem: 0x228B22, fruit: 0xDC143C, leaf: 0x2E8B57 },
+            carrot: { stem: 0x228B22, fruit: 0xFF6347, leaf: 0x32CD32 }
+        };
+        const pal = palettes[plot.cropId] || palettes.corn;
+        
+        gfx.clear();
+        
+        // 茎
+        gfx.fillStyle(pal.stem, 1);
+        gfx.fillRect(-1.5, -s, 3, s);
+        
+        // 叶子（阶段 > 0）
+        if (stage > 0) {
+            gfx.fillStyle(pal.leaf, 0.9);
+            gfx.fillTriangle(-s * 0.6, -s * 0.3, -2, -s * 0.5, -2, -s * 0.1);
+            gfx.fillTriangle(s * 0.6, -s * 0.3, 2, -s * 0.5, 2, -s * 0.1);
+        }
+        
+        // 果实
+        if (stage >= 2) {
+            gfx.fillStyle(pal.fruit, 1);
+            switch (plot.cropId) {
+                case 'corn':
+                    gfx.fillEllipse(0, -s - 4, 8, 14);
+                    gfx.fillStyle(0x8B6914, 1);
+                    gfx.fillRect(-1, -s - 10, 2, 6); // 玉米须
+                    break;
+                case 'wheat':
+                    gfx.fillEllipse(0, -s - 3, 6, 10);
+                    break;
+                case 'tomato':
+                    gfx.fillCircle(0, -s * 0.6, s * 0.35);
+                    gfx.fillStyle(0x228B22, 1);
+                    gfx.fillTriangle(0, -s * 0.6 - s * 0.35, -3, -s * 0.6 - s * 0.1, 3, -s * 0.6 - s * 0.1);
+                    break;
+                case 'carrot':
+                    gfx.fillTriangle(0, -s, -s * 0.3, s * 0.2, s * 0.3, s * 0.2);
+                    break;
+            }
+        }
+    }
+
+    // ============== 成熟闪光 ==============
+    sparkleMature(ps) {
+        const plot = this.farmModel.getPlot(ps.plotId);
+        if (!plot || !plot.isMature()) {
+            ps.sparkle.setVisible(false);
+            return;
+        }
+        
+        ps.sparkle.setVisible(true);
+        ps.sparkle.clear();
+        
+        const t = Date.now() / 500;
+        const half = ps.size / 2;
+        
+        // 旋转星光
+        for (let i = 0; i < 4; i++) {
+            const angle = t + (Math.PI / 2) * i;
+            const dist = half * 0.6;
+            const sx = Math.cos(angle) * dist;
+            const sy = Math.sin(angle) * dist;
+            const alpha = 0.4 + Math.sin(t * 2 + i) * 0.3;
+            
+            ps.sparkle.fillStyle(0xFFFFFF, alpha);
+            ps.sparkle.fillStar(sx, sy, 2, 5, 3);
+        }
+    }
+
+    // ============== 呼吸动画 ==============
+    breatheCrops() {
         this.plotSprites.forEach(ps => {
             const plot = this.farmModel.getPlot(ps.plotId);
-            if (plot) {
-                this.updatePlotVisual(ps, plot);
-            }
+            if (!plot || plot.state !== 'planted') return;
+            
+            // 轻微缩放呼吸
+            const scale = 1 + Math.sin(Date.now() / 1000) * 0.03;
+            ps.container.setScale(scale);
         });
     }
 
-    /**
-     * 更新单个地块视觉
-     */
-    updatePlotVisual(ps, plot) {
-        const config = plot.getCropConfig();
-        
-        // 清空作物图形
-        ps.cropSprite.clear();
-        
-        // 根据状态绘制
-        switch (plot.state) {
-            case 'empty':
-                // 空地：浅色边框
-                ps.bg.clear();
-                ps.bg.fillStyle(0x8B6914, 1);
-                ps.bg.fillRoundedRect(-ps.size/2, -ps.size/2, ps.size, ps.size, 8);
-                ps.bg.lineStyle(1, 0xA07830, 1);
-                ps.bg.strokeRoundedRect(-ps.size/2, -ps.size/2, ps.size, ps.size, 8);
-                ps.progressBg.setVisible(false);
-                ps.progressBar.setVisible(false);
-                break;
-                
-            case 'tilled':
-                // 已开垦：深色边框
-                ps.bg.clear();
-                ps.bg.fillStyle(0x6B4F0E, 1);
-                ps.bg.fillRoundedRect(-ps.size/2, -ps.size/2, ps.size, ps.size, 8);
-                ps.bg.lineStyle(2, 0x5A3E0A, 1);
-                ps.bg.strokeRoundedRect(-ps.size/2, -ps.size/2, ps.size, ps.size, 8);
-                ps.progressBg.setVisible(false);
-                ps.progressBar.setVisible(false);
-                break;
-                
-            case 'planted':
-                if (plot.isMature()) {
-                    // 成熟：发光效果
-                    ps.bg.clear();
-                    ps.bg.fillStyle(0xFFD700, 1); // 金色
-                    ps.bg.fillRoundedRect(-ps.size/2, -ps.size/2, ps.size, ps.size, 8);
-                    ps.bg.lineStyle(3, 0xFFA500, 1);
-                    ps.bg.strokeRoundedRect(-ps.size/2, -ps.size/2, ps.size, ps.size, 8);
-                } else {
-                    // 生长中
-                    ps.bg.clear();
-                    ps.bg.fillStyle(0x5A3E0A, 1); // 深土壤色
-                    ps.bg.fillRoundedRect(-ps.size/2, -ps.size/2, ps.size, ps.size, 8);
-                    ps.bg.lineStyle(2, 0x4A2E00, 1);
-                    ps.bg.strokeRoundedRect(-ps.size/2, -ps.size/2, ps.size, ps.size, 8);
-                }
-                
-                // 绘制作物
-                this.drawCrop(ps.cropSprite, plot, ps.size);
-                
-                // 进度条
-                if (!plot.isMature()) {
-                    const progress = plot.getGrowthProgress();
-                    ps.progressBg.setVisible(true);
-                    ps.progressBar.setVisible(true);
-                    ps.progressBar.clear();
-                    ps.progressBar.fillStyle(0x4CAF50, 1);
-                    ps.progressBar.fillRoundedRect(
-                        -ps.size/2 + 4,
-                        ps.size/2 - 12,
-                        (ps.size - 8) * progress,
-                        6, 3
-                    );
-                } else {
-                    ps.progressBg.setVisible(false);
-                    ps.progressBar.setVisible(false);
-                }
-                break;
-        }
-    }
-
-    /**
-     * 绘制作物
-     */
-    drawCrop(graphics, plot, size) {
-        if (!plot.cropId) return;
-        
-        const stage = plot.getGrowthStage();
-        const cropSize = size * 0.4 * (0.5 + stage * 0.25); // 阶段越高越大
-        
-        // 颜色映射
-        const colors = {
-            corn: { seed: 0x90EE90, grow: 0x228B22, mature: 0xFFD700 },
-            wheat: { seed: 0x90EE90, grow: 0xDAA520, mature: 0xFFD700 },
-            tomato: { seed: 0x90EE90, grow: 0xFF6347, mature: 0xDC143C },
-            carrot: { seed: 0x90EE90, grow: 0xFFA500, mature: 0xFF4500 }
-        };
-        
-        const color = colors[plot.cropId] || colors.corn;
-        const currentColor = stage === 0 ? color.seed : 
-                           stage === 1 ? color.grow : color.mature;
-        
-        // 绘制茎/作物
-        graphics.fillStyle(currentColor, 1);
-        
-        switch (plot.cropId) {
-            case 'corn':
-                // 玉米：向上的茎
-                graphics.fillRect(-2, -cropSize, 4, cropSize);
-                if (stage > 0) {
-                    graphics.fillEllipse(0, -cropSize - 5, 8, 12);
-                }
-                break;
-                
-            case 'wheat':
-                // 小麦：麦穗
-                graphics.fillRect(-1, -cropSize, 2, cropSize);
-                if (stage > 0) {
-                    graphics.fillEllipse(0, -cropSize - 3, 6, 8);
-                }
-                break;
-                
-            case 'tomato':
-                // 番茄：圆球
-                graphics.fillCircle(0, -cropSize/2, cropSize/2);
-                break;
-                
-            case 'carrot':
-                // 胡萝卜：三角形
-                graphics.fillTriangle(
-                    0, -cropSize,
-                    -cropSize/2, cropSize/3,
-                    cropSize/2, cropSize/3
-                );
-                break;
-        }
-        
-        // 叶子
-        if (stage > 0) {
-            graphics.fillStyle(0x228B22, 1);
-            graphics.fillEllipse(-cropSize/2, -cropSize/4, cropSize/3, cropSize/4);
-            graphics.fillEllipse(cropSize/2, -cropSize/4, cropSize/3, cropSize/4);
-        }
-    }
-
-    /**
-     * 更新生长状态
-     * 每秒调用，更新所有生长中的作物
-     */
+    // ============== 更新逻辑 ==============
     updateGrowth() {
         this.plotSprites.forEach(ps => {
             const plot = this.farmModel.getPlot(ps.plotId);
-            if (plot && plot.state === 'planted' && !plot.isMature()) {
-                this.updatePlotVisual(ps, plot);
-            }
+            if (!plot || plot.state !== 'planted') return;
+            
+            this.updatePlotVisual(ps, plot);
+            if (plot.isMature()) this.sparkleMature(ps);
         });
     }
 
-    /**
-     * 地块点击处理
-     */
+    updatePlotVisual(ps, plot) {
+        const state = plot.isMature() ? 'mature' : plot.state;
+        this.drawPlotBg(ps.bg, ps.size, state);
+        this.drawCrop(ps.cropGfx, plot, ps.size);
+        
+        // 进度条
+        if (plot.state === 'planted' && !plot.isMature()) {
+            const p = plot.getGrowthProgress();
+            const half = ps.size / 2;
+            ps.progressBg.setVisible(true);
+            ps.progressBg.clear();
+            ps.progressBg.fillStyle(0x000000, 0.4);
+            ps.progressBg.fillRoundedRect(-half + 3, half - 8, ps.size - 6, 5, 2);
+            
+            ps.progressBar.setVisible(true);
+            ps.progressBar.clear();
+            ps.progressBar.fillStyle(0x4CAF50, 1);
+            ps.progressBar.fillRoundedRect(-half + 3, half - 8, (ps.size - 6) * p, 5, 2);
+        } else {
+            ps.progressBg.setVisible(false);
+            ps.progressBar.setVisible(false);
+        }
+    }
+
+    syncPlotsToGraphics() {
+        this.plotSprites.forEach(ps => {
+            const plot = this.farmModel.getPlot(ps.plotId);
+            if (plot) this.updatePlotVisual(ps, plot);
+        });
+    }
+
+    // ============== 光标反馈 ==============
+    setupCursor() {
+        // 光标图标（跟随鼠标）
+        this.cursorIcon = this.add.text(0, 0, '', {
+            fontSize: '22px',
+            padding: { x: 4, y: 4 }
+        });
+        this.cursorIcon.setDepth(1000);
+        this.cursorIcon.setVisible(false);
+        this.cursorIcon.setScrollFactor(0);
+        
+        // 提示框
+        this.tooltipBg = this.add.graphics();
+        this.tooltipBg.setDepth(999);
+        this.tooltipBg.setVisible(false);
+        
+        this.tooltipText = this.add.text(0, 0, '', {
+            fontSize: '11px',
+            color: '#FFFFFF',
+            fontFamily: 'Arial',
+            padding: { x: 6, y: 3 }
+        });
+        this.tooltipText.setDepth(999);
+        this.tooltipText.setVisible(false);
+    }
+
+    onPlotHover(plotId, isOver) {
+        const ps = this.plotSprites.find(p => p.plotId === plotId);
+        if (!ps) return;
+        const plot = this.farmModel.getPlot(plotId);
+        
+        if (isOver) {
+            // 高亮边框
+            ps.bg.clear();
+            const half = ps.size / 2;
+            ps.bg.fillStyle(0xFFFFFF, 0.1);
+            ps.bg.fillRoundedRect(-half, -half, ps.size, ps.size, 6);
+            ps.bg.lineStyle(2, 0xFFFFFF, 0.6);
+            ps.bg.strokeRoundedRect(-half, -half, ps.size, ps.size, 6);
+            
+            // 光标图标
+            let icon = '❓';
+            if (plot.state === 'empty') icon = '⛏️';
+            else if (plot.state === 'tilled') icon = '🌱';
+            else if (plot.state === 'planted' && plot.isMature()) icon = '🫴';
+            else if (plot.state === 'planted') icon = '💧';
+            
+            this.cursorIcon.setText(icon);
+            this.cursorIcon.setVisible(true);
+            
+            // 提示框
+            let tip = plot.getStatusText();
+            if (plot.state === 'tilled') tip = '点击种植';
+            else if (plot.isMature()) tip = '点击收获！';
+            
+            const tx = ps.container.x;
+            const ty = ps.container.y - ps.size / 2 - 18;
+            
+            this.tooltipText.setText(tip);
+            this.tooltipText.setPosition(tx, ty);
+            this.tooltipText.setOrigin(0.5);
+            this.tooltipText.setVisible(true);
+            
+            const tw = this.tooltipText.width;
+            this.tooltipBg.clear();
+            this.tooltipBg.fillStyle(0x000000, 0.7);
+            this.tooltipBg.fillRoundedRect(tx - tw / 2 - 4, ty - 8, tw + 8, 18, 6);
+            this.tooltipBg.setVisible(true);
+        } else {
+            // 恢复
+            if (plot) this.updatePlotVisual(ps, plot);
+            this.cursorIcon.setVisible(false);
+            this.tooltipBg.setVisible(false);
+            this.tooltipText.setVisible(false);
+        }
+    }
+
+    // ============== 点击处理 ==============
     async onPlotClick(plotId) {
         const plot = this.farmModel.getPlot(plotId);
         if (!plot) return;
         
-        // 视觉效果：点击反馈
+        // 点击缩放反馈
         this.tweens.add({
-            targets: this.plotContainer.list.find(c => c.plotId === plotId),
-            scaleX: 0.95,
-            scaleY: 0.95,
-            duration: 50,
-            yoyo: true
+            targets: this.plotSprites.find(p => p.plotId === plotId).container,
+            scaleX: 0.9, scaleY: 0.9,
+            duration: 60, yoyo: true,
+            ease: 'Back.easeOut'
         });
         
-        // 根据当前工具和地块状态处理
         switch (plot.state) {
             case 'empty':
-                // 空地 -> 开垦
                 if (this.selectedTool === 'hoe') {
                     await this.farmModel.till(plotId);
+                    this.showFloatingText('✅ 已开垦', plotId);
                 }
                 break;
-                
             case 'tilled':
-                // 已开垦 -> 种植
                 if (this.selectedTool === 'seed') {
                     if (this.farmModel.getSeedCount(this.selectedCrop) > 0) {
                         await this.farmModel.plant(plotId, this.selectedCrop);
+                        this.showFloatingText('🌱 已种植', plotId);
                     } else {
-                        this.showMessage('种子不足！');
+                        this.showFloatingText('❌ 种子不足', plotId);
                     }
                 }
                 break;
-                
             case 'planted':
                 if (plot.isMature()) {
-                    // 成熟 -> 收获
                     await this.farmModel.harvest(plotId);
-                    this.showMessage('收获成功！');
-                } else {
-                    // 未成熟 -> 浇水
-                    if (this.selectedTool === 'water') {
-                        await this.farmModel.water(plotId);
-                        this.showMessage('浇水成功！');
-                    }
+                    this.showFloatingText('🎉 +1', plotId);
+                } else if (this.selectedTool === 'water') {
+                    await this.farmModel.water(plotId);
+                    this.showFloatingText('💧 浇水', plotId);
                 }
                 break;
         }
@@ -401,272 +430,307 @@ class GameScene extends Phaser.Scene {
         this.updateGoldDisplay();
     }
 
-    /**
-     * 地块悬停效果
-     */
-    onPlotHover(plotId, isOver) {
-        const ps = this.plotSprites.find(p => p.plotId === plotId);
-        if (!ps) return;
+    // ============== HUD 界面 ==============
+    createHUD() {
+        // === 顶部金币栏 ===
+        this.createGoldBar();
         
-        const plot = this.farmModel.getPlot(plotId);
-        
-        // 高亮边框
-        ps.bg.clear();
-        if (isOver) {
-            // 悬停：高亮边框
-            ps.bg.fillStyle(plot.state === 'empty' ? 0x8B6914 : 
-                           plot.state === 'tilled' ? 0x6B4F0E : 0x5A3E0A, 1);
-            ps.bg.fillRoundedRect(-ps.size/2, -ps.size/2, ps.size, ps.size, 8);
-            ps.bg.lineStyle(3, 0xFFFFFF, 0.8);
-            ps.bg.strokeRoundedRect(-ps.size/2, -ps.size/2, ps.size, ps.size, 8);
-        } else {
-            // 恢复默认
-            this.updatePlotVisual(ps, plot);
-        }
-        
-        // 显示提示
-        if (isOver && plot) {
-            this.showTooltip(plot);
-        } else {
-            this.hideTooltip();
-        }
+        // === 底部工具栏（HUD 风格）===
+        this.createToolbarHUD();
     }
 
-    /**
-     * 创建 UI
-     */
-    createUI() {
-        // 金币显示
-        const goldBg = this.add.graphics();
-        goldBg.fillStyle(0x000000, 0.5);
-        goldBg.fillRoundedRect(this.scale.width/2 - 80, 15, 160, 36, 18);
+    createGoldBar() {
+        const hud = this.add.container(0, 0);
+        hud.setScrollFactor(0);
+        hud.setDepth(100);
         
-        const coinIcon = this.add.text(this.scale.width/2 - 55, 23, '💰', { fontSize: '20px' });
+        const barW = 140;
+        const barH = 32;
+        const bx = this.W / 2;
+        const by = 16;
         
-        this.goldText = this.add.text(this.scale.width/2 - 30, 23, '100', {
-            fontSize: '20px',
+        // 背景：半透明 + 圆角 + 阴影
+        const bg = this.add.graphics();
+        bg.fillStyle(0x000000, 0.45);
+        bg.fillRoundedRect(bx - barW / 2, by - barH / 2, barW, barH, barH / 2);
+        // 内发光边
+        bg.lineStyle(1, 0xFFFFFF, 0.15);
+        bg.strokeRoundedRect(bx - barW / 2, by - barH / 2, barW, barH, barH / 2);
+        hud.add(bg);
+        
+        // 金币图标
+        const coin = this.add.text(bx - barW / 2 + 14, by, '💰', { fontSize: '16px' });
+        coin.setOrigin(0.5);
+        hud.add(coin);
+        
+        // 金币数字
+        this.goldText = this.add.text(bx - barW / 2 + 36, by, '100', {
+            fontSize: '15px',
             fontFamily: 'Arial',
-            color: '#FFD700',
-            fontStyle: 'bold'
+            fontStyle: 'bold',
+            color: '#FFD700'
         });
-        
-        // 底部工具栏
-        this.createToolbar();
+        this.goldText.setOrigin(0, 0.5);
+        hud.add(this.goldText);
     }
 
-    /**
-     * 创建工具栏
-     */
-    createToolbar() {
-        const toolbarY = this.scale.height - 70;
+    createToolbarHUD() {
+        const hud = this.add.container(0, 0);
+        hud.setScrollFactor(0);
+        hud.setDepth(100);
         
-        // 工具栏背景
-        const toolbarBg = this.add.graphics();
-        toolbarBg.fillStyle(0x000000, 0.7);
-        toolbarBg.fillRoundedRect(20, toolbarY, this.scale.width - 40, 55, 12);
+        const barW = 320;
+        const barH = 56;
+        const bx = this.W / 2;
+        const by = this.H - 16;
+        
+        // 背景：毛玻璃效果
+        const bg = this.add.graphics();
+        bg.fillStyle(0x1a1a2e, 0.75);
+        bg.fillRoundedRect(bx - barW / 2, by - barH, barW, barH, 16);
+        // 顶部高光线
+        bg.lineStyle(1, 0xFFFFFF, 0.12);
+        bg.lineBetween(bx - barW / 2 + 16, by - barH + 1, bx + barW / 2 - 16, by - barH + 1);
+        // 外发光
+        bg.lineStyle(1, 0xFFFFFF, 0.06);
+        bg.strokeRoundedRect(bx - barW / 2, by - barH, barW, barH, 16);
+        hud.add(bg);
         
         // 工具按钮
         const tools = [
-            { id: 'hoe', icon: '⛏️', label: '锄头' },
-            { id: 'seed', icon: '🌱', label: '种子' },
+            { id: 'hoe',   icon: '⛏️', label: '锄头' },
+            { id: 'seed',  icon: '🌱', label: '种子' },
             { id: 'water', icon: '💧', label: '浇水' }
         ];
         
         this.toolButtons = [];
+        const btnStartX = bx - (tools.length * 70) / 2 + 35;
         
-        tools.forEach((tool, index) => {
-            const x = 50 + index * 80;
-            const btn = this.createToolButton(x, toolbarY + 28, tool, index === 0);
+        tools.forEach((tool, i) => {
+            const tx = btnStartX + i * 70;
+            const ty = by - barH / 2;
+            const btn = this.createToolBtn(tx, ty, tool, i === 0);
+            hud.add(btn);
             this.toolButtons.push(btn);
         });
         
-        // 种子选择器（当选择种子工具时显示）
-        this.createSeedSelector(toolbarY);
+        // 种子选择浮层
+        this.createSeedPopup(hud, bx, by - barH - 8);
     }
 
-    /**
-     * 创建工具按钮
-     */
-    createToolButton(x, y, tool, isSelected = false) {
+    createToolBtn(x, y, tool, selected) {
         const container = this.add.container(x, y);
         
-        // 按钮背景
+        // 按钮圆形背景
         const bg = this.add.graphics();
-        bg.fillStyle(isSelected ? 0x6B8E23 : 0x333333, 1);
-        bg.fillRoundedRect(-30, -22, 60, 44, 10);
+        const r = 22;
+        if (selected) {
+            // 选中：绿色发光
+            bg.fillStyle(0x4CAF50, 0.3);
+            bg.fillCircle(0, 0, r + 4);
+            bg.fillStyle(0x4CAF50, 0.9);
+            bg.fillCircle(0, 0, r);
+        } else {
+            bg.fillStyle(0x333344, 0.8);
+            bg.fillCircle(0, 0, r);
+            bg.lineStyle(1, 0xFFFFFF, 0.1);
+            bg.strokeCircle(0, 0, r);
+        }
         container.add(bg);
         
         // 图标
-        const icon = this.add.text(0, -8, tool.icon, { fontSize: '24px' });
+        const icon = this.add.text(0, -1, tool.icon, { fontSize: '20px' });
         icon.setOrigin(0.5);
         container.add(icon);
         
         // 标签
-        const label = this.add.text(0, 12, tool.label, {
-            fontSize: '10px',
-            color: '#FFFFFF'
+        const label = this.add.text(0, r + 10, tool.label, {
+            fontSize: '9px',
+            color: selected ? '#4CAF50' : '#888899',
+            fontFamily: 'Arial'
         });
         label.setOrigin(0.5);
         container.add(label);
         
-        // 使可点击
-        const hitArea = this.add.rectangle(0, 0, 60, 44, 0x000000, 0);
-        hitArea.setInteractive({ useHandCursor: true });
-        container.add(hitArea);
+        // 交互
+        const hit = this.add.circle(0, 0, r, 0x000000, 0);
+        hit.setInteractive({ useHandCursor: true });
+        container.add(hit);
         
-        hitArea.on('pointerdown', () => {
-            this.selectTool(tool.id);
+        hit.on('pointerdown', () => this.selectTool(tool.id));
+        hit.on('pointerover', () => {
+            if (!container.isSelected) {
+                bg.clear();
+                bg.fillStyle(0x444455, 0.9);
+                bg.fillCircle(0, 0, r);
+            }
+        });
+        hit.on('pointerout', () => {
+            if (!container.isSelected) {
+                bg.clear();
+                bg.fillStyle(0x333344, 0.8);
+                bg.fillCircle(0, 0, r);
+                bg.lineStyle(1, 0xFFFFFF, 0.1);
+                bg.strokeCircle(0, 0, r);
+            }
         });
         
-        // 存储引用
         container.toolData = tool;
         container.bg = bg;
-        container.isSelected = isSelected;
+        container.iconObj = icon;
+        container.labelObj = label;
+        container.isSelected = selected;
         
         return container;
     }
 
-    /**
-     * 选择工具
-     */
-    selectTool(toolId) {
-        this.selectedTool = toolId;
+    createSeedPopup(parentHud, cx, bottomY) {
+        this.seedPopup = this.add.container(cx, bottomY);
+        this.seedPopup.setVisible(false);
+        parentHud.add(this.seedPopup);
         
-        // 更新按钮状态
-        this.toolButtons.forEach(btn => {
-            const isSelected = btn.toolData.id === toolId;
-            btn.isSelected = isSelected;
-            btn.bg.clear();
-            btn.bg.fillStyle(isSelected ? 0x6B8E23 : 0x333333, 1);
-            btn.bg.fillRoundedRect(-30, -22, 60, 44, 10);
-        });
+        const seeds = [
+            { id: 'corn',   icon: '🌽', name: '玉米' },
+            { id: 'wheat',  icon: '🌾', name: '小麦' },
+            { id: 'tomato', icon: '🍅', name: '番茄' },
+            { id: 'carrot', icon: '🥕', name: '萝卜' }
+        ];
         
-        // 显示/隐藏种子选择器
-        if (this.seedSelector) {
-            this.seedSelector.setVisible(toolId === 'seed');
-        }
-    }
-
-    /**
-     * 创建种子选择器
-     */
-    createSeedSelector(toolbarY) {
-        this.seedSelector = this.add.container(this.scale.width / 2, toolbarY - 20);
-        this.seedSelector.setVisible(false);
+        const popupW = seeds.length * 56 + 16;
+        const popupH = 64;
         
-        const seeds = ['corn', 'wheat', 'tomato', 'carrot'];
-        const icons = { corn: '🌽', wheat: '🌾', tomato: '🍅', carrot: '🥕' };
+        // 弹出背景
+        const bg = this.add.graphics();
+        bg.fillStyle(0x1a1a2e, 0.85);
+        bg.fillRoundedRect(-popupW / 2, -popupH, popupW, popupH, 12);
+        bg.lineStyle(1, 0xFFFFFF, 0.08);
+        bg.strokeRoundedRect(-popupW / 2, -popupH, popupW, popupH, 12);
+        // 小三角
+        bg.fillStyle(0x1a1a2e, 0.85);
+        bg.fillTriangle(-6, 0, 6, 0, 0, 6);
+        this.seedPopup.add(bg);
         
-        seeds.forEach((seed, index) => {
-            const x = (index - 1.5) * 50;
-            const count = this.farmModel.getSeedCount(seed);
+        this.seedBtns = [];
+        seeds.forEach((seed, i) => {
+            const sx = -popupW / 2 + 28 + i * 56;
+            const sy = -popupH / 2;
             
-            const btn = this.add.container(x, 0);
+            const btn = this.add.container(sx, sy);
             
-            // 背景
-            const bg = this.add.graphics();
-            bg.fillStyle(count > 0 ? 0x333333 : 0x222222, 1);
-            bg.fillCircle(0, 0, 22);
-            btn.add(bg);
+            const btnBg = this.add.graphics();
+            btnBg.fillStyle(0x333344, 0.8);
+            btnBg.fillRoundedRect(-20, -20, 40, 40, 10);
+            btn.add(btnBg);
             
-            // 图标
-            const icon = this.add.text(0, -2, icons[seed], { fontSize: '24px' });
+            const icon = this.add.text(0, -3, seed.icon, { fontSize: '20px' });
             icon.setOrigin(0.5);
             btn.add(icon);
             
-            // 数量
-            const countText = this.add.text(15, 10, `x${count}`, {
-                fontSize: '10px',
-                color: '#FFFFFF',
-                backgroundColor: '#000000'
+            const count = this.farmModel.getSeedCount(seed.id);
+            const countTxt = this.add.text(0, 16, `x${count}`, {
+                fontSize: '8px',
+                color: count > 0 ? '#AAAAAA' : '#FF4444',
+                fontFamily: 'Arial'
             });
-            countText.setOrigin(0.5);
-            btn.add(countText);
+            countTxt.setOrigin(0.5);
+            btn.add(countTxt);
             
-            // 点击
-            const hitArea = this.add.circle(0, 0, 22, 0x000000, 0);
-            hitArea.setInteractive({ useHandCursor: true });
-            btn.add(hitArea);
+            const hit = this.add.rectangle(0, 0, 40, 40, 0x000000, 0);
+            hit.setInteractive({ useHandCursor: true });
+            btn.add(hit);
             
-            hitArea.on('pointerdown', () => {
-                this.selectSeed(seed);
-            });
+            hit.on('pointerdown', () => this.selectSeed(seed.id));
             
-            this.seedSelector.add(btn);
+            btn.seedId = seed.id;
+            btn.bg = btnBg;
+            this.seedBtns.push(btn);
+            this.seedPopup.add(btn);
         });
     }
 
-    /**
-     * 选择种子
-     */
-    selectSeed(cropId) {
-        this.selectedCrop = cropId;
+    selectTool(toolId) {
+        this.selectedTool = toolId;
         
-        // 更新选择器高亮
-        const seeds = ['corn', 'wheat', 'tomato', 'carrot'];
-        this.seedSelector.each((btn, index) => {
-            const isSelected = seeds[index] === cropId;
-            btn.list[0].clear(); // 清除背景
-            btn.list[0].fillStyle(isSelected ? 0x4CAF50 : 0x333333, 1);
-            btn.list[0].fillCircle(0, 0, 22);
+        this.toolButtons.forEach(btn => {
+            const sel = btn.toolData.id === toolId;
+            btn.isSelected = sel;
+            const bg = btn.bg;
+            const r = 22;
+            bg.clear();
+            
+            if (sel) {
+                bg.fillStyle(0x4CAF50, 0.3);
+                bg.fillCircle(0, 0, r + 4);
+                bg.fillStyle(0x4CAF50, 0.9);
+                bg.fillCircle(0, 0, r);
+            } else {
+                bg.fillStyle(0x333344, 0.8);
+                bg.fillCircle(0, 0, r);
+                bg.lineStyle(1, 0xFFFFFF, 0.1);
+                bg.strokeCircle(0, 0, r);
+            }
+            
+            btn.labelObj.setColor(sel ? '#4CAF50' : '#888899');
         });
-    }
-
-    /**
-     * 更新金币显示
-     */
-    updateGoldDisplay() {
-        if (this.goldText) {
-            this.goldText.setText(String(this.farmModel.gold));
+        
+        // 种子弹窗
+        if (this.seedPopup) {
+            this.seedPopup.setVisible(toolId === 'seed');
+            // 弹出动画
+            if (toolId === 'seed') {
+                this.seedPopup.setScale(0.8);
+                this.seedPopup.setAlpha(0);
+                this.tweens.add({
+                    targets: this.seedPopup,
+                    scaleX: 1, scaleY: 1, alpha: 1,
+                    duration: 200, ease: 'Back.easeOut'
+                });
+            }
         }
     }
 
-    /**
-     * 显示消息
-     */
-    showMessage(text) {
-        const msg = this.add.text(this.scale.width / 2, this.scale.height / 2, text, {
-            fontSize: '24px',
-            color: '#FFFFFF',
-            backgroundColor: '#4CAF50',
-            padding: { x: 20, y: 10 }
-        });
-        msg.setOrigin(0.5);
-        msg.setAlpha(0);
+    selectSeed(cropId) {
+        this.selectedCrop = cropId;
         
-        this.tweens.add({
-            targets: msg,
-            alpha: 1,
-            y: msg.y - 30,
-            duration: 300,
-            onComplete: () => {
-                this.tweens.add({
-                    targets: msg,
-                    alpha: 0,
-                    delay: 1000,
-                    onComplete: () => msg.destroy()
-                });
+        this.seedBtns.forEach(btn => {
+            const sel = btn.seedId === cropId;
+            btn.bg.clear();
+            btn.bg.fillStyle(sel ? 0x4CAF50 : 0x333344, 0.8);
+            btn.bg.fillRoundedRect(-20, -20, 40, 40, 10);
+            if (sel) {
+                btn.bg.lineStyle(2, 0xFFFFFF, 0.3);
+                btn.bg.strokeRoundedRect(-20, -20, 40, 40, 10);
             }
         });
     }
 
-    /**
-     * 显示提示
-     */
-    showTooltip(plot) {
-        // TODO: 实现提示框
+    // ============== 浮动文字 ==============
+    showFloatingText(text, plotId) {
+        const ps = this.plotSprites.find(p => p.plotId === plotId);
+        if (!ps) return;
+        
+        const msg = this.add.text(ps.container.x, ps.container.y - ps.size / 2 - 10, text, {
+            fontSize: '13px',
+            fontStyle: 'bold',
+            color: '#FFFFFF',
+            fontFamily: 'Arial',
+            stroke: '#000000',
+            strokeThickness: 2
+        });
+        msg.setOrigin(0.5);
+        msg.setDepth(200);
+        
+        this.tweens.add({
+            targets: msg,
+            y: msg.y - 30,
+            alpha: 0,
+            duration: 800,
+            ease: 'Power2',
+            onComplete: () => msg.destroy()
+        });
     }
 
-    /**
-     * 隐藏提示
-     */
-    hideTooltip() {
-        // TODO: 隐藏提示框
-    }
-
-    /**
-     * 数据更新回调
-     */
+    // ============== 数据回调 ==============
     onModelUpdate(event, data) {
         switch (event) {
             case 'data_loaded':
@@ -675,9 +739,7 @@ class GameScene extends Phaser.Scene {
                 break;
             case 'plot_updated':
                 const ps = this.plotSprites.find(p => p.plotId === data.id);
-                if (ps) {
-                    this.updatePlotVisual(ps, data);
-                }
+                if (ps) this.updatePlotVisual(ps, data);
                 break;
             case 'gold_changed':
                 this.updateGoldDisplay();
@@ -685,18 +747,31 @@ class GameScene extends Phaser.Scene {
         }
     }
 
-    /**
-     * 设置输入
-     */
+    updateGoldDisplay() {
+        if (this.goldText) {
+            this.goldText.setText(String(this.farmModel.gold));
+        }
+    }
+
+    async loadGameData() {
+        if (this.farmModel.plots.length > 0) this.syncPlotsToGraphics();
+        await this.farmModel.loadFromServer();
+        this.syncPlotsToGraphics();
+        this.updateGoldDisplay();
+    }
+
     setupInput() {
-        // ESC 键返回
+        // 鼠标移动更新光标
+        this.input.on('pointermove', (pointer) => {
+            if (this.cursorIcon && this.cursorIcon.visible) {
+                this.cursorIcon.setPosition(pointer.x + 12, pointer.y - 12);
+            }
+        });
+        
         this.input.keyboard.on('keydown-ESC', () => {
-            // 关闭游戏或返回
             console.log('ESC pressed');
         });
     }
 }
 
-
-// 导出
 window.GameScene = GameScene;
