@@ -119,7 +119,22 @@ async def deploy():
         logger.info("开始部署...")
         logger.info(f"项目目录: {PROJECT_DIR}")
 
-        # 1. Git pull
+        # 1. 清理 Python 缓存
+        logger.info("清理 Python 缓存...")
+        subprocess.run(
+            ['find', PROJECT_DIR, '-type', 'd', '-name', '__pycache__', '-exec', 'rm', '-rf', '{}', '+'],
+            capture_output=True,
+            text=True,
+            timeout=30
+        )
+        subprocess.run(
+            ['find', PROJECT_DIR, '-type', 'f', '-name', '*.pyc', '-delete'],
+            capture_output=True,
+            text=True,
+            timeout=30
+        )
+
+        # 2. Git pull
         logger.info("执行 git pull...")
         result = subprocess.run(
             ['git', 'pull'],
@@ -133,7 +148,7 @@ async def deploy():
             return
         logger.info(f"git pull: {result.stdout.strip()}")
 
-        # 2. 重启 bot 服务
+        # 3. 重启 bot 服务
         logger.info(f"重启服务: {BOT_SERVICE}")
         result = subprocess.run(
             ['systemctl', 'restart', BOT_SERVICE],
@@ -145,7 +160,18 @@ async def deploy():
             logger.error(f"重启服务失败: {result.stderr}")
             return
 
-        logger.info("✅ 部署完成")
+        # 4. 等待服务启动并验证
+        await asyncio.sleep(3)
+        result = subprocess.run(
+            ['systemctl', 'is-active', BOT_SERVICE],
+            capture_output=True,
+            text=True,
+            timeout=10
+        )
+        if result.stdout.strip() != 'active':
+            logger.error(f"服务启动失败: {result.stdout.strip()}")
+        else:
+            logger.info("✅ 部署完成，服务已启动")
 
     except Exception as e:
         logger.error(f"部署错误: {e}")
@@ -304,13 +330,28 @@ async def deploy_status(request):
         )
         service_status = result.stdout.strip() if result.returncode == 0 else 'inactive'
 
+        # 动态读取版本号
+        version = BOT_VERSION
+        try:
+            result = subprocess.run(
+                ['python3', '-c', 'from config import BOT_VERSION; print(BOT_VERSION)'],
+                cwd=PROJECT_DIR,
+                capture_output=True,
+                text=True,
+                timeout=10
+            )
+            if result.returncode == 0 and result.stdout.strip():
+                version = result.stdout.strip()
+        except Exception:
+            pass
+
         return web.json_response({
             'status': 'ok',
             'project_dir': PROJECT_DIR,
             'last_commit': last_commit,
             'bot_service': BOT_SERVICE,
             'service_status': service_status,
-            'version': '1.4.8.1'
+            'version': version
         })
 
     except Exception as e:
