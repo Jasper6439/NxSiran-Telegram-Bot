@@ -91,22 +91,21 @@ class NovelKnowledge:
             func=embedding_func,
         )
     
-    def _ensure_init(self) -> bool:
-        """延迟初始化"""
-        if self._initialized:
-            return True
-        
+    async def _async_init(self):
+        """异步初始化 LightRAG"""
         try:
             # 确保目录存在
             os.makedirs(self._lightrag_dir, exist_ok=True)
             
             # 初始化 LightRAG
-            # 注意：这里使用简化配置，实际生产环境需要配置正确的 LLM 和嵌入模型
             self.rag = LightRAG(
                 working_dir=self._lightrag_dir,
                 llm_model_func=self._get_llm_model_func(),
                 embedding_func=self._get_embedding_func(),
             )
+            
+            # v1.6.4.3: LightRAG 新版本需要显式初始化 storages
+            await self.rag.initialize_storages()
             
             self._initialized = True
             logger.info("[LightRAG] 初始化成功")
@@ -118,10 +117,34 @@ class NovelKnowledge:
             traceback.print_exc()
             return False
     
+    def _ensure_init(self) -> bool:
+        """延迟初始化（同步入口）"""
+        if self._initialized:
+            return True
+        
+        try:
+            import asyncio
+            # 尝试获取当前事件循环
+            try:
+                loop = asyncio.get_running_loop()
+                # 如果在异步上下文中，需要异步初始化
+                return False  # 返回 False，让异步调用方处理
+            except RuntimeError:
+                # 不在异步上下文中，创建新循环
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+                result = loop.run_until_complete(self._async_init())
+                return result
+        except Exception as e:
+            logger.error(f"[LightRAG] 同步初始化失败: {e}")
+            return False
+    
     async def load_novel(self) -> bool:
         """加载小说文件"""
-        if not self._ensure_init():
-            return False
+        # 确保异步初始化
+        if not self._initialized:
+            if not await self._async_init():
+                return False
         
         if self._novel_loaded:
             return True
@@ -170,8 +193,10 @@ class NovelKnowledge:
         Returns:
             回答
         """
-        if not self._ensure_init():
-            return "知识库未初始化"
+        # 确保异步初始化
+        if not self._initialized:
+            if not await self._async_init():
+                return "知识库初始化失败"
         
         if not self._novel_loaded:
             # 尝试加载小说
