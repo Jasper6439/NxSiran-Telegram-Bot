@@ -15,8 +15,8 @@ from lightrag.utils import EmbeddingFunc
 
 logger = logging.getLogger(__name__)
 
-# 数据存储路径
-KNOWLEDGE_DIR = os.path.join(DATA_DIR, 'knowledge')
+# 角色数据存储路径（v1.6.4.1: 移至 characters/ 目录下）
+CHARACTERS_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'characters')
 
 
 class NovelKnowledge:
@@ -28,8 +28,8 @@ class NovelKnowledge:
         self._initialized = False
         self._novel_loaded = False
         
-        # 每个角色独立的路径
-        self._novel_file = os.path.join(KNOWLEDGE_DIR, character_id, 'novel.txt')
+        # 每个角色独立的路径（v1.6.4.1: 小说文件在 characters/{id}/novel.txt）
+        self._novel_file = os.path.join(CHARACTERS_DIR, character_id, 'novel.txt')
         self._lightrag_dir = os.path.join(DATA_DIR, 'lightrag_db', character_id)
     
     def _get_llm_model_func(self):

@@ -9,8 +9,9 @@
 Before writing ANY code, the following steps are MANDATORY:
 
 1. **Read `PROJECT_CONTEXT.md`** — Understand project architecture, directory structure, import conventions, and deployment constraints.
-2. **Read the `README.md` of every directory you will modify** — Understand each file's responsibility and principal exports before touching it.
-3. **If the requirement is ambiguous** — Halt. Enumerate interpretations. Present options. Await user decision. (See D4)
+2. **Read `memory.md`** — Review recent project changes and accumulated knowledge to avoid regression and leverage established patterns.
+3. **Read the `README.md` of every directory you will modify** — Understand each file's responsibility and principal exports before touching it.
+4. **If the requirement is ambiguous** — Halt. Enumerate interpretations. Present options. Await user decision. (See D4)
 
 ## Post-Task Checklist
 

@@ -84,12 +84,43 @@ class Character(CharacterBase):
                 return f.read()
         return ""
 
+    async def _get_relevant_memories(self, user_id: int, query: str = None) -> str:
+        """从 Qdrant 获取与当前对话相关的记忆
+
+        v1.6.4.1: 动态检索相关记忆，整合到 prompt
+        """
+        try:
+            from .qdrant_memory import get_memory
+            memory = get_memory(self.character_id)
+
+            # 搜索相关记忆
+            if query:
+                memories = await memory.search_memories(query, user_id=user_id, n_results=3)
+            else:
+                memories = memory.get_recent_memories(user_id=user_id, limit=5)
+
+            if not memories:
+                return ""
+
+            memory_texts = []
+            for mem in memories:
+                content = mem.get("content", "")
+                if content:
+                    memory_texts.append(f"- {content}")
+
+            return "\n".join(memory_texts)
+
+        except Exception as e:
+            logger.debug(f"[Character] 获取记忆失败: {e}")
+            return ""
+
     def get_system_prompt(self, context: Dict[str, Any] = None) -> str:
         """获取完整的 AI 系统提示词"""
         context = context or {}
         user_name = context.get('user_name', '完成者')
         world_layer = context.get('world_layer', 'stage')
         awakening_level = context.get('awakening_level', 0)
+        user_id = context.get('user_id')
 
         persona_section = ""
         if self._persona:
@@ -97,6 +128,15 @@ class Character(CharacterBase):
         memories_section = ""
         if self._memories:
             memories_section = f"\n\n【共同记忆】\n{self._memories}"
+
+        # v1.6.4.1: 动态获取 Qdrant 相关记忆
+        qdrant_memories = ""
+        if user_id:
+            # 注意：这里使用同步方式获取，因为 get_system_prompt 是同步方法
+            # 实际相关记忆应在调用前通过 _get_relevant_memories 异步获取并传入 context
+            recent_memories = context.get('recent_memories', '')
+            if recent_memories:
+                qdrant_memories = f"\n\n【最近的记忆】\n{recent_memories}"
 
         # 根据觉醒度调整世界观认知
         awakening_awareness = ""
@@ -233,6 +273,7 @@ class Character(CharacterBase):
 车如云: ...{user_name}很奇怪。（转移视线）
 {persona_section}
 {memories_section}
+{qdrant_memories}
 
 【重要提醒】
 - 你是车如云，不是AI助手。不要解释、不要建议、不要总结。

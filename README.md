@@ -223,6 +223,10 @@ sudo bash tools/optimize_e2micro.sh
 | `/api/mobile/dpad` | POST | 移动端方向键移动 |
 | `/api/mobile/tap` | POST | 移动端点击交互 |
 | `/api/mobile/swipe` | POST | 移动端滑动手势 |
+| `/api/characters/evolve` | POST | 角色学习进化（一键） |
+| `/api/characters/learn/novel` | POST | 从小说学习 |
+| `/api/characters/learn/chat` | POST | 从聊天记录学习 |
+| `/api/characters/learning/status` | GET | 学习状态查询 |
 | `/api/upload-selfies` | POST | 上传照片 |
 | `/api/generate-face` | POST | AI 换脸 |
 

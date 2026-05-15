@@ -33,6 +33,11 @@ from game_api.map_routes import (
     api_get_maps, api_switch_map, api_get_map_state,
     api_discover_map, api_get_map_discoveries,
 )
+from game_api.learning_routes import (
+    api_character_evolve, api_character_learn_novel,
+    api_character_learn_chat, api_character_learn_qdrant,
+    api_character_learning_status,
+)
 
 
 def register_game_routes(app):
@@ -96,3 +101,10 @@ def register_game_routes(app):
     app.router.add_get("/api/game/state/sse", api_game_state_sse)
     app.router.add_get("/api/game/state/diff", api_game_state_diff)
     app.router.add_get("/api/game/state/version", api_game_state_version)
+
+    # v1.6.4.1 — 角色学习进化 API
+    app.router.add_post("/api/characters/evolve", api_character_evolve)
+    app.router.add_post("/api/characters/learn/novel", api_character_learn_novel)
+    app.router.add_post("/api/characters/learn/chat", api_character_learn_chat)
+    app.router.add_post("/api/characters/learn/qdrant", api_character_learn_qdrant)
+    app.router.add_get("/api/characters/learning/status", api_character_learning_status)
