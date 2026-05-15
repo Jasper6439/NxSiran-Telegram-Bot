@@ -42,7 +42,7 @@ export default function SettingsPage() {
   const [loginForm, setLoginForm] = useState({ username: '', password: '' });
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [loginError, setLoginError] = useState<string | null>(null);
-  const [appVersion, setAppVersion] = useState<string>('v1.6.4.2'); // 默认版本
+  const [appVersion, setAppVersion] = useState<string>('v1.6.5'); // 默认版本
 
   // 检查登录状态 & 获取版本号
   useEffect(() => {
@@ -98,7 +98,7 @@ export default function SettingsPage() {
     setLoginError(null);
 
     try {
-      const res = await fetch(`${API_BASE}/api/auth/login`, {
+      const res = await fetch(`${API_BASE}/api/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(loginForm),
