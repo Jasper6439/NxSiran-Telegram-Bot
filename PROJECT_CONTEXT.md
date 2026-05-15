@@ -77,7 +77,11 @@ bot.py                          # 唯一入口，python-telegram-bot Application
 │   ├── init_admin.py           # 管理员初始化
 │   └── _archive/               # 归档文件（bot_instance/manager 等）
 ├── web-v2/                     # React + TypeScript + Vite 前端
-├── knowledge/                  # LightRAG 知识库
+├── characters/chayewoon/       # 角色数据（车如云）
+│   ├── config.json             # 角色配置
+│   ├── persona.md              # 角色详细设定
+│   ├── memories.md             # 共同记忆
+│   └── novel.txt               # 原著小说（角色学习素材）
 ├── static/                     # 静态资源
 ├── templates/                  # HTML 模板
 └── data/                       # 运行时数据（JSON/图片/音频）
