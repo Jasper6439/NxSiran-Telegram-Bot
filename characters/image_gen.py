@@ -20,7 +20,7 @@ from telegram import Update
 from telegram.ext import ContextTypes
 
 from system.config import (
-    AI_API_BASE, AI_API_KEY, GEMINI_API_KEY,
+    AI_API_BASE, AI_API_KEY,
     YOUR_CHAT_ID,
     get_user_selfie_dir,
 )
@@ -398,9 +398,6 @@ async def analyze_image_with_gemini(image_data: str, prompt: str) -> str:
     Returns:
         分析结果文本
     """
-    if not GEMINI_API_KEY:
-        return None
-
     try:
         # 从 misc 模块导入 call_gemini
         from packages.commands.misc import call_gemini
@@ -422,9 +419,6 @@ async def ocr_document(image_data: str) -> str:
     Returns:
         提取的文字内容
     """
-    if not GEMINI_API_KEY:
-        return None
-
     ocr_prompt = """请仔细识别并提取这张图片中的所有文字内容。
 要求：
 1. 保持原文的段落结构和格式

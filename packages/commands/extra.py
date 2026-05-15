@@ -4,7 +4,7 @@ import logging
 from telegram import Update
 from telegram.ext import ContextTypes
 
-from system.config import YOUR_CHAT_ID, GEMINI_API_KEY
+from system.config import YOUR_CHAT_ID
 from characters.image_gen import analyze_image_with_gemini, ocr_document
 
 
@@ -29,9 +29,9 @@ async def analyze_img_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if YOUR_CHAT_ID != 0 and chat_id != YOUR_CHAT_ID:
         return
 
-    if not GEMINI_API_KEY:
-        await update.message.reply_text("...图片分析没配置。需要设置 GEMINI_API_KEY 环境变量。")
-        return
+    # 图片分析通过 OpenRouter 调用 Gemini
+    pass
+
 
     # 检查是否回复了一张图片
     if not update.message.reply_to_message or not update.message.reply_to_message.photo:
@@ -82,9 +82,9 @@ async def ocr_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if YOUR_CHAT_ID != 0 and chat_id != YOUR_CHAT_ID:
         return
 
-    if not GEMINI_API_KEY:
-        await update.message.reply_text("...OCR没配置。需要设置 GEMINI_API_KEY 环境变量。")
-        return
+    # OCR 通过 OpenRouter 调用 Gemini
+    pass
+
 
     # 检查是否回复了一张图片
     if not update.message.reply_to_message or not update.message.reply_to_message.photo:

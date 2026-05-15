@@ -3,7 +3,6 @@ import logging
 
 from telegram.ext import ContextTypes
 
-from system.config import GEMINI_API_KEY
 from packages.commands.utils import call_gemini, web_search
 
 
@@ -20,8 +19,7 @@ async def deep_research(topic: str, chat_id: int, context: ContextTypes.DEFAULT_
     Returns:
         Markdown格式的研究报告
     """
-    if not GEMINI_API_KEY:
-        return None
+    # OpenRouter 澶勭悊锛屾棤闇€ API key 妫€鏌?    pass
 
     try:
         # 步骤1：将主题分解为子问题

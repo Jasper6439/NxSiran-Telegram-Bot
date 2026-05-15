@@ -28,7 +28,6 @@ from system.config import (
     AI_API_BASE,
     AI_API_KEY,
     AI_MODEL,
-    GEMINI_API_KEY,
     YOUR_CHAT_ID,
 )
 from system.prompts import EMOTION_RESPONSE_GUIDE
@@ -193,13 +192,12 @@ async def call_ai(user_message: str, chat_history: list = None, use_memory: bool
     logging.error("[AI] 所有OpenRouter模型都失败了")
 
     # [Skill: gemini] 所有OpenRouter模型失败时，fallback到Gemini
-    if GEMINI_API_KEY:
-        logging.info("[Skill: gemini] 尝试使用Gemini作为fallback...")
-        try:
-            gemini_result = await call_gemini(user_message)
-            if gemini_result:
-                gemini_result = humanize_text(gemini_result)
-                logging.info("[Skill: gemini] Gemini fallback成功")
+    logging.info("[Skill: gemini] 尝试使用Gemini作为fallback...")
+    try:
+        gemini_result = await call_gemini(user_message)
+        if gemini_result:
+            gemini_result = humanize_text(gemini_result)
+            logging.info("[Skill: gemini] Gemini fallback成功")
                 return gemini_result
         except Exception as e:
             logging.error(f"[Skill: gemini] Gemini fallback失败: {e}")

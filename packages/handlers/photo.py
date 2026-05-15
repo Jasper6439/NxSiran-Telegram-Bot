@@ -11,7 +11,7 @@ from telegram import Update
 from telegram.ext import ContextTypes
 
 from system.config import (
-    YOUR_CHAT_ID, TELEGRAM_TOKEN, GEMINI_API_KEY,
+    YOUR_CHAT_ID, TELEGRAM_TOKEN,
     DATA_DIR, get_user_selfie_dir, get_user_dir,
     get_user_memory_file, load_json,
 )
@@ -46,12 +46,11 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # [Skill: vision-sandbox] [Skill: deepread-ocr] 检查是否有待处理的图片分析/OCR请求
     if chat_id in _pending_analyze_img:
         del _pending_analyze_img[chat_id]
-        if GEMINI_API_KEY:
-            try:
-                await update.message.chat.send_action("typing")
-                file = await update.get_bot().get_file(photo.file_id)
-                photo_bytes = await file.download_as_bytearray()
-                image_b64 = base64.b64encode(bytes(photo_bytes)).decode("utf-8")
+        try:
+            await update.message.chat.send_action("typing")
+            file = await update.get_bot().get_file(photo.file_id)
+            photo_bytes = await file.download_as_bytearray()
+            image_b64 = base64.b64encode(bytes(photo_bytes)).decode("utf-8")
 
                 analysis_prompt = """请详细分析这张图片，包括：
 1. 图片中有什么（主体内容）
@@ -77,12 +76,11 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if chat_id in _pending_ocr:
         del _pending_ocr[chat_id]
-        if GEMINI_API_KEY:
-            try:
-                await update.message.chat.send_action("typing")
-                file = await update.get_bot().get_file(photo.file_id)
-                photo_bytes = await file.download_as_bytearray()
-                image_b64 = base64.b64encode(bytes(photo_bytes)).decode("utf-8")
+        try:
+            await update.message.chat.send_action("typing")
+            file = await update.get_bot().get_file(photo.file_id)
+            photo_bytes = await file.download_as_bytearray()
+            image_b64 = base64.b64encode(bytes(photo_bytes)).decode("utf-8")
 
                 result = await ocr_document(image_b64)
                 if result:
@@ -164,12 +162,11 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 save_memory_entry(f"明去过{description}")
 
             # [Skill: vision-sandbox] 使用Gemini对图片进行深度分析并保存描述到记忆
-            if GEMINI_API_KEY:
-                try:
-                    photo_bytes = await file.download_as_bytearray()
-                    image_b64 = base64.b64encode(bytes(photo_bytes)).decode("utf-8")
-                    detail_prompt = "请用一句简短的中文描述这张图片的内容（不超过30字）："
-                    detail_desc = await analyze_image_with_gemini(image_b64, detail_prompt)
+            try:
+                photo_bytes = await file.download_as_bytearray()
+                image_b64 = base64.b64encode(bytes(photo_bytes)).decode("utf-8")
+                detail_prompt = "请用一句简短的中文描述这张图片的内容（不超过30字）："
+                detail_desc = await analyze_image_with_gemini(image_b64, detail_prompt)
                     if detail_desc and len(detail_desc) > 5:
                         save_memory_entry(f"明发了一张图片：{detail_desc.strip()}")
                 except Exception as e:
