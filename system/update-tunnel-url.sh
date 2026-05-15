@@ -5,7 +5,7 @@
 #
 # 用法: 添加到 crontab，每分钟检查一次
 #   crontab -e
-#   * * * * * /root/NxSiran-Telegram-Bot/update-tunnel-url.sh
+#   * * * * * /opt/NxSiran/NxSiran-Telegram-Bot/update-tunnel-url.sh
 # ============================================================
 
 LOG_FILE="/opt/NxSiran/data/logs/tunnel.log"

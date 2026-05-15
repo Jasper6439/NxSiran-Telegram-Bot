@@ -5,9 +5,9 @@ After=network.target
 [Service]
 Type=simple
 User=root
-WorkingDirectory=/root/NxSiran-Telegram-Bot
-EnvironmentFile=/root/NxSiran-Telegram-Bot/.env
-ExecStart=/usr/bin/python3 /root/NxSiran-Telegram-Bot/bridge_server.py
+WorkingDirectory=/opt/NxSiran/NxSiran-Telegram-Bot
+EnvironmentFile=/opt/NxSiran/NxSiran-Telegram-Bot/.env
+ExecStart=/usr/bin/python3 /opt/NxSiran/NxSiran-Telegram-Bot/bridge_server.py
 Restart=always
 RestartSec=5
 Environment=PYTHONUNBUFFERED=1

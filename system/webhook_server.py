@@ -38,7 +38,7 @@ except ImportError:
 # 配置
 WEBHOOK_PORT = int(os.environ.get('WEBHOOK_PORT', 8082))
 WEBHOOK_SECRET = os.environ.get('GITHUB_WEBHOOK_SECRET', '')
-PROJECT_DIR = os.environ.get('PROJECT_DIR', '/root/NxSiran-Telegram-Bot')
+PROJECT_DIR = os.environ.get('PROJECT_DIR', '/opt/NxSiran/NxSiran-Telegram-Bot')
 BOT_SERVICE = os.environ.get('BOT_SERVICE', 'nxsiran-bot.service')
 BRIDGE_TOKEN = os.environ.get('BRIDGE_TOKEN', '')
 BOT_VERSION = 'unknown'  # 默认值，会在 deploy_status 中动态获取

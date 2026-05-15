@@ -13,7 +13,7 @@
 
 set -e
 
-PROJECT_DIR="/root/NxSiran-Telegram-Bot"
+PROJECT_DIR="/opt/NxSiran/NxSiran-Telegram-Bot"
 CONFIG_FILE="/opt/NxSiran/data/config.json"
 LOG_FILE="/opt/NxSiran/data/logs/tunnel.log"
 

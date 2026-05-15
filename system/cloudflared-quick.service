@@ -6,7 +6,7 @@ Wants=network-online.target
 [Service]
 Type=simple
 User=root
-WorkingDirectory=/root/NxSiran-Telegram-Bot
+WorkingDirectory=/opt/NxSiran/NxSiran-Telegram-Bot
 ExecStart=/usr/local/bin/cloudflared tunnel --url http://localhost:8080
 Restart=always
 RestartSec=10
