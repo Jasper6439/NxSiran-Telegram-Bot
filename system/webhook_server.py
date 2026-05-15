@@ -41,6 +41,7 @@ WEBHOOK_SECRET = os.environ.get('GITHUB_WEBHOOK_SECRET', '')
 PROJECT_DIR = os.environ.get('PROJECT_DIR', '/root/NxSiran-Telegram-Bot')
 BOT_SERVICE = os.environ.get('BOT_SERVICE', 'nxsiran-bot.service')
 BRIDGE_TOKEN = os.environ.get('BRIDGE_TOKEN', '')
+BOT_VERSION = 'unknown'  # 默认值，会在 deploy_status 中动态获取
 
 # Bridge 命令队列
 pending_commands = {}  # {vm_id: [commands]}
