@@ -40,13 +40,16 @@
 
 | 任务 | 状态 | 说明 |
 |------|------|------|
-| 移除 qdrant-client | ⏳ TODO | 改用 LightRAG 自带存储 |
+| 移除 qdrant-client | ✅ 完成 | 改用 LightRAG 自带存储 |
 | 添加 rank-bm25 | ✅ 完成 | 已安装并配置 |
 | 内存监控脚本 | ✅ 完成 | `tools/memory_monitor.py` |
 | API Key 配置 | ✅ 完成 | `system/config.py` |
 | 系统优化脚本 | ✅ 完成 | `optimize_memory.sh` |
 | Python 语法验证 | ✅ 完成 | `python -m py_compile` |
 | 创建回滚标签 | ✅ 完成 | `git tag rollback-pre-v165` |
+| BM25+LightRAG 混合检索 | ✅ 完成 | `characters/retrieval_engine.py` |
+| 上下文截断 (1024 tokens) | ✅ 完成 | `characters/token_utils.py` |
+| OpenRouter 流式输出 | ✅ 完成 | `call_ai_stream()` |
 
 **架构原则**:
 - LLM 核心层 → OpenRouter 云端（`:free` / `:nitro` 模型）
