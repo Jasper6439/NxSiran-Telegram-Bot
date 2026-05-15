@@ -43,7 +43,7 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     photo = photos[-1]
 
-    # [Skill: vision-sandbox] [Skill: deepread-ocr] 检查是否有待处理的图片分析/OCR请求
+    # [Skill: vision-sandbox] 检查是否有待处理的图片分析请求
     if chat_id in _pending_analyze_img:
         del _pending_analyze_img[chat_id]
         try:
@@ -52,7 +52,7 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
             photo_bytes = await file.download_as_bytearray()
             image_b64 = base64.b64encode(bytes(photo_bytes)).decode("utf-8")
 
-                analysis_prompt = """请详细分析这张图片，包括：
+            analysis_prompt = """请详细分析这张图片，包括：
 1. 图片中有什么（主体内容）
 2. 颜色、构图、风格
 3. 如果有人物，描述其表情和动作
@@ -61,19 +61,20 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 用简洁的中文回答。"""
 
-                result = await analyze_image_with_gemini(image_b64, analysis_prompt)
-                if result:
-                    if len(result) > 4000:
-                        result = result[:4000] + "\n\n...太多了，就这些。"
-                    await update.message.reply_text(result)
-                else:
-                    await update.message.reply_text("...分析失败了。再试试。")
-                return
-            except Exception as e:
-                logging.error(f"[Skill: vision-sandbox] 图片分析失败: {e}")
-                await update.message.reply_text("...出错了。")
-                return
+            result = await analyze_image_with_gemini(image_b64, analysis_prompt)
+            if result:
+                if len(result) > 4000:
+                    result = result[:4000] + "\n\n...太多了，就这些。"
+                await update.message.reply_text(result)
+            else:
+                await update.message.reply_text("...分析失败了。再试试。")
+            return
+        except Exception as e:
+            logging.error(f"[Skill: vision-sandbox] 图片分析失败: {e}")
+            await update.message.reply_text("...出错了。")
+            return
 
+    # [Skill: deepread-ocr] 检查是否有待处理的 OCR 请求
     if chat_id in _pending_ocr:
         del _pending_ocr[chat_id]
         try:
@@ -82,20 +83,20 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
             photo_bytes = await file.download_as_bytearray()
             image_b64 = base64.b64encode(bytes(photo_bytes)).decode("utf-8")
 
-                result = await ocr_document(image_b64)
-                if result:
-                    if len(result) > 4000:
-                        for i in range(0, len(result), 4000):
-                            await update.message.reply_text(result[i:i+4000])
-                    else:
-                        await update.message.reply_text(result)
+            result = await ocr_document(image_b64)
+            if result:
+                if len(result) > 4000:
+                    for i in range(0, len(result), 4000):
+                        await update.message.reply_text(result[i:i+4000])
                 else:
-                    await update.message.reply_text("...没识别出文字。")
-                return
-            except Exception as e:
-                logging.error(f"[Skill: deepread-ocr] OCR失败: {e}")
-                await update.message.reply_text("...出错了。")
-                return
+                    await update.message.reply_text(result)
+            else:
+                await update.message.reply_text("...没识别出文字。")
+            return
+        except Exception as e:
+            logging.error(f"[Skill: deepread-ocr] OCR失败: {e}")
+            await update.message.reply_text("...出错了。")
+            return
 
     try:
         # 先发送分析中的提示
@@ -148,7 +149,7 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
         else:
             # 保存为用户照片（不统计在自拍里）
             filename = f"user_{timestamp}{ext}"
-            filepath = os.path.join(USER_PHOTOS_DIR, filename)
+            filepath = os.path.join(get_user_dir(chat_id), 'photos', filename)
             await file.download_to_drive(filepath)
 
             # 根据类型生成回复
@@ -167,14 +168,15 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 image_b64 = base64.b64encode(bytes(photo_bytes)).decode("utf-8")
                 detail_prompt = "请用一句简短的中文描述这张图片的内容（不超过30字）："
                 detail_desc = await analyze_image_with_gemini(image_b64, detail_prompt)
-                    if detail_desc and len(detail_desc) > 5:
-                        save_memory_entry(f"明发了一张图片：{detail_desc.strip()}")
-                except Exception as e:
-                    logging.debug(f"[Skill: vision-sandbox] 深度分析跳过: {e}")
+                if detail_desc and len(detail_desc) > 5:
+                    save_memory_entry(f"明发了一张图片：{detail_desc.strip()}")
+            except Exception as e:
+                logging.debug(f"[Skill: vision-sandbox] 深度分析跳过: {e}")
 
     except Exception as e:
         logging.error(f"处理照片失败: {e}")
         await update.message.reply_text("...（照片处理失败了，再发一次试试）")
+
 
 async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_chat.id
@@ -226,9 +228,6 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     imported_photos += 1
 
         os.remove(tmp_path)
-
-        if imported_history:
-            chat_histories[chat_id] = load_chat_history(chat_id)
 
         parts = ["...收到了。\n\n"]
         parts.append(f"🧠 {imported_memories} 条记忆")
