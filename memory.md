@@ -4,6 +4,30 @@
 
 ---
 
+## [2026-05-15] v1.6.5-hotfix 核心文件更新
+
+**Context**: 紧急更新项目宪法文件，确立 e2-micro 极限优化规范
+
+**Category**: 文档更新, 架构规范
+
+**变更内容**:
+
+| 文件 | 变更 |
+|------|------|
+| `AGENTS.md` | 重写为中文宪法格式，明确生存红线、工作流协议、记忆固化要求 |
+| `design.md` | 新建技术蓝图，定义混合检索架构、部署规范、禁止事项 |
+
+**核心架构原则**:
+- 双路混合检索：BM25 (本地) + LightRAG (云端)
+- 内存铁律：512MB RSS 上限
+- 异步强制：所有网络 I/O 必须异步
+
+**工作流协议要点**:
+1. 任务前：先读 `memory.md` → `design.md` → `PROJECT_CONTEXT.md`
+2. 任务后：更新 README → 语法验证 → 原子提交 → **记忆固化**
+
+---
+
 ## [2025-05-15] v1.6.5 e2-micro 极限性能优化
 
 **Context**: GCP e2-micro (1 vCPU, 1GB RAM) 极限减负，目标零崩溃稳定运行
@@ -17,12 +41,12 @@
 | 任务 | 状态 | 说明 |
 |------|------|------|
 | 移除 qdrant-client | ⏳ TODO | 改用 LightRAG 自带存储 |
-| 添加 rank-bm25 | ⏳ TODO | 关键词检索补充 |
-| 内存监控脚本 | ⏳ TODO | `tools/memory_monitor.py` |
-| API Key 配置 | ⏳ TODO | `system/config.py` |
-| 系统优化脚本 | ⏳ TODO | `optimize_memory.sh` |
-| Python 语法验证 | ⏳ TODO | `python -m py_compile` |
-| 创建回滚标签 | ⏳ TODO | `git tag rollback-pre-v165` |
+| 添加 rank-bm25 | ✅ 完成 | 已安装并配置 |
+| 内存监控脚本 | ✅ 完成 | `tools/memory_monitor.py` |
+| API Key 配置 | ✅ 完成 | `system/config.py` |
+| 系统优化脚本 | ✅ 完成 | `optimize_memory.sh` |
+| Python 语法验证 | ✅ 完成 | `python -m py_compile` |
+| 创建回滚标签 | ✅ 完成 | `git tag rollback-pre-v165` |
 
 **架构原则**:
 - LLM 核心层 → OpenRouter 云端（`:free` / `:nitro` 模型）
