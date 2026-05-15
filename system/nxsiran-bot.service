@@ -5,9 +5,9 @@ After=network.target
 [Service]
 Type=simple
 User=root
-WorkingDirectory=/opt/NxSiran-Telegram-Bot
-EnvironmentFile=/opt/NxSiran-Telegram-Bot/.env
-ExecStart=/usr/bin/python3 /opt/NxSiran-Telegram-Bot/bot.py
+WorkingDirectory=/opt/LoveSupremacy-Telegram-Bot
+EnvironmentFile=/opt/LoveSupremacy-Telegram-Bot/.env
+ExecStart=/usr/bin/python3 /opt/LoveSupremacy-Telegram-Bot/main.py
 Restart=always
 RestartSec=5
 Environment=PYTHONUNBUFFERED=1
