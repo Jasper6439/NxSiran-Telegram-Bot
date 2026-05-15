@@ -1,5 +1,5 @@
 # NxSiran Bot - e2-micro 轻量化依赖
-# v1.6.5 优化版：移除重型依赖，极限减负
+# v1.6.6 优化版：移除重型依赖，极限减负
 
 # Bot 框架
 python-telegram-bot==22.7

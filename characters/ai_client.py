@@ -8,14 +8,17 @@ import re
 import json
 import logging
 import random
-from typing import Dict, List, Optional, Any
+import asyncio
+from typing import Dict, List, Optional, Any, AsyncGenerator, Callable
 
 import httpx
+import aiohttp
 
 logger = logging.getLogger(__name__)
 
 # 从 config 模块导入配置（统一管理）
-from system.config import AI_API_BASE, AI_API_KEY, AI_MODEL, AI_MODELS, DATA_DIR
+from system.config import AI_API_BASE, AI_API_KEY, AI_MODEL, AI_MODELS, DATA_DIR, MAX_CONTEXT_TOKENS
+from .token_utils import truncate_messages_for_api
 
 # ── 统一的模型列表（从 config 导入） ──────────────────────────
 FALLBACK_MODELS: List[str] = AI_MODELS
@@ -25,6 +28,8 @@ DEFAULT_TEMPERATURE = 0.85
 DEFAULT_MAX_TOKENS = 300
 DEFAULT_TIMEOUT = 60.0
 MAX_HISTORY_MESSAGES = 20
+MAX_RETRIES = 3
+STREAM_CHUNK_SIZE = 1024
 
 
 def _load_api_config() -> tuple:
@@ -91,6 +96,20 @@ async def call_ai(
         messages.extend(chat_history[-MAX_HISTORY_MESSAGES:])
 
     messages.append({"role": "user", "content": user_message})
+
+    # [上下文截断] 防止 KV Cache 溢出
+    truncated_messages, truncate_info = truncate_messages_for_api(
+        messages=messages,
+        max_tokens=MAX_CONTEXT_TOKENS,
+        preserve_first_n=1,  # 保留 system prompt
+    )
+    if truncate_info['was_truncated']:
+        logger.info(
+            f"[AIClient] 消息截断: {truncate_info['original_count']} -> "
+            f"{truncate_info['truncated_count']} 条, "
+            f"tokens: {truncate_info['original_tokens']} -> {truncate_info['final_tokens']}"
+        )
+        messages = truncated_messages
 
     # 确定要尝试的模型列表
     if model:
@@ -196,16 +215,215 @@ async def _make_api_request(
         return content.strip()
 
 
+async def stream_chat_completion(
+    system_prompt: str,
+    user_message: str,
+    chat_history: Optional[List[Dict]] = None,
+    model: Optional[str] = None,
+    temperature: float = DEFAULT_TEMPERATURE,
+    max_tokens: int = DEFAULT_MAX_TOKENS,
+    timeout: float = DEFAULT_TIMEOUT,
+    response_format: Optional[Dict[str, Any]] = None,
+    tools: Optional[List[Dict[str, Any]]] = None,
+    on_chunk: Optional[Callable[[str], None]] = None,
+    should_stop: Optional[Callable[[], bool]] = None,
+) -> str:
+    """流式 AI API 调用函数，支持打字机效果输出。
+
+    Args:
+        system_prompt: 系统提示词
+        user_message: 用户消息
+        chat_history: 对话历史列表（每项为 {"role": ..., "content": ...}）
+        model: 指定使用的模型，为 None 时按 FALLBACK_MODELS 顺序尝试
+        temperature: 生成温度
+        max_tokens: 最大生成 token 数
+        timeout: HTTP 请求超时秒数
+        response_format: 可选的响应格式（如 {"type": "json_object"}）
+        tools: 可选的工具列表（用于 function calling）
+        on_chunk: 回调函数，每当收到新 chunk 时调用，参数为当前完整文本
+        should_stop: 可选的停止检查函数，返回 True 时中断流式输出
+
+    Returns:
+        完整的 AI 回复文本
+
+    Raises:
+        ValueError: API Key 未配置
+        RuntimeError: 所有模型均调用失败
+    """
+    # 构建 messages 列表
+    messages: List[Dict[str, str]] = [{"role": "system", "content": system_prompt}]
+
+    if chat_history:
+        messages.extend(chat_history[-MAX_HISTORY_MESSAGES:])
+
+    messages.append({"role": "user", "content": user_message})
+
+    # 确定要尝试的模型列表
+    if model:
+        models_to_try = [model]
+    else:
+        models_to_try = [AI_MODEL] + [m for m in FALLBACK_MODELS if m != AI_MODEL]
+
+    api_key, api_base = _load_api_config()
+
+    if not api_key:
+        raise ValueError("AI_API_KEY not set")
+
+    last_error: Optional[str] = None
+
+    for current_model in models_to_try:
+        for attempt in range(MAX_RETRIES):
+            try:
+                full_content = await _make_stream_request(
+                    api_base=api_base,
+                    api_key=api_key,
+                    model=current_model,
+                    messages=messages,
+                    temperature=temperature,
+                    max_tokens=max_tokens,
+                    timeout=timeout,
+                    response_format=response_format,
+                    tools=tools,
+                    on_chunk=on_chunk,
+                    should_stop=should_stop,
+                )
+                if full_content:
+                    if current_model != models_to_try[0]:
+                        logger.info(f"Fallback model {current_model} succeeded")
+                    # 过滤掉 AI 思考过程
+                    return _strip_thinking_content(full_content).strip()
+
+            except asyncio.TimeoutError:
+                logger.warning(f"Model {current_model} stream timed out (attempt {attempt + 1}/{MAX_RETRIES})")
+                last_error = "timeout"
+                if attempt < MAX_RETRIES - 1:
+                    await asyncio.sleep(1 * (attempt + 1))  # 指数退避
+                continue
+            except aiohttp.ClientError as e:
+                logger.warning(f"Model {current_model} stream client error (attempt {attempt + 1}/{MAX_RETRIES}): {e}")
+                last_error = f"Client error: {e}"
+                if attempt < MAX_RETRIES - 1:
+                    await asyncio.sleep(1 * (attempt + 1))
+                continue
+            except Exception as e:
+                logger.warning(f"Model {current_model} stream failed (attempt {attempt + 1}/{MAX_RETRIES}): {e}")
+                last_error = str(e)
+                if attempt < MAX_RETRIES - 1:
+                    await asyncio.sleep(1 * (attempt + 1))
+                continue
+        # 当前模型所有重试失败，尝试下一个模型
+        logger.warning(f"Model {current_model} all {MAX_RETRIES} retries exhausted, trying next")
+
+    logger.error(f"All AI models failed in stream mode. Last error: {last_error}")
+    raise RuntimeError(f"All AI models failed in stream mode. Last error: {last_error}")
+
+
+async def _make_stream_request(
+    api_base: str,
+    api_key: str,
+    model: str,
+    messages: List[Dict],
+    temperature: float,
+    max_tokens: int,
+    timeout: float,
+    response_format: Optional[Dict] = None,
+    tools: Optional[List[Dict]] = None,
+    on_chunk: Optional[Callable[[str], None]] = None,
+    should_stop: Optional[Callable[[], bool]] = None,
+) -> Optional[str]:
+    """发送流式 API 请求到 OpenRouter 兼容接口。
+
+    Returns:
+        完整的 AI 回复文本，失败时返回 None
+    """
+    payload: Dict[str, Any] = {
+        "model": model,
+        "messages": messages,
+        "max_tokens": max_tokens,
+        "temperature": temperature,
+        "stream": True,  # 启用流式输出
+    }
+
+    if response_format:
+        payload["response_format"] = response_format
+    if tools:
+        payload["tools"] = tools
+
+    full_content = ""
+
+    async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=timeout)) as session:
+        async with session.post(
+            f"{api_base}/chat/completions",
+            headers={
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json",
+            },
+            json=payload,
+        ) as response:
+            response.raise_for_status()
+
+            async for line in response.content:
+                # 检查是否需要停止
+                if should_stop and should_stop():
+                    logger.info("Stream interrupted by stop signal")
+                    break
+
+                line = line.decode('utf-8').strip()
+
+                # SSE 格式: data: {...}
+                if not line.startswith('data: '):
+                    continue
+
+                data = line[6:]  # 去掉 'data: ' 前缀
+
+                # 流结束标记
+                if data == '[DONE]':
+                    break
+
+                try:
+                    chunk = json.loads(data)
+
+                    # 检查 choices 是否存在
+                    if "choices" not in chunk or not chunk["choices"]:
+                        continue
+
+                    delta = chunk["choices"][0].get("delta", {})
+                    content = delta.get("content", "")
+
+                    if content:
+                        full_content += content
+
+                        # 调用回调函数
+                        if on_chunk:
+                            try:
+                                on_chunk(full_content)
+                            except Exception as e:
+                                logger.warning(f"on_chunk callback error: {e}")
+
+                except json.JSONDecodeError:
+                    logger.warning(f"Failed to parse SSE chunk: {data}")
+                    continue
+                except Exception as e:
+                    logger.warning(f"Error processing SSE chunk: {e}")
+                    continue
+
+    if not full_content.strip():
+        logger.warning(f"Model {model} returned empty content in stream mode")
+        return None
+
+    return full_content
+
+
 def _strip_thinking_content(content: str) -> str:
     """去除 AI 模型返回的思考过程内容。
-    
+
     某些模型（如 Minimax、DeepSeek 等 reasoning 模型）会在响应中包含
     思考过程，需要用 <think>、<think> 等标签包裹，或者直接以自然语言
     输出分析过程。这些内容不应该展示给用户。
-    
+
     Args:
         content: AI 原始响应内容
-        
+
     Returns:
         过滤后的最终回复内容
     """

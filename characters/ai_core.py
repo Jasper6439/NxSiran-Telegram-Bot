@@ -5,11 +5,14 @@ AI Core Functions - AI 调用核心逻辑
 
 包含：
   - call_ai: 统一 AI 调用，组装系统提示词
+  - call_ai_stream: 流式 AI 调用，支持打字机效果
   - summarize_and_save_memory: 记忆提取与保存
 """
 
 import logging
+import asyncio
 from datetime import datetime
+from typing import Optional, Callable
 
 import httpx
 
@@ -17,7 +20,7 @@ import httpx
 # Core imports (from bot.py's import block)
 # ============================================================
 
-from .ai_client import call_ai as ai_client_call_ai
+from .ai_client import call_ai as ai_client_call_ai, stream_chat_completion
 from system.config import (
     get_default_tz,
     get_user_memory_file,
@@ -44,6 +47,8 @@ from characters import get_current_character
 from packages.analysis.chatlog import get_all_imported_relationships
 from packages.importers.video import get_video_analysis_context
 from packages.commands.misc import call_gemini, web_search
+from .token_utils import truncate_chat_history
+from system.config import MAX_CONTEXT_TOKENS
 
 
 # ============================================================
@@ -51,7 +56,16 @@ from packages.commands.misc import call_gemini, web_search
 # ============================================================
 
 
-async def call_ai(user_message: str, chat_history: list = None, use_memory: bool = True, emotion: str = "") -> str:
+def _build_system_prompt(use_memory: bool = True, emotion: str = "") -> str:
+    """构建系统提示词。
+
+    Args:
+        use_memory: 是否使用记忆
+        emotion: 情绪状态
+
+    Returns:
+        完整的系统提示词
+    """
     now = datetime.now(get_default_tz())
     weekdays = ['星期一','星期二','星期三','星期四','星期五','星期六','星期日']
     period = '凌晨' if now.hour < 6 else '上午' if now.hour < 12 else '下午' if now.hour < 18 else '晚上'
@@ -107,22 +121,49 @@ async def call_ai(user_message: str, chat_history: list = None, use_memory: bool
     if video_context:
         system_content += f"\n\n{video_context}\n\n请尽量模仿上述说话风格和口头禅，让角色更加真实。"
 
+    return system_content
+
+
+async def _build_user_message_with_search(user_message: str) -> str:
+    """构建用户消息，包含联网搜索结果（如果需要）。"""
+    search_keywords = ["几点", "时间", "天气", "今天", "新闻", "最近", "现在", "多少度", "热搜", "发生了什么", "怎么了"]
+    need_search = any(kw in user_message for kw in search_keywords)
+
+    if need_search:
+        search_result = await web_search(user_message)
+        if search_result:
+            search_context = f"\n\n【联网搜索结果】\n{search_result}\n\n请结合以上搜索结果回答，如果搜索结果不相关就忽略。"
+            return user_message + search_context
+
+    return user_message
+
+
+async def call_ai(user_message: str, chat_history: list = None, use_memory: bool = True, emotion: str = "") -> str:
+    """统一 AI 调用，组装系统提示词（非流式）。"""
+    system_content = _build_system_prompt(use_memory, emotion)
+
     # [Skill: 天气] 注入天气信息
     weather = await get_seoul_weather()
     weather_ctx = get_weather_context(weather)
     if weather_ctx:
         system_content += weather_ctx
 
-    # 联网搜索
-    search_keywords = ["几点", "时间", "天气", "今天", "新闻", "最近", "现在", "多少度", "热搜", "发生了什么", "怎么了"]
-    need_search = any(kw in user_message for kw in search_keywords)
+    final_user_message = await _build_user_message_with_search(user_message)
 
-    final_user_message = user_message
-    if need_search:
-        search_result = await web_search(user_message)
-        if search_result:
-            search_context = f"\n\n【联网搜索结果】\n{search_result}\n\n请结合以上搜索结果回答，如果搜索结果不相关就忽略。"
-            final_user_message = user_message + search_context
+    # [上下文截断] 防止 KV Cache 溢出
+    truncated_history, truncate_info = truncate_chat_history(
+        chat_history=chat_history,
+        system_prompt=system_content,
+        user_message=final_user_message,
+        max_tokens=MAX_CONTEXT_TOKENS,
+        preserve_system=True,
+    )
+    if truncate_info['was_truncated']:
+        logging.info(
+            f"[AI] 上下文已截断: 从 {truncate_info['original_count']} 条 -> "
+            f"{truncate_info['truncated_count']} 条, "
+            f"tokens: {truncate_info['original_tokens']} -> {truncate_info['final_tokens']}"
+        )
 
     # [AI竞争] 多模型竞争生成最佳回复
     try:
@@ -130,7 +171,7 @@ async def call_ai(user_message: str, chat_history: list = None, use_memory: bool
         content = await compete_reply(
             system_prompt=system_content,
             user_message=final_user_message,
-            chat_history=chat_history,
+            chat_history=truncated_history,
         )
         content = humanize_text(content)
         return content
@@ -142,7 +183,7 @@ async def call_ai(user_message: str, chat_history: list = None, use_memory: bool
         content = await ai_client_call_ai(
             system_prompt=system_content,
             user_message=final_user_message,
-            chat_history=chat_history,
+            chat_history=truncated_history,
         )
         content = humanize_text(content)
         return content
@@ -164,6 +205,69 @@ async def call_ai(user_message: str, chat_history: list = None, use_memory: bool
             logging.error(f"[Skill: gemini] Gemini fallback失败: {e}")
 
     return "...（低头不说话）"
+
+
+async def call_ai_stream(
+    user_message: str,
+    chat_history: list = None,
+    use_memory: bool = True,
+    emotion: str = "",
+    on_chunk: Optional[Callable[[str], None]] = None,
+    should_stop: Optional[Callable[[], bool]] = None,
+) -> str:
+    """流式 AI 调用，支持打字机效果输出。
+
+    Args:
+        user_message: 用户消息
+        chat_history: 对话历史
+        use_memory: 是否使用记忆
+        emotion: 情绪状态
+        on_chunk: 回调函数，每当收到新 chunk 时调用，参数为当前完整文本
+        should_stop: 可选的停止检查函数，返回 True 时中断流式输出
+
+    Returns:
+        完整的 AI 回复文本
+    """
+    system_content = _build_system_prompt(use_memory, emotion)
+
+    # [Skill: 天气] 注入天气信息
+    weather = await get_seoul_weather()
+    weather_ctx = get_weather_context(weather)
+    if weather_ctx:
+        system_content += weather_ctx
+
+    final_user_message = await _build_user_message_with_search(user_message)
+
+    # [上下文截断] 防止 KV Cache 溢出
+    truncated_history, truncate_info = truncate_chat_history(
+        chat_history=chat_history,
+        system_prompt=system_content,
+        user_message=final_user_message,
+        max_tokens=MAX_CONTEXT_TOKENS,
+        preserve_system=True,
+    )
+    if truncate_info['was_truncated']:
+        logging.info(
+            f"[AI Stream] 上下文已截断: 从 {truncate_info['original_count']} 条 -> "
+            f"{truncate_info['truncated_count']} 条"
+        )
+
+    # 使用流式 API 调用
+    try:
+        content = await stream_chat_completion(
+            system_prompt=system_content,
+            user_message=final_user_message,
+            chat_history=truncated_history,
+            on_chunk=on_chunk,
+            should_stop=should_stop,
+        )
+        content = humanize_text(content)
+        return content
+    except Exception as e:
+        logging.error(f"[AI] 流式调用失败: {type(e).__name__}: {e}")
+        # fallback 到非流式调用
+        logging.info("[AI] 流式调用失败，fallback 到非流式调用")
+        return await call_ai(user_message, chat_history, use_memory, emotion)
 
 
 async def summarize_and_save_memory(chat_id: int):

@@ -10,8 +10,8 @@ from typing import Dict, Any, List, Optional
 
 from .ai_client import call_ai, MAX_HISTORY_MESSAGES
 from system.prompts import parse_dialogue_options
-
-logger = logging.getLogger(__name__)
+from system.config import MAX_CONTEXT_TOKENS
+from .token_utils import estimate_messages_tokens, truncate_messages_for_api
 
 
 class ChatEngine:
@@ -159,7 +159,7 @@ class ChatEngine:
 
     # ── 对话历史 ──────────────────────────────────────────────
     def _load_chat_history(self, user_id: int, character_id: str) -> List[Dict]:
-        """加载对话历史"""
+        """加载对话历史，并进行 token 限制检查"""
         try:
             from database import GameDatabase
             db = GameDatabase()
@@ -170,6 +170,20 @@ class ChatEngine:
                     'role': msg.get('role', 'user'),
                     'content': msg.get('content', '')
                 })
+
+            # [上下文截断] 检查并记录 token 使用情况
+            history_tokens = estimate_messages_tokens(history)
+            if history_tokens > MAX_CONTEXT_TOKENS:
+                logger.warning(
+                    f"[ChatEngine] 用户 {user_id} 的对话历史 token 数 ({history_tokens}) "
+                    f"超过限制 ({MAX_CONTEXT_TOKENS})，将在 AI 调用时截断"
+                )
+            else:
+                logger.debug(
+                    f"[ChatEngine] 用户 {user_id} 对话历史: {len(history)} 条, "
+                    f"约 {history_tokens} tokens"
+                )
+
             return history
         except Exception as e:
             logger.warning(f"Failed to load chat history: {e}")

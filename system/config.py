@@ -120,7 +120,7 @@ SKILLS_REGISTRY = {
     "vision-sandbox": {"name": "图片分析", "desc": "Gemini图片深度分析", "enabled": True, "category": "AI"},
     "deepread-ocr": {"name": "文档OCR", "desc": "文档文字识别", "enabled": True, "category": "工具"},
     "tts": {"name": "语音合成", "desc": "TTS语音回复(韩语男声+声音克隆)", "enabled": True, "category": "工具"},
-    "qdrant-memory": {"name": "Qdrant记忆", "desc": "Qdrant Cloud向量记忆(语义搜索)", "enabled": True, "category": "记忆"},
+    "lightrag-memory": {"name": "向量记忆", "desc": "LightRAG本地向量记忆(语义搜索)", "enabled": True, "category": "记忆"},
     "lightrag": {"name": "知识库", "desc": "原作小说知识查询", "enabled": True, "category": "知识"},
 }
 

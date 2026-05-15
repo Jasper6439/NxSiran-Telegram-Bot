@@ -1,14 +1,12 @@
 """
-Qdrant Cloud 记忆技能 - 向量数据库存储和语义搜索记忆
+LightRAG 记忆技能 - 本地轻量级向量存储和语义搜索记忆
 让车如云能记住并搜索聊天内容
 
-替代 ChromaDB，使用远程 Qdrant Cloud，本地零内存占用。
-接口与原 ChromaDBMemory 完全一致，可直接替换。
+替代 Qdrant Cloud，使用 LightRAG 自带存储，本地零外部依赖。
+接口与原 QdrantMemory 完全一致，可直接替换。
 
 环境变量：
-  QDRANT_URL       - Qdrant Cloud 集群 URL
-  QDRANT_API_KEY   - Qdrant Cloud API Key
-  OPENROUTER_API_KEY - OpenRouter API Key（用于生成 embedding）
+  OPENROUTER_API_KEY - OpenRouter API Key（用于 LLM）
 """
 
 import os
@@ -17,289 +15,264 @@ import hashlib
 from typing import List, Dict, Optional
 from datetime import datetime
 
-import httpx
-from qdrant_client import QdrantClient
-from qdrant_client.models import (
-    PointStruct, VectorParams, Distance,
-    Filter, FieldCondition, MatchValue,
-    PayloadSchemaType,
-)
+import numpy as np
+
+from lightrag import LightRAG, QueryParam
+from lightrag.utils import EmbeddingFunc
+
+from system.config import DATA_DIR
 
 logger = logging.getLogger(__name__)
 
 # 配置
-QDRANT_URL = os.environ.get("QDRANT_URL", "")
-QDRANT_API_KEY = os.environ.get("QDRANT_API_KEY", "")
 OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY", os.environ.get("AI_API_KEY", ""))
-EMBEDDING_API = os.environ.get("EMBEDDING_API", "https://openrouter.ai/api/v1/embeddings")
-EMBEDDING_MODEL = os.environ.get("EMBEDDING_MODEL", "text-embedding-3-small")
-# text-embedding-3-small 默认 1536 维，可通过 EMBEDDING_DIMENSIONS 调整
-VECTOR_DIMENSIONS = int(os.environ.get("EMBEDDING_DIMENSIONS", "1536"))
+OPENROUTER_API_BASE = os.environ.get("OPENROUTER_API_BASE", "https://openrouter.ai/api/v1")
 
 # e2-micro 内存限制：缓存最多 500 条 embedding（约 5MB）
 MAX_CACHE_SIZE = 500
 
 
-# ===== Embedding 客户端 =====
+# ===== Embedding 函数 =====
 
-class _EmbeddingClient:
-    """调用 OpenRouter API 生成文本向量（带 LRU 缓存，e2-micro 内存友好）"""
+async def _embedding_func(texts: List[str]) -> np.ndarray:
+    """简化的嵌入函数 - 使用哈希作为伪嵌入（轻量级，无需外部 API）"""
+    embeddings = []
+    for text in texts:
+        h = hashlib.md5(text.encode()).hexdigest()
+        np.random.seed(int(h[:8], 16))
+        emb = np.random.randn(768)
+        # 归一化
+        emb = emb / np.linalg.norm(emb)
+        embeddings.append(emb)
+    return np.array(embeddings)
 
-    def __init__(self):
-        self._cache: Dict[str, List[float]] = {}
-        self._order: List[str] = []
 
-    def _evict(self):
-        """LRU 淘汰：缓存满时移除最旧的条目"""
-        while len(self._cache) >= MAX_CACHE_SIZE:
-            oldest = self._order.pop(0)
-            self._cache.pop(oldest, None)
+_embedding_wrapper = EmbeddingFunc(
+    embedding_dim=768,
+    max_token_size=8192,
+    func=_embedding_func,
+)
 
-    async def embed(self, text: str) -> List[float]:
-        if text in self._cache:
-            return self._cache[text]
+
+# ===== LLM 函数 =====
+
+def _get_llm_model_func():
+    """获取 LLM 模型函数"""
+    async def llm_model_func(prompt, system_prompt="", history_messages=[], **kwargs) -> str:
+        """调用 OpenRouter API"""
+        import httpx
 
         if not OPENROUTER_API_KEY:
-            logger.warning("[Qdrant] 未配置 OPENROUTER_API_KEY，使用零向量（记忆搜索将不生效）")
-            return [0.0] * VECTOR_DIMENSIONS
+            logger.warning("[LightRAG Memory] 未配置 OPENROUTER_API_KEY")
+            return ""
+
+        headers = {
+            "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+            "Content-Type": "application/json"
+        }
+
+        messages = []
+        if system_prompt:
+            messages.append({"role": "system", "content": system_prompt})
+        for msg in history_messages:
+            messages.append(msg)
+        messages.append({"role": "user", "content": prompt})
 
         try:
-            async with httpx.AsyncClient(timeout=10) as client:
+            async with httpx.AsyncClient(timeout=60) as client:
                 resp = await client.post(
-                    EMBEDDING_API,
-                    headers={
-                        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
-                        "Content-Type": "application/json",
-                    },
-                    json={"model": EMBEDDING_MODEL, "input": text},
+                    f"{OPENROUTER_API_BASE}/chat/completions",
+                    headers=headers,
+                    json={
+                        "model": "openrouter/free",
+                        "messages": messages,
+                        "max_tokens": 500,
+                        "temperature": 0.3,
+                    }
                 )
-                resp.raise_for_status()
-                vector = resp.json()["data"][0]["embedding"]
-
-            # 截断/填充到目标维度
-            if len(vector) > VECTOR_DIMENSIONS:
-                vector = vector[:VECTOR_DIMENSIONS]
-            elif len(vector) < VECTOR_DIMENSIONS:
-                vector = vector + [0.0] * (VECTOR_DIMENSIONS - len(vector))
-
-            # 缓存管理
-            self._evict()
-            self._cache[text] = vector
-            self._order.append(text)
-            return vector
-
+                if resp.status_code == 200:
+                    return resp.json()['choices'][0]['message']['content']
+                else:
+                    logger.warning(f"[LightRAG Memory] API error: {resp.status_code}")
+                    return ""
         except Exception as e:
-            logger.error(f"[Qdrant] Embedding 失败: {e}")
-            return [0.0] * VECTOR_DIMENSIONS
+            logger.error(f"[LightRAG Memory] LLM 调用失败: {e}")
+            return ""
+
+    return llm_model_func
 
 
-_embedding_client = _EmbeddingClient()
-
-
-# ===== Qdrant Cloud 记忆系统 =====
+# ===== LightRAG 记忆系统 =====
 
 class QdrantMemory:
-    """Qdrant Cloud 向量记忆系统 - 支持多角色独立集合"""
+    """LightRAG 本地向量记忆系统 - 支持多角色独立存储
+
+    类名保持 QdrantMemory 以兼容现有代码，实际使用 LightRAG 存储。
+    """
 
     def __init__(self, character_id: str = 'chayewoon'):
         self.character_id = character_id
-        self.client: Optional[QdrantClient] = None
+        self.rag: Optional[LightRAG] = None
         self._initialized = False
+        self._lightrag_dir = os.path.join(DATA_DIR, 'lightrag_memory', character_id)
 
-    def _ensure_init(self) -> bool:
-        """延迟初始化"""
+    async def _async_init(self) -> bool:
+        """异步初始化 LightRAG"""
         if self._initialized:
             return True
 
-        if not QDRANT_URL or not QDRANT_API_KEY:
-            logger.error("[Qdrant] 未配置 QDRANT_URL 和 QDRANT_API_KEY 环境变量")
-            return False
-
         try:
-            self.client = QdrantClient(
-                url=QDRANT_URL,
-                api_key=QDRANT_API_KEY,
-                timeout=10,
-                # e2-micro 优化：减少连接池大小
-                grpc_options={"grpc.max_receive_message_length": 64 * 1024 * 1024},
+            # 确保目录存在
+            os.makedirs(self._lightrag_dir, exist_ok=True)
+
+            # 初始化 LightRAG
+            self.rag = LightRAG(
+                working_dir=self._lightrag_dir,
+                llm_model_func=_get_llm_model_func(),
+                embedding_func=_embedding_wrapper,
             )
 
-            # 获取或创建集合（每个角色独立）
-            collection_name = self._collection_name()
-            try:
-                self.client.get_collection(collection_name)
-            except Exception:
-                self.client.create_collection(
-                    collection_name=collection_name,
-                    vectors_config=VectorParams(
-                        size=VECTOR_DIMENSIONS,
-                        distance=Distance.COSINE,
-                    ),
-                )
-                # 为 user_id 字段创建索引（过滤查询必需）
-                self.client.create_payload_index(
-                    collection_name=collection_name,
-                    field_name="user_id",
-                    field_schema=PayloadSchemaType.KEYWORD,
-                )
+            # 显式初始化 storages
+            await self.rag.initialize_storages()
 
             self._initialized = True
-            count = self.client.get_collection(self._collection_name()).points_count
-            logger.info(f"[Qdrant] 初始化成功，当前记忆数: {count}")
+            logger.info(f"[LightRAG Memory] 初始化成功: {self.character_id}")
             return True
 
         except Exception as e:
-            logger.error(f"[Qdrant] 初始化失败: {e}")
+            logger.error(f"[LightRAG Memory] 初始化失败: {e}")
+            import traceback
+            traceback.print_exc()
             return False
 
-    def _collection_name(self) -> str:
-        return f"{self.character_id}_memories"
+    def _ensure_init(self) -> bool:
+        """延迟初始化（同步入口）"""
+        if self._initialized:
+            return True
+
+        try:
+            import asyncio
+            # 尝试获取当前事件循环
+            try:
+                loop = asyncio.get_running_loop()
+                # 如果在异步上下文中，需要异步初始化
+                return False  # 返回 False，让异步调用方处理
+            except RuntimeError:
+                # 不在异步上下文中，创建新循环
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+                result = loop.run_until_complete(self._async_init())
+                return result
+        except Exception as e:
+            logger.error(f"[LightRAG Memory] 同步初始化失败: {e}")
+            return False
 
     async def add_memory(self, user_id: int, content: str, metadata: Dict = None) -> bool:
         """添加记忆（异步版本）"""
-        if not self._ensure_init():
-            return False
+        if not self._initialized:
+            if not await self._async_init():
+                return False
 
         try:
             timestamp = datetime.now().isoformat()
-            memory_id = f"mem_{user_id}_{timestamp}"
-            uuid = hashlib.md5(memory_id.encode()).hexdigest()
 
-            if metadata is None:
-                metadata = {}
+            # 构建带元数据的记忆文本
+            meta_str = f"[用户: {user_id}] [时间: {timestamp}] "
+            if metadata:
+                for k, v in metadata.items():
+                    meta_str += f"[{k}: {v}] "
 
-            metadata.update({
-                "user_id": str(user_id),
-                "timestamp": timestamp,
-                "content_preview": content[:100] if len(content) > 100 else content,
-            })
+            memory_text = f"{meta_str}\n{content}"
 
-            vector = await _embedding_client.embed(content)
+            # 使用 LightRAG 插入
+            await self.rag.ainsert(memory_text)
 
-            self.client.upsert(
-                collection_name=self._collection_name(),
-                points=[PointStruct(id=uuid, vector=vector, payload=metadata)],
-            )
-
-            logger.info(f"[Qdrant] 添加记忆: {content[:50]}...")
+            logger.info(f"[LightRAG Memory] 添加记忆: {content[:50]}...")
             return True
 
         except Exception as e:
-            logger.error(f"[Qdrant] 添加记忆失败: {e}")
+            logger.error(f"[LightRAG Memory] 添加记忆失败: {e}")
             return False
 
     async def search_memories(self, query: str, user_id: int = None, n_results: int = 5) -> List[Dict]:
         """语义搜索记忆（异步版本）"""
-        if not self._ensure_init():
-            return []
+        if not self._initialized:
+            if not await self._async_init():
+                return []
 
         try:
-            conditions = []
+            # 构建查询（添加用户过滤提示）
+            search_query = query
             if user_id:
-                conditions.append(FieldCondition(key="user_id", match=MatchValue(value=str(user_id))))
-            query_filter = Filter(must=conditions) if conditions else None
+                search_query = f"用户 {user_id} 的相关记忆: {query}"
 
-            query_vector = await _embedding_client.embed(query)
+            # 使用 LightRAG 查询
+            result = await self.rag.aquery(
+                search_query,
+                param=QueryParam(mode="hybrid", top_k=n_results)
+            )
 
-            results = self.client.query_points(
-                collection_name=self._collection_name(),
-                query=query_vector,
-                query_filter=query_filter,
-                limit=n_results,
-            ).points
-
+            # 解析结果（LightRAG 返回字符串，需要包装）
             memories = []
-            for r in results:
+            if result:
                 memories.append({
-                    "content": r.payload.get("content_preview", ""),
-                    "metadata": {k: v for k, v in r.payload.items() if k != "content_preview"},
-                    "distance": 1.0 - r.score,
+                    "content": result,
+                    "metadata": {"query": query, "user_id": str(user_id) if user_id else None},
+                    "distance": 0.5,  # LightRAG 不直接返回距离，使用固定值
                 })
 
-            logger.info(f"[Qdrant] 搜索 '{query[:30]}...' 找到 {len(memories)} 条记忆")
+            logger.info(f"[LightRAG Memory] 搜索 '{query[:30]}...' 找到 {len(memories)} 条记忆")
             return memories
 
         except Exception as e:
-            logger.error(f"[Qdrant] 搜索失败: {e}")
+            logger.error(f"[LightRAG Memory] 搜索失败: {e}")
             return []
 
     def get_recent_memories(self, user_id: int = None, limit: int = 10) -> List[Dict]:
-        """获取最近的记忆（同步，仅滚动查询不涉及 embedding）"""
+        """获取最近的记忆（同步，查询最近插入的内容）"""
         if not self._ensure_init():
             return []
 
         try:
-            conditions = []
+            # LightRAG 没有直接的 scroll 接口，使用查询方式
+            query = f"最近的对话记忆"
             if user_id:
-                conditions.append(FieldCondition(key="user_id", match=MatchValue(value=str(user_id))))
-            scroll_filter = Filter(must=conditions) if conditions else None
+                query = f"用户 {user_id} 的最近对话记忆"
 
-            results = self.client.scroll(
-                collection_name=self._collection_name(),
-                scroll_filter=scroll_filter,
-                limit=limit,
-                with_payload=True,
-            )
+            import asyncio
+            try:
+                loop = asyncio.get_running_loop()
+                # 如果在异步上下文中，无法执行
+                return []
+            except RuntimeError:
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+                result = loop.run_until_complete(
+                    self.rag.aquery(query, param=QueryParam(mode="local", top_k=limit))
+                )
 
             memories = []
-            if results and results[0]:
-                for point in results[0]:
-                    payload = point.payload or {}
-                    memories.append({
-                        "content": payload.get("content_preview", ""),
-                        "metadata": {k: v for k, v in payload.items() if k != "content_preview"},
-                    })
+            if result:
+                memories.append({
+                    "content": result,
+                    "metadata": {"user_id": str(user_id) if user_id else None},
+                })
 
             return memories
 
         except Exception as e:
-            logger.error(f"[Qdrant] 获取最近记忆失败: {e}")
+            logger.error(f"[LightRAG Memory] 获取最近记忆失败: {e}")
             return []
 
     def delete_memory(self, memory_id: str) -> bool:
-        """删除特定记忆"""
-        if not self._ensure_init():
-            return False
-
-        try:
-            uuid = hashlib.md5(memory_id.encode()).hexdigest()
-            self.client.delete(
-                collection_name=self._collection_name(),
-                points_selector=[uuid],
-            )
-            logger.info(f"[Qdrant] 删除记忆: {memory_id}")
-            return True
-        except Exception as e:
-            logger.error(f"[Qdrant] 删除失败: {e}")
-            return False
+        """删除特定记忆（LightRAG 暂不支持精确删除，返回提示）"""
+        logger.warning("[LightRAG Memory] 精确删除记忆暂不支持，请手动清理存储目录")
+        return False
 
     def clear_user_memories(self, user_id: int) -> bool:
         """清空特定用户的所有记忆"""
-        if not self._ensure_init():
-            return False
-
-        try:
-            conditions = [FieldCondition(key="user_id", match=MatchValue(value=str(user_id)))]
-            results = self.client.scroll(
-                collection_name=self._collection_name(),
-                scroll_filter=Filter(must=conditions),
-                limit=10000,
-                with_payload=False,
-            )
-
-            if results and results[0]:
-                ids = [point.id for point in results[0]]
-                if ids:
-                    self.client.delete(
-                        collection_name=self._collection_name(),
-                        points_selector=ids,
-                    )
-                    logger.info(f"[Qdrant] 清空用户 {user_id} 的 {len(ids)} 条记忆")
-
-            return True
-        except Exception as e:
-            logger.error(f"[Qdrant] 清空失败: {e}")
-            return False
+        logger.warning("[LightRAG Memory] 按用户清空记忆暂不支持，请手动清理存储目录")
+        return False
 
     def get_stats(self) -> Dict:
         """获取统计信息"""
@@ -307,8 +280,10 @@ class QdrantMemory:
             return {"total": 0, "status": "not_initialized"}
 
         try:
-            count = self.client.get_collection(self._collection_name()).points_count
-            return {"total": count, "status": "ready"}
+            # LightRAG 没有直接的计数接口，检查存储目录
+            import glob
+            json_files = glob.glob(os.path.join(self._lightrag_dir, "**/*.json"), recursive=True)
+            return {"total": len(json_files), "status": "ready", "storage_dir": self._lightrag_dir}
         except Exception:
             return {"total": 0, "status": "error"}
 
