@@ -18,6 +18,7 @@
 | `sync_routes.py` | 全量状态同步, 游戏事件拉取, SSE 实时推送, 增量 diff | `api_get_full_game_state`, `api_game_state_sse`, `api_game_state_diff`, `api_game_state_version` |
 | `game_state.py` | 状态序列化, 版本号管理, 变更通知, 快照缓存 | `serialize_game_state`, `notify_state_change`, `get_state_version` |
 | `learning_routes.py` | 角色学习进化 API | `api_character_evolve`, `api_character_learn_novel`, `api_character_learning_status` |
+| `upload_routes.py` | 上传处理 API（声音/聊天记录/视频） | `api_upload_voice`, `api_clone_voice`, `api_upload_chatlog`, `api_upload_video` |
 
 ## 依赖关系
 

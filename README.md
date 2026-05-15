@@ -227,6 +227,11 @@ sudo bash tools/optimize_e2micro.sh
 | `/api/characters/learn/novel` | POST | 从小说学习 |
 | `/api/characters/learn/chat` | POST | 从聊天记录学习 |
 | `/api/characters/learning/status` | GET | 学习状态查询 |
+| `/api/upload/voice` | POST | 上传角色声音样本 |
+| `/api/upload/voice/clone` | POST | Fish Speech 声音克隆 |
+| `/api/upload/chatlog` | POST | 上传聊天记录生成 soul.md |
+| `/api/upload/video` | POST | 上传角色视频学习 |
+| `/api/upload/status` | GET | 上传功能状态查询 |
 | `/api/upload-selfies` | POST | 上传照片 |
 | `/api/generate-face` | POST | AI 换脸 |
 

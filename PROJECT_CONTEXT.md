@@ -134,6 +134,7 @@ bot.py                          # 唯一入口，python-telegram-bot Application
 | v1.6.4 | Multi-character support | Done |
 | v1.6.5 | Mobile touch controls | Done |
 | v1.6.4.1 | Character self-learning evolution | Done |
+| v1.6.4.2 | Voice/Chatlog/Video upload & learning | Done |
 
 ## Key Design Decisions
 

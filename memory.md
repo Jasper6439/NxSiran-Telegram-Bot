@@ -98,4 +98,29 @@
 
 ---
 
+## [2025-05-15] v1.6.4.2 上传与学习链路
+
+**Context**: 实现声音/聊天记录/视频上传的完整学习链路
+
+**Category**: 代码结构, 代码模式
+
+**Instructions**:
+- **角色声音管理**: `characters/voice_manager.py` — `VoiceManager` 类管理声音样本，支持 Fish Speech 克隆
+  - 存储路径: `characters/{id}/voice/sample_*.mp3`
+  - 配置: `characters/{id}/voice/voice_config.json`
+  - API: `POST /api/upload/voice`, `POST /api/upload/voice/clone`
+- **用户灵魂画像**: `characters/soul_manager.py` — 所有角色共享的 `characters/soul.md`
+  - 从聊天记录生成: `generate_soul_from_chatlog()`
+  - 画像维度: 性格、沟通风格、情感需求、关系模式、兴趣偏好、敏感点
+  - API: `POST /api/upload/chatlog`
+- **视频学习**: `packages/importers/video_enhanced.py` — 视频 → 音频/字幕提取 → AI 分析 → 更新 persona
+  - 支持: 字幕提取、Whisper/Google 语音识别、AI 分析角色特点
+  - API: `POST /api/upload/video`
+- **完整学习链路**:
+  1. 声音上传 → `characters/{id}/voice/` → TTS 克隆
+  2. 聊天记录上传 → AI 分析 → `characters/soul.md`
+  3. 视频上传 → 音频/字幕提取 → AI 分析 → `persona.md`
+
+---
+
 *此文件由 Agent 在编码后自动更新，记录项目关键知识和变动。*

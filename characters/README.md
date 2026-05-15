@@ -22,8 +22,10 @@ characters/{character_id}/
 | 模块 | 职责 | 主要导出 |
 |------|------|----------|
 | `__init__.py` | 角色注册表，多角色自动发现与动态加载 | `get_current_character`, `set_current_character`, `list_characters`, `get_all_character_ids`, `load_characters_from_dir` |
-| `base.py` | CharacterBase 抽象基类, CharacterConfig 数据类 | `CharacterBase`, `CharacterConfig` |
+| `base.py` | 角色基类与配置模型 | `CharacterBase`, `CharacterConfig` |
 | `character_learning.py` | 角色自我学习进化系统 | `CharacterLearning`, `evolve_character`, `get_learning` |
+| `voice_manager.py` | 角色声音管理（上传/克隆/TTS） | `VoiceManager`, `get_voice_manager` |
+| `soul_manager.py` | 用户灵魂画像（所有角色共享） | `SoulManager`, `generate_soul_from_chatlog` |
 | `chayewoon.py` | 车如云角色实现（完整蒸馏版） | `Character` |
 | `ai_client.py` | AI API 统一调用层, 模型 fallback 机制 | `call_ai`, `MAX_HISTORY_MESSAGES` |
 | `ai_core.py` | AI 调用核心逻辑, 系统提示词组装, 记忆提取 | `call_ai`, `summarize_and_save_memory` |

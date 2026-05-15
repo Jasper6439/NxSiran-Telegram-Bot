@@ -38,6 +38,11 @@ from game_api.learning_routes import (
     api_character_learn_chat, api_character_learn_qdrant,
     api_character_learning_status,
 )
+from game_api.upload_routes import (
+    api_upload_voice, api_clone_voice,
+    api_upload_chatlog, api_upload_video,
+    api_upload_status,
+)
 
 
 def register_game_routes(app):
@@ -108,3 +113,10 @@ def register_game_routes(app):
     app.router.add_post("/api/characters/learn/chat", api_character_learn_chat)
     app.router.add_post("/api/characters/learn/qdrant", api_character_learn_qdrant)
     app.router.add_get("/api/characters/learning/status", api_character_learning_status)
+
+    # v1.6.4.2 — 上传处理 API
+    app.router.add_post("/api/upload/voice", api_upload_voice)
+    app.router.add_post("/api/upload/voice/clone", api_clone_voice)
+    app.router.add_post("/api/upload/chatlog", api_upload_chatlog)
+    app.router.add_post("/api/upload/video", api_upload_video)
+    app.router.add_get("/api/upload/status", api_upload_status)
