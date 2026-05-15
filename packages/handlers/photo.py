@@ -18,8 +18,9 @@ from system.config import (
 from characters.stats import load_stats, save_stats
 from characters.image_gen import (
     analyze_photo_with_ai, analyze_image_with_gemini, ocr_document,
-    get_photo_response_by_type, save_memory_entry, get_selfie_count,
+    get_photo_response_by_type, get_selfie_count,
 )
+from characters.memory_legacy import save_memory_entry
 from characters import get_current_character
 from packages.commands.extra import _pending_analyze_img, _pending_ocr
 from packages.commands.import_cmds import (
