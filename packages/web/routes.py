@@ -145,19 +145,18 @@ def register_routes(app):
     web_v2_assets = os.path.join(web_v2_dist, 'assets')
     if os.path.isdir(web_v2_assets):
         app.router.add_static('/assets', web_v2_assets)
+        app.router.add_static('/icons', web_v2_dist)  # icons 目录
     else:
         import logging
         logging.warning(f"[Routes] web-v2/assets 目录不存在: {web_v2_assets}")
 
-    # PWA 和其他静态资源 (manifest, sw.js, favicon 等)
-    pwa_files = ['registerSW.js', 'manifest.webmanifest', 'manifest.json', 'favicon.svg', 'vite.svg', 'sw.js']
-    for filename in pwa_files:
+    # PWA 和其他静态资源
+    for filename in ['registerSW.js', 'manifest.webmanifest', 'manifest.json', 'favicon.svg', 'vite.svg', 'sw.js']:
         fpath = os.path.join(web_v2_dist, filename)
         if os.path.isfile(fpath):
             content_type = 'application/javascript' if filename.endswith('.js') else \
-                          'application/manifest+json' if filename.endswith('.webmanifest') else \
-                          'image/svg+xml' if filename.endswith('.svg') else \
-                          'application/json' if filename.endswith('.json') else 'text/plain'
+                          'application/manifest+json' if filename.endswith('.webmanifest') or filename.endswith('.json') else \
+                          'image/svg+xml' if filename.endswith('.svg') else 'text/plain'
             
             def make_handler(fp, ct):
                 async def handler(request):
