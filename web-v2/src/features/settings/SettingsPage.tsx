@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════════════════════
-// 设置页面 - 含登录功能
+// 设置页面 - 含登录功能 + Telegram 配置
 // ═══════════════════════════════════════════════════════════════════════════
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
@@ -13,6 +13,15 @@ interface UserInfo {
   username: string;
   nickname: string;
   avatar?: string;
+}
+
+interface TelegramConfig {
+  telegram_token: string;
+  chat_id: string;
+  ai_api_key: string;
+  ai_api_base: string;
+  admin_username: string;
+  public_url: string;
 }
 
 function getAuthToken(): string | null {
@@ -29,10 +38,8 @@ function clearAuthToken() {
 
 export default function SettingsPage() {
   const [darkMode, setDarkMode] = useState(() => {
-    // 从 localStorage 读取深色模式设置
     const saved = localStorage.getItem('darkMode');
     if (saved !== null) return saved === 'true';
-    // 默认跟随系统
     return window.matchMedia('(prefers-color-scheme: dark)').matches;
   });
   const [notifications, setNotifications] = useState(true);
@@ -42,7 +49,22 @@ export default function SettingsPage() {
   const [loginForm, setLoginForm] = useState({ username: '', password: '' });
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [loginError, setLoginError] = useState<string | null>(null);
-  const [appVersion, setAppVersion] = useState<string>('v1.6.5'); // 默认版本
+  const [appVersion, setAppVersion] = useState<string>('v1.6.5');
+
+  // ===== Telegram 配置相关状态 =====
+  const [showTelegramModal, setShowTelegramModal] = useState(false);
+  const [telegramConfig, setTelegramConfig] = useState<TelegramConfig>({
+    telegram_token: '',
+    chat_id: '',
+    ai_api_key: '',
+    ai_api_base: '',
+    admin_username: '',
+    public_url: '',
+  });
+  const [adminPassword, setAdminPassword] = useState('');
+  const [isSavingConfig, setIsSavingConfig] = useState(false);
+  const [configMessage, setConfigMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [isLoadingConfig, setIsLoadingConfig] = useState(false);
 
   // 检查登录状态 & 获取版本号
   useEffect(() => {
@@ -51,9 +73,7 @@ export default function SettingsPage() {
       setIsLoggedIn(true);
       fetchUserInfo(token);
     }
-    // 获取后端版本号
     fetchVersion();
-    // 应用保存的深色模式
     const savedDarkMode = localStorage.getItem('darkMode');
     if (savedDarkMode === 'true') {
       document.documentElement.classList.add('dark');
@@ -84,8 +104,89 @@ export default function SettingsPage() {
         setUserInfo(data);
       }
     } catch {
-      // 忽略错误，保持默认状态
+      // 忽略错误
     }
+  };
+
+  // ===== Telegram 配置相关函数 =====
+
+  // 加载 Telegram 配置
+  const loadTelegramConfig = async () => {
+    setIsLoadingConfig(true);
+    setConfigMessage(null);
+    try {
+      const res = await fetch(`${API_BASE}/api/config`);
+      const data = await res.json();
+      if (data.success && data.config) {
+        setTelegramConfig({
+          telegram_token: data.config.telegram_token || '',
+          chat_id: data.config.chat_id || '',
+          ai_api_key: data.config.ai_api_key || '',
+          ai_api_base: data.config.ai_api_base || '',
+          admin_username: data.config.admin_username || '',
+          public_url: data.config.public_url || '',
+        });
+      }
+    } catch (err) {
+      setConfigMessage({ type: 'error', text: '加载配置失败，请稍后重试' });
+    } finally {
+      setIsLoadingConfig(false);
+    }
+  };
+
+  // 保存 Telegram 配置
+  const saveTelegramConfig = async () => {
+    if (!telegramConfig.admin_username || !adminPassword) {
+      setConfigMessage({ type: 'error', text: '请填写管理员用户名和密码' });
+      return;
+    }
+
+    if (!telegramConfig.telegram_token) {
+      setConfigMessage({ type: 'error', text: '请填写 Telegram Bot Token' });
+      return;
+    }
+
+    setIsSavingConfig(true);
+    setConfigMessage(null);
+
+    try {
+      const res = await fetch(`${API_BASE}/api/config`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          telegram_token: telegramConfig.telegram_token,
+          chat_id: telegramConfig.chat_id,
+          ai_api_key: telegramConfig.ai_api_key,
+          ai_api_base: telegramConfig.ai_api_base,
+          admin_username: telegramConfig.admin_username,
+          admin_password: adminPassword,
+          public_url: telegramConfig.public_url,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (data.success) {
+        setConfigMessage({ type: 'success', text: data.message || '配置保存成功！' });
+        setAdminPassword('');
+        setTimeout(() => {
+          setShowTelegramModal(false);
+          setConfigMessage(null);
+        }, 1500);
+      } else {
+        setConfigMessage({ type: 'error', text: data.error || '保存失败，仅管理员可修改配置' });
+      }
+    } catch (err) {
+      setConfigMessage({ type: 'error', text: '网络错误，请稍后重试' });
+    } finally {
+      setIsSavingConfig(false);
+    }
+  };
+
+  // 打开 Telegram 配置弹窗
+  const handleOpenTelegramConfig = () => {
+    setShowTelegramModal(true);
+    loadTelegramConfig();
   };
 
   const handleLogin = async () => {
@@ -183,8 +284,26 @@ export default function SettingsPage() {
 
       {/* 设置列表 */}
       <div className="space-y-4">
-        <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wide">外观</h3>
-        
+        {/* ===== Telegram 配置区块 ===== */}
+        <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wide">集成</h3>
+
+        <GlassCard className="p-4" hoverable onClick={handleOpenTelegramConfig}>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <span className="text-xl">🤖</span>
+              <div>
+                <p className="font-medium text-gray-800">Telegram 配置</p>
+                <p className="text-sm text-gray-500">绑定 Bot Token 和 Chat ID</p>
+              </div>
+            </div>
+            <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </div>
+        </GlassCard>
+
+        <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wide pt-4">外观</h3>
+
         <GlassCard className="p-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -195,29 +314,28 @@ export default function SettingsPage() {
               </div>
             </div>
             <button
-            onClick={() => {
-              const newMode = !darkMode;
-              setDarkMode(newMode);
-              localStorage.setItem('darkMode', String(newMode));
-              // 应用/移除 dark 类到 html 元素
-              if (newMode) {
-                document.documentElement.classList.add('dark');
-              } else {
-                document.documentElement.classList.remove('dark');
-              }
-            }}
-            className={`w-12 h-7 rounded-full transition-colors ${darkMode ? 'bg-brand-500' : 'bg-gray-300'}`}
-          >
-            <motion.div
-              animate={{ x: darkMode ? 20 : 0 }}
-              className="w-5 h-5 bg-white rounded-full shadow"
-            />
-          </button>
+              onClick={() => {
+                const newMode = !darkMode;
+                setDarkMode(newMode);
+                localStorage.setItem('darkMode', String(newMode));
+                if (newMode) {
+                  document.documentElement.classList.add('dark');
+                } else {
+                  document.documentElement.classList.remove('dark');
+                }
+              }}
+              className={`w-12 h-7 rounded-full transition-colors ${darkMode ? 'bg-brand-500' : 'bg-gray-300'}`}
+            >
+              <motion.div
+                animate={{ x: darkMode ? 20 : 0 }}
+                className="w-5 h-5 bg-white rounded-full shadow"
+              />
+            </button>
           </div>
         </GlassCard>
 
         <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wide pt-4">通知</h3>
-        
+
         <GlassCard className="p-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -237,7 +355,7 @@ export default function SettingsPage() {
         </GlassCard>
 
         <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wide pt-4">数据</h3>
-        
+
         <GlassCard className="p-4" hoverable onClick={handleExportData}>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -269,7 +387,7 @@ export default function SettingsPage() {
         </GlassCard>
 
         <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wide pt-4">关于</h3>
-        
+
         <GlassCard className="p-4">
           <div className="text-center text-gray-500 text-sm">
             <p>恋爱至上主义区域 {appVersion}</p>
@@ -302,11 +420,11 @@ export default function SettingsPage() {
               className="w-full px-4 py-3 bg-white/50 rounded-ios-lg border border-gray-200/50 focus:outline-none focus:ring-2 focus:ring-brand-400/50"
             />
           </div>
-          
+
           {loginError && (
             <p className="text-sm text-red-500 text-center">{loginError}</p>
           )}
-          
+
           <GlassButton
             variant="primary"
             className="w-full py-3"
@@ -315,9 +433,111 @@ export default function SettingsPage() {
           >
             {isLoggingIn ? '登录中...' : '登录'}
           </GlassButton>
-          
+
           <p className="text-xs text-gray-400 text-center">
             登录后可保存游戏进度并与小樱聊天
+          </p>
+        </div>
+      </GlassModal>
+
+      {/* Telegram 配置弹窗 */}
+      <GlassModal isOpen={showTelegramModal} onClose={() => setShowTelegramModal(false)} title="🤖 Telegram 配置" position="center">
+        <div className="space-y-4">
+          {/* Bot Token */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Bot Token <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="password"
+              value={telegramConfig.telegram_token}
+              onChange={(e) => setTelegramConfig({ ...telegramConfig, telegram_token: e.target.value })}
+              placeholder="从 @BotFather 获取的 Token"
+              className="w-full px-4 py-3 bg-white/50 rounded-ios-lg border border-gray-200/50 focus:outline-none focus:ring-2 focus:ring-brand-400/50"
+            />
+            <p className="text-xs text-gray-400 mt-1">格式: 123456789:ABCDefGhIJKlmNoPQRsTUVwxYZ</p>
+          </div>
+
+          {/* Chat ID */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Chat ID
+            </label>
+            <input
+              type="text"
+              value={telegramConfig.chat_id}
+              onChange={(e) => setTelegramConfig({ ...telegramConfig, chat_id: e.target.value })}
+              placeholder="你的 Telegram Chat ID（如 123456789）"
+              className="w-full px-4 py-3 bg-white/50 rounded-ios-lg border border-gray-200/50 focus:outline-none focus:ring-2 focus:ring-brand-400/50"
+            />
+            <p className="text-xs text-gray-400 mt-1">发送消息给 @userinfobot 获取你的 Chat ID</p>
+          </div>
+
+          {/* Public URL */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Public URL
+            </label>
+            <input
+              type="text"
+              value={telegramConfig.public_url}
+              onChange={(e) => setTelegramConfig({ ...telegramConfig, public_url: e.target.value })}
+              placeholder="https://your-domain.com（用于 Webhook）"
+              className="w-full px-4 py-3 bg-white/50 rounded-ios-lg border border-gray-200/50 focus:outline-none focus:ring-2 focus:ring-brand-400/50"
+            />
+          </div>
+
+          {/* 分隔线 */}
+          <div className="border-t border-gray-200 my-4"></div>
+
+          {/* 管理员验证 */}
+          <p className="text-sm text-gray-500">修改配置需要管理员权限</p>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              管理员用户名 <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              value={telegramConfig.admin_username}
+              onChange={(e) => setTelegramConfig({ ...telegramConfig, admin_username: e.target.value })}
+              placeholder="管理员用户名"
+              className="w-full px-4 py-3 bg-white/50 rounded-ios-lg border border-gray-200/50 focus:outline-none focus:ring-2 focus:ring-brand-400/50"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              管理员密码 <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="password"
+              value={adminPassword}
+              onChange={(e) => setAdminPassword(e.target.value)}
+              placeholder="管理员密码"
+              className="w-full px-4 py-3 bg-white/50 rounded-ios-lg border border-gray-200/50 focus:outline-none focus:ring-2 focus:ring-brand-400/50"
+            />
+          </div>
+
+          {/* 消息提示 */}
+          {configMessage && (
+            <p className={`text-sm text-center ${configMessage.type === 'success' ? 'text-green-500' : 'text-red-500'}`}>
+              {configMessage.text}
+            </p>
+          )}
+
+          {/* 保存按钮 */}
+          <GlassButton
+            variant="primary"
+            className="w-full py-3"
+            onClick={saveTelegramConfig}
+            disabled={isSavingConfig || isLoadingConfig}
+          >
+            {isSavingConfig ? '保存中...' : isLoadingConfig ? '加载中...' : '💾 保存配置'}
+          </GlassButton>
+
+          <p className="text-xs text-gray-400 text-center">
+            保存后 Bot Token 和 Chat ID 将立即生效
           </p>
         </div>
       </GlassModal>
