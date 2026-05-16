@@ -8,6 +8,7 @@ import asyncio
 import logging
 import random
 from datetime import datetime
+from typing import Optional
 
 from system.prompts import (
     EMOTION_PATTERNS,
