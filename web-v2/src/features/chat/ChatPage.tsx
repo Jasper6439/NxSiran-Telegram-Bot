@@ -295,7 +295,7 @@ export function ChatPage() {
                       : 'bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 border border-gray-100 dark:border-gray-700 rounded-bl-md shadow-sm'
                   }`}
                 >
-                  {message.content}
+                  {message.content || '\u00A0'}
                   {message.isStreaming && (
                     <span className="inline-flex ml-1">
                       <span className="animate-bounce">.</span>
