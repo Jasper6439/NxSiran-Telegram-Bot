@@ -24,6 +24,7 @@ Environment=PYTHONUNBUFFERED=1
 Environment=WEBHOOK_PORT=8082
 Environment=PROJECT_DIR=/opt/LoveSupremacy-Telegram-Bot
 Environment=BOT_SERVICE=nx_siran.service
+Environment=BRIDGE_TOKEN=nxsiran_bridge_2024
 
 # 内存限制（e2-micro 1GB RAM）
 MemoryMax=128M
