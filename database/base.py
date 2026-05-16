@@ -60,6 +60,13 @@ class GameDatabase:
 
             self._migrate_db(conn)
 
+            # v1.8 - 执行双域世界数据迁移
+            migration_v18 = os.path.join(os.path.dirname(__file__), 'data', 'migration_v18_world.sql')
+            if os.path.exists(migration_v18):
+                with open(migration_v18, 'r', encoding='utf-8') as f:
+                    conn.executescript(f.read())
+                logger.info("[DB] v1.8 世界系统迁移完成")
+
     def _migrate_db(self, conn):
         """数据库自动迁移 - 添加缺失的列和表"""
         migrations = {
@@ -94,6 +101,43 @@ class GameDatabase:
                         logger.info(f"[DB] 迁移: {table} 添加列 {col_name}")
                     except Exception as e:
                         logger.warning(f"[DB] 迁移失败 {table}.{col_name}: {e}")
+
+        # v1.8 - 双域世界系统：添加作物来源和料理觉醒字段
+        v18_migrations = {
+            'crops': [
+                ('source_type', "TEXT DEFAULT 'NORMAL'"),
+                ('color_hex', 'TEXT DEFAULT NULL'),
+            ],
+            'recipe_types': [
+                ('awakening_boost', 'INTEGER DEFAULT 0'),
+                ('effect_type', "TEXT DEFAULT 'STABILIZE'"),
+            ],
+        }
+        for table, columns in v18_migrations.items():
+            try:
+                cursor = conn.execute(f"PRAGMA table_info({table})")
+                existing_cols = {row[1] for row in cursor.fetchall()}
+            except Exception:
+                continue
+            for col_name, col_def in columns:
+                if col_name not in existing_cols:
+                    try:
+                        conn.execute(f"ALTER TABLE {table} ADD COLUMN {col_name} {col_def}")
+                        logger.info(f"[DB] 迁移: {table} 添加列 {col_name}")
+                    except Exception as e:
+                        logger.warning(f"[DB] 迁移失败 {table}.{col_name}: {e}")
+
+        # v1.8 - 创建世界切换历史表
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS world_shift_history (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                from_state TEXT NOT NULL,
+                to_state TEXT NOT NULL,
+                shifted_at TEXT NOT NULL,
+                FOREIGN KEY (user_id) REFERENCES users(id)
+            )
+        """)
 
         # v1.4.10.2 - 多地图系统：创建 player_maps 表
         conn.execute("""

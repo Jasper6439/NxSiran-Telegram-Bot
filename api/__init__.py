@@ -39,6 +39,7 @@ def create_app() -> FastAPI:
     from api.routes_character import router as character_router
     from api.routes_sync import router as sync_router
     from api.routes_media import router as media_router
+    from api.routes_world import router as world_router
 
     app.include_router(user_router)
     app.include_router(chat_router)
@@ -46,6 +47,7 @@ def create_app() -> FastAPI:
     app.include_router(character_router)
     app.include_router(sync_router)
     app.include_router(media_router)
+    app.include_router(world_router)
     app.include_router(static_router)
 
     # SPA fallback 中间件（必须在路由注册之后添加）

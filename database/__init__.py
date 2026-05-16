@@ -29,9 +29,10 @@ from database.inventory import InventoryMixin
 from database.chat import ChatMixin
 from database.player import PlayerMixin
 from database.maps import MapMixin
+from database.world import WorldMixin
 
 
-class GameDatabase(MapMixin, FarmMixin, RelationshipMixin, CookingMixin, EventsMixin, InventoryMixin, ChatMixin, PlayerMixin, _Base):
+class GameDatabase(WorldMixin, MapMixin, FarmMixin, RelationshipMixin, CookingMixin, EventsMixin, InventoryMixin, ChatMixin, PlayerMixin, _Base):
     """游戏数据库管理类（组合所有业务域 Mixin）"""
     pass
 

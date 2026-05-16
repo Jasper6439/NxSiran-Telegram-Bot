@@ -306,3 +306,267 @@ html {
   @apply bg-gray-800/50 border-gray-700/50 text-gray-100 placeholder-gray-500;
   @apply focus:ring-brand-400/50 focus:border-brand-400;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   v1.8 阶段八 - 双域色彩系统
+   剧本区（彩色/强制扮演）↔ 空白区（黑白/真实自我）
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ─── CSS 自定义属性：双域主题 ──────────────────────────────────────────── */
+:root {
+  /* 剧本区主题 - 高饱和马卡龙色 */
+  --script-bg: #FAFAFA;
+  --script-surface: rgba(255, 255, 255, 0.6);
+  --script-text: #1a1a2e;
+  --script-accent: #660874;
+  --script-warm: #E07A5F;
+  --script-sky: #B8E0D2;
+  --script-grass: #95D5B2;
+
+  /* 空白区主题 - 米白与深灰 */
+  --void-bg: #F0EDE8;
+  --void-surface: rgba(240, 237, 232, 0.7);
+  --void-text: #2C2C2C;
+  --void-muted: #8A8A8A;
+  --void-accent: #660874;
+  --void-warm: #D4A574;
+  --void-highlight: #FF69B4;
+
+  /* 动态色彩反转参数（由 JS 动态设置） */
+  --awakening-level: 0;
+  --script-grayscale: 0%;
+  --script-contrast: 1;
+  --void-grayscale: 100%;
+  --void-color-opacity: 0;
+}
+
+/* ─── 剧本区样式 ────────────────────────────────────────────────────────── */
+.scripted-world {
+  background-color: var(--script-bg);
+  color: var(--script-text);
+  /* 觉醒度越高，剧本区越灰暗 */
+  filter: grayscale(var(--script-grayscale)) contrast(var(--script-contrast));
+  transition: filter 0.8s ease;
+}
+
+/* ─── 空白区样式 ────────────────────────────────────────────────────────── */
+.void-world {
+  background-color: var(--void-bg);
+  color: var(--void-text);
+  filter: grayscale(var(--void-grayscale));
+  transition: filter 0.8s ease;
+}
+
+/* 空白区水彩晕染背景遮罩 */
+.void-world::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    radial-gradient(ellipse at 20% 50%, rgba(255, 105, 180, calc(var(--void-color-opacity) * 0.15)) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 20%, rgba(155, 89, 182, calc(var(--void-color-opacity) * 0.12)) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 80%, rgba(244, 208, 63, calc(var(--void-color-opacity) * 0.1)) 0%, transparent 50%);
+  opacity: var(--void-color-opacity);
+  transition: opacity 0.8s ease;
+}
+
+/* ─── 空白区特效类 ──────────────────────────────────────────────────────── */
+
+/* 飞舞的纸张效果 */
+.void-papers {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  overflow: hidden;
+}
+
+.void-papers .paper {
+  position: absolute;
+  width: 20px;
+  height: 28px;
+  background: rgba(255, 255, 255, 0.6);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  border-radius: 1px;
+  animation: paper-float linear infinite;
+  will-change: transform;
+}
+
+@keyframes paper-float {
+  0% {
+    transform: translateY(110vh) rotate(0deg) translateX(0);
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.7;
+  }
+  90% {
+    opacity: 0.7;
+  }
+  100% {
+    transform: translateY(-10vh) rotate(720deg) translateX(100px);
+    opacity: 0;
+  }
+}
+
+/* 漂浮的分镜框效果 */
+.void-frames {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  overflow: hidden;
+}
+
+.void-frames .frame {
+  position: absolute;
+  border: 2px solid rgba(0, 0, 0, 0.08);
+  border-radius: 4px;
+  animation: frame-drift linear infinite;
+  will-change: transform;
+}
+
+@keyframes frame-drift {
+  0% {
+    transform: translateY(100vh) rotate(-5deg);
+    opacity: 0;
+  }
+  20% {
+    opacity: 0.4;
+  }
+  80% {
+    opacity: 0.4;
+  }
+  100% {
+    transform: translateY(-20vh) rotate(5deg);
+    opacity: 0;
+  }
+}
+
+/* 失重漂浮感 */
+.float-anim {
+  animation: float-gentle 3s ease-in-out infinite;
+  will-change: transform;
+}
+
+@keyframes float-gentle {
+  0%, 100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  25% {
+    transform: translateY(-6px) rotate(0.5deg);
+  }
+  75% {
+    transform: translateY(4px) rotate(-0.5deg);
+  }
+}
+
+/* 对话框漂浮（空白区专用） */
+.void-dialogue-float {
+  animation: dialogue-float 4s ease-in-out infinite;
+  will-change: transform;
+}
+
+@keyframes dialogue-float {
+  0%, 100% {
+    transform: translateY(0) translateX(0);
+  }
+  33% {
+    transform: translateY(-8px) translateX(3px);
+  }
+  66% {
+    transform: translateY(4px) translateX(-2px);
+  }
+}
+
+/* ─── 真实色彩锚点 ──────────────────────────────────────────────────────── */
+.real-color {
+  filter: grayscale(0%) !important;
+  box-shadow: 0 0 12px rgba(255, 105, 180, calc(var(--void-color-opacity) * 0.5)),
+              0 0 24px rgba(155, 89, 182, calc(var(--void-color-opacity) * 0.3));
+  transition: filter 0.5s ease, box-shadow 0.5s ease;
+}
+
+/* 真实作物高亮 */
+.real-crop {
+  filter: grayscale(0%) !important;
+  animation: real-crop-glow 2s ease-in-out infinite alternate;
+  will-change: box-shadow;
+}
+
+@keyframes real-crop-glow {
+  0% {
+    box-shadow: 0 0 8px rgba(255, 105, 180, 0.3);
+  }
+  100% {
+    box-shadow: 0 0 20px rgba(255, 105, 180, 0.6),
+                0 0 40px rgba(155, 89, 182, 0.3);
+  }
+}
+
+/* 救赎料理高亮 */
+.redemption-dish {
+  filter: grayscale(0%) !important;
+  background: linear-gradient(135deg,
+    rgba(255, 105, 180, 0.1),
+    rgba(155, 89, 182, 0.1));
+  box-shadow: 0 0 16px rgba(255, 105, 180, 0.4);
+  animation: dish-shimmer 3s ease-in-out infinite;
+  will-change: box-shadow;
+}
+
+@keyframes dish-shimmer {
+  0%, 100% {
+    box-shadow: 0 0 16px rgba(255, 105, 180, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 28px rgba(255, 105, 180, 0.7),
+                0 0 48px rgba(155, 89, 182, 0.3);
+  }
+}
+
+/* ─── 世界切换过渡动画 ──────────────────────────────────────────────────── */
+.world-transition {
+  animation: world-shift 0.8s ease-in-out;
+}
+
+@keyframes world-shift {
+  0% {
+    filter: blur(0) brightness(1);
+  }
+  30% {
+    filter: blur(8px) brightness(1.5);
+  }
+  70% {
+    filter: blur(4px) brightness(0.8);
+  }
+  100% {
+    filter: blur(0) brightness(1);
+  }
+}
+
+/* ─── 觉醒度进度条 ──────────────────────────────────────────────────────── */
+.awakening-bar {
+  height: 6px;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #8A8A8A, #660874, #FF69B4);
+  transition: width 0.5s ease;
+  will-change: width;
+}
+
+/* ─── 性能优化 ──────────────────────────────────────────────────────────── */
+.scripted-world,
+.void-world {
+  will-change: filter;
+  backface-visibility: hidden;
+}
+
+.float-anim,
+.void-dialogue-float,
+.real-crop,
+.redemption-dish {
+  will-change: transform, box-shadow;
+  backface-visibility: hidden;
+}
