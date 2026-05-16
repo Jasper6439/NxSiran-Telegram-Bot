@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Send, User, Settings, Sparkles, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -27,7 +27,7 @@ export function ChatPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [showSelfie, setShowSelfie] = useState(false);
-  const [selfieImage, setSelfieImage] = useState<string | null>(null);
+  const selfieImage = useState<string | null>(null)[0];
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Check login status

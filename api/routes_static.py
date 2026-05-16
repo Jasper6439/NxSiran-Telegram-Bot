@@ -7,7 +7,7 @@ api/routes_static.py - 静态文件服务 + SPA fallback (v1.7)
 
 import os
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Request, FastAPI
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -19,21 +19,23 @@ router = APIRouter(tags=["static"])
 WEB_DIST = os.path.join(os.path.dirname(os.path.dirname(__file__)), "web-v2", "dist")
 
 
+def mount_static_files(app: FastAPI):
+    """在 app 级别挂载静态文件（确保优先级高于 API 路由）"""
+    # 挂载静态文件目录（/assets 对应 web-v2/dist/assets）
+    _assets_dir = os.path.join(WEB_DIST, "assets")
+    if os.path.isdir(_assets_dir):
+        app.mount("/assets", StaticFiles(directory=_assets_dir), name="assets")
+    
+    # 挂载 icons 目录
+    _icons_dir = os.path.join(WEB_DIST, "icons")
+    if os.path.isdir(_icons_dir):
+        app.mount("/icons", StaticFiles(directory=_icons_dir), name="icons")
+
+
 @router.get("/")
 async def serve_index():
     """提供 web-v2 的 index.html"""
     return FileResponse(os.path.join(WEB_DIST, "index.html"))
-
-
-# 挂载静态文件目录（/assets 对应 web-v2/dist/assets）
-_assets_dir = os.path.join(WEB_DIST, "assets")
-if os.path.isdir(_assets_dir):
-    router.mount("/assets", StaticFiles(directory=_assets_dir), name="assets")
-
-# 挂载 icons 目录
-_icons_dir = WEB_DIST
-if os.path.isdir(_icons_dir):
-    router.mount("/icons", StaticFiles(directory=_icons_dir), name="icons")
 
 
 @router.get("/miniapp")

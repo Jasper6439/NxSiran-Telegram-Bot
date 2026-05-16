@@ -41,6 +41,10 @@ def create_app() -> FastAPI:
     from api.routes_media import router as media_router
     from api.routes_world import router as world_router
 
+    # 先挂载静态文件（确保优先级最高）
+    from api.routes_static import mount_static_files
+    mount_static_files(app)
+
     app.include_router(user_router)
     app.include_router(chat_router)
     app.include_router(game_router)
