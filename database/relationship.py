@@ -365,3 +365,66 @@ class RelationshipMixin:
                 'current_layer': layer,
                 'layer_name': state['layers'][layer]['name']
             }
+
+    # ============================================================
+    # 用户活跃时间持久化 (v1.7 Phase 5)
+    # ============================================================
+
+    def update_last_active_time(self, user_id: int, character_id: str = 'chayewoon') -> bool:
+        """更新用户最后活跃时间到数据库。
+
+        Args:
+            user_id: 用户ID
+            character_id: 角色ID
+
+        Returns:
+            是否更新成功
+        """
+        now = datetime.now(get_default_tz()).isoformat()
+        with self.get_connection() as conn:
+            # 检查关系是否存在
+            cursor = conn.execute(
+                "SELECT id FROM relationships WHERE user_id = ? AND character_id = ?",
+                (user_id, character_id)
+            )
+            row = cursor.fetchone()
+
+            if row:
+                # 更新现有记录
+                conn.execute(
+                    """UPDATE relationships SET last_active_time = ?, updated_at = ?
+                       WHERE user_id = ? AND character_id = ?""",
+                    (now, now, user_id, character_id)
+                )
+            else:
+                # 创建新记录（如果用户存在）
+                conn.execute(
+                    """INSERT INTO relationships (user_id, character_id, last_active_time, created_at, updated_at)
+                       VALUES (?, ?, ?, ?, ?)""",
+                    (user_id, character_id, now, now, now)
+                )
+            return True
+
+    def get_last_active_time(self, user_id: int, character_id: str = 'chayewoon') -> Optional[datetime]:
+        """从数据库获取用户最后活跃时间。
+
+        Args:
+            user_id: 用户ID
+            character_id: 角色ID
+
+        Returns:
+            最后活跃时间的 datetime 对象，不存在返回 None
+        """
+        with self.get_connection() as conn:
+            cursor = conn.execute(
+                "SELECT last_active_time FROM relationships WHERE user_id = ? AND character_id = ?",
+                (user_id, character_id)
+            )
+            row = cursor.fetchone()
+
+            if row and row['last_active_time']:
+                try:
+                    return datetime.fromisoformat(row['last_active_time'])
+                except (ValueError, TypeError):
+                    return None
+            return None

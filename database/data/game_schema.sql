@@ -70,6 +70,7 @@ CREATE TABLE IF NOT EXISTS relationships (
     happiness INTEGER DEFAULT 50,
     awakening INTEGER DEFAULT 0,
     current_world_layer TEXT DEFAULT 'stage',
+    last_active_time TEXT,              -- 用户最后活跃时间 (ISO格式)
     created_at TEXT NOT NULL,
     updated_at TEXT,
     UNIQUE(user_id, character_id),

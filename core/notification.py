@@ -9,10 +9,78 @@
 """
 
 import asyncio
+import functools
 import logging
-from typing import Optional
+import random
+from typing import Optional, Callable, TypeVar, Any
 
 logger = logging.getLogger(__name__)
+
+T = TypeVar('T')
+
+
+# ============================================================
+# 重试装饰器
+# ============================================================
+
+def with_retry(
+    max_retries: int = 3,
+    base_delay: float = 1.0,
+    max_delay: float = 10.0,
+    exponential_base: float = 2.0,
+    jitter: bool = True,
+    retry_exceptions: tuple = (Exception,),
+):
+    """重试装饰器，支持指数退避和抖动。
+
+    Args:
+        max_retries: 最大重试次数
+        base_delay: 初始延迟秒数
+        max_delay: 最大延迟秒数
+        exponential_base: 指数退避基数
+        jitter: 是否添加随机抖动
+        retry_exceptions: 触发重试的异常类型元组
+
+    Returns:
+        装饰后的函数
+    """
+    def decorator(func: Callable[..., T]) -> Callable[..., T]:
+        @functools.wraps(func)
+        async def wrapper(*args, **kwargs) -> T:
+            last_exception = None
+
+            for attempt in range(max_retries + 1):
+                try:
+                    return await func(*args, **kwargs)
+                except retry_exceptions as e:
+                    last_exception = e
+
+                    if attempt == max_retries:
+                        # 最后一次尝试失败，不再重试
+                        logger.error(
+                            f"[重试] {func.__name__} 失败，已重试 {max_retries} 次: {e}"
+                        )
+                        raise
+
+                    # 计算延迟（指数退避）
+                    delay = min(base_delay * (exponential_base ** attempt), max_delay)
+
+                    # 添加抖动（防止重试风暴）
+                    if jitter:
+                        delay = delay * (0.5 + random.random())
+
+                    logger.warning(
+                        f"[重试] {func.__name__} 第 {attempt + 1} 次失败: {e}，"
+                        f"{delay:.2f}s 后重试"
+                    )
+
+                    await asyncio.sleep(delay)
+
+            # 理论上不会到达这里
+            raise last_exception
+
+        return wrapper
+    return decorator
 
 
 # ============================================================
@@ -38,15 +106,41 @@ def set_tg_app(app):
 
 
 # ============================================================
-# 底层消息发送
+# 底层消息发送（带重试）
 # ============================================================
+
+@with_retry(max_retries=3, base_delay=1.0, exponential_base=2.0)
+async def _send_message_with_retry(
+    bot,
+    chat_id: int,
+    text: str,
+    parse_mode: str = "HTML"
+) -> bool:
+    """带重试的消息发送核心逻辑。
+
+    Args:
+        bot: Telegram Bot 实例
+        chat_id: 目标 chat_id
+        text: 消息文本
+        parse_mode: 解析模式
+
+    Returns:
+        发送是否成功
+    """
+    await bot.send_message(
+        chat_id=chat_id,
+        text=text,
+        parse_mode=parse_mode,
+    )
+    return True
 
 
 async def send_telegram_notification(user_id: int, message: str, parse_mode: str = "HTML") -> bool:
-    """发送 Telegram 通知消息。
+    """发送 Telegram 通知消息（带重试机制）。
 
     通过 main.py 中创建的 tg_app 实例发送消息。
-    tg_app 在 main() 中创建后，通过 set_tg_app() 保存到本模块。
+    遇到网络错误时自动重试 3 次（指数退避：1s, 2s, 4s）。
+    失败时只记录日志，不抛出异常（通知不是关键路径）。
 
     Args:
         user_id: 目标用户的 Telegram chat_id
@@ -62,15 +156,18 @@ async def send_telegram_notification(user_id: int, message: str, parse_mode: str
             logger.warning("[通知] tg_app 实例不可用，无法发送通知")
             return False
 
-        await app.bot.send_message(
+        await _send_message_with_retry(
+            bot=app.bot,
             chat_id=user_id,
             text=message,
             parse_mode=parse_mode,
         )
         logger.info(f"[通知] 已发送通知给用户 {user_id}")
         return True
+
     except Exception as e:
-        logger.warning(f"[通知] 发送 Telegram 通知失败: {e}")
+        # 所有重试失败后，只记录日志，不抛出异常
+        logger.error(f"[通知] 发送 Telegram 通知失败（已重试 3 次）: {e}")
         return False
 
 
@@ -157,7 +254,7 @@ _IMPORTANT_CHANGE_KEYS = {
 }
 
 
-def bridge_web_to_telegram(user_id: int, changed_keys: list):
+async def bridge_web_to_telegram(user_id: int, changed_keys: list):
     """桥接 Web 端游戏状态变更到 Telegram 通知。
 
     被 game_state.notify_state_change 调用。
@@ -188,24 +285,15 @@ def bridge_web_to_telegram(user_id: int, changed_keys: list):
     for key, event_keyword in important_events:
         try:
             if event_keyword == "crop_ready":
-                asyncio.ensure_future(
-                    notify_game_event(user_id, "crop_ready", {"detail": key})
-                )
+                await notify_game_event(user_id, "crop_ready", {"detail": key})
             elif event_keyword in ("heart", "hearts"):
-                asyncio.ensure_future(
-                    notify_game_event(user_id, "heart_event", {"detail": key})
-                )
+                await notify_game_event(user_id, "heart_event", {"detail": key})
             elif event_keyword in ("relationship", "relationshipStatus"):
-                asyncio.ensure_future(
-                    notify_game_event(user_id, "heart_event", {"detail": key})
-                )
+                await notify_game_event(user_id, "heart_event", {"detail": key})
             elif event_keyword == "level":
-                asyncio.ensure_future(
-                    notify_game_event(user_id, "level_up", {"detail": key})
-                )
+                await notify_game_event(user_id, "level_up", {"detail": key})
             elif event_keyword == "cooking":
-                asyncio.ensure_future(
-                    notify_game_event(user_id, "cooking_complete", {"detail": key})
-                )
+                await notify_game_event(user_id, "cooking_complete", {"detail": key})
         except Exception as e:
-            logger.warning(f"[通知] 桥接通知调度失败 ({key}): {e}")
+            # 通知失败不应该影响主流程
+            logger.warning(f"[通知] 桥接通知失败 ({key}): {e}")

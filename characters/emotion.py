@@ -121,19 +121,71 @@ def get_intimacy_context(stats: dict) -> str:
 # [Skill: proactive-agent] 主动行为系统
 # ============================================================
 
-# 用户最后活跃时间记录
+# 用户最后活跃时间记录（内存缓存，优先使用）
 _last_user_active_time = {}  # chat_id -> datetime
 
 
-def update_user_active_time(user_id: int):
+def update_user_active_time(user_id: int, persist: bool = True):
     """更新用户最后活跃时间。
 
     在用户发送消息时调用，用于主动行为系统判断用户是否长时间未活跃。
+    同时更新内存缓存和数据库，确保服务重启后数据不丢失。
 
     Args:
         user_id: 用户的 chat_id
+        persist: 是否持久化到数据库（默认 True）
     """
-    _last_user_active_time[user_id] = datetime.now(get_default_tz())
+    now = datetime.now(get_default_tz())
+    _last_user_active_time[user_id] = now
+
+    # 异步持久化到数据库（通过线程池执行同步数据库操作）
+    if persist:
+        try:
+            import asyncio
+            from concurrent.futures import ThreadPoolExecutor
+            from database import get_db
+
+            def _persist_to_db():
+                try:
+                    db = get_db()
+                    db.update_last_active_time(user_id)
+                except Exception as e:
+                    logging.warning(f"[活跃时间] 持久化失败: {e}")
+
+            # 在后台线程执行，不阻塞主流程
+            loop = asyncio.get_event_loop()
+            loop.run_in_executor(None, _persist_to_db)
+        except Exception as e:
+            logging.debug(f"[活跃时间] 持久化跳过: {e}")
+
+
+def get_user_active_time(user_id: int) -> Optional[datetime]:
+    """获取用户最后活跃时间。
+
+    优先从内存缓存读取，无缓存则从数据库加载。
+
+    Args:
+        user_id: 用户的 chat_id
+
+    Returns:
+        最后活跃时间，不存在返回 None
+    """
+    # 优先从内存缓存读取
+    if user_id in _last_user_active_time:
+        return _last_user_active_time[user_id]
+
+    # 从数据库加载
+    try:
+        from database import get_db
+        db = get_db()
+        last_active = db.get_last_active_time(user_id)
+        if last_active:
+            # 更新内存缓存
+            _last_user_active_time[user_id] = last_active
+        return last_active
+    except Exception as e:
+        logging.warning(f"[活跃时间] 从数据库加载失败: {e}")
+        return None
 
 
 async def check_proactive_actions(app):
@@ -145,7 +197,7 @@ async def check_proactive_actions(app):
                 continue
 
             now = datetime.now(get_default_tz())
-            last_active = _last_user_active_time.get(YOUR_CHAT_ID)
+            last_active = get_user_active_time(YOUR_CHAT_ID)
 
             # 检查用户是否超过 24 小时没发消息
             if last_active:
@@ -159,7 +211,7 @@ async def check_proactive_actions(app):
                         await send_active_message(app, msg)
                         logging.info("[主动行为] 用户超过24小时未活跃，发送主动消息")
                     # 发送后重置计时，避免重复发送
-                    _last_user_active_time[YOUR_CHAT_ID] = now
+                    update_user_active_time(YOUR_CHAT_ID)
 
             # 每天晚上 10 点（22:00-22:05）有机会发晚安消息
             if now.hour == 22 and 0 <= now.minute <= 5 and random.random() < 0.15:

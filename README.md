@@ -248,3 +248,50 @@ sudo bash tools/optimize_e2micro.sh
 ## 许可证
 
 MIT License
+
+## 压力测试
+
+使用 `locust` 进行 SSE 长连接和普通 API 的压力测试。
+
+### 安装
+
+```bash
+pip install locust
+```
+
+### 运行测试（Web UI 模式）
+
+```bash
+locust -f load_test.py --host http://localhost:8000
+```
+
+然后在浏览器打开 http://localhost:8089，配置：
+- Number of users: 50
+- Spawn rate: 10
+- Host: http://localhost:8000
+
+### 运行测试（无头模式）
+
+```bash
+locust -f load_test.py --host http://localhost:8000 \
+    --users 50 --spawn-rate 10 --run-time 5m --headless
+```
+
+### 测试场景
+
+| 场景 | 用户数 | 目标 |
+|------|--------|------|
+| GameAPIUser | 50 | 普通游戏 API 压力测试 |
+| SSEChatUser | 20 | SSE 长连接稳定性测试 |
+| HealthCheckUser | 5 | 服务健康监控 |
+
+### 内存泄漏检测
+
+在测试过程中，监控服务器内存使用：
+
+```bash
+# 在服务器上运行
+watch -n 5 'ps aux | grep python3 | grep -v grep'
+```
+
+如果内存持续上涨（RSS 超过 500MB），可能存在内存泄漏。
