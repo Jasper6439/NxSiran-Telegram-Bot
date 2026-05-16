@@ -1,16 +1,16 @@
 [Unit]
-Description=NxSiran AI Bot Service
+Description=LoveSupremacy AI Bot Service
 After=network.target
 
 [Service]
 Type=simple
 User=root
 
-# 自动检测 Python 路径（优先使用虚拟环境）
-ExecStart=/bin/bash -c 'PYTHON=$(which python3); if [ -f "${WORKING_DIRECTORY}/venv/bin/python" ]; then PYTHON="${WORKING_DIRECTORY}/venv/bin/python"; fi; exec ${PYTHON} ${WORKING_DIRECTORY}/main.py'
-
-# 工作目录（部署时替换为实际路径）
+# 工作目录
 WorkingDirectory=/opt/LoveSupremacy-Telegram-Bot
+
+# 自动检测 Python 路径（优先使用虚拟环境）
+ExecStart=/bin/bash -c 'PYTHON=$(which python3); if [ -f "/opt/LoveSupremacy-Telegram-Bot/venv/bin/python" ]; then PYTHON="/opt/LoveSupremacy-Telegram-Bot/venv/bin/python"; fi; exec ${PYTHON} /opt/LoveSupremacy-Telegram-Bot/main.py'
 
 # 环境变量文件
 EnvironmentFile=/opt/LoveSupremacy-Telegram-Bot/.env
@@ -24,7 +24,7 @@ StartLimitBurst=3
 # 日志输出到 journal（防止磁盘撑爆）
 StandardOutput=journal
 StandardError=journal
-SyslogIdentifier=nx-siran
+SyslogIdentifier=lovesupremacy-bot
 
 # 优雅关闭
 TimeoutStopSec=30
