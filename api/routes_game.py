@@ -1625,8 +1625,8 @@ class CharacterLearnChatRequest(BaseModel):
     character_id: str = "chayewoon"
 
 
-class CharacterLearnQdrantRequest(BaseModel):
-    """从 Qdrant 学习请求体"""
+class CharacterLearnMemoryRequest(BaseModel):
+    """从向量记忆学习请求体"""
     character_id: str = "chayewoon"
 
 
@@ -1696,16 +1696,16 @@ async def api_character_learn_chat(
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@learning_router.post("/learn/qdrant")
-async def api_character_learn_qdrant(
-    body: CharacterLearnQdrantRequest,
+@learning_router.post("/learn/memory")
+async def api_character_learn_memory(
+    body: CharacterLearnMemoryRequest,
     user_id: int = Depends(get_current_user),
 ):
-    """从 Qdrant 记忆库学习"""
+    """从向量记忆库学习"""
     try:
         from characters.character_learning import get_learning
         learning = get_learning(body.character_id)
-        result = await learning.learn_from_qdrant_memories(user_id)
+        result = await learning.learn_from_memories(user_id)
 
         return {
             'success': result.get('success', False),
@@ -1713,7 +1713,7 @@ async def api_character_learn_qdrant(
         }
 
     except Exception as e:
-        logger.error(f"[Learning API] Qdrant 学习失败: {e}")
+        logger.error(f"[Learning API] 记忆学习失败: {e}")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -1725,10 +1725,10 @@ async def api_character_learning_status(
     """获取角色学习状态"""
     try:
         from characters.novel_knowledge import is_knowledge_ready
-        from characters.qdrant_memory import get_memory_stats
+        from characters.memory import get_memory_stats
 
         novel_ready = is_knowledge_ready(character_id)
-        qdrant_stats = get_memory_stats(character_id)
+        memory_stats = get_memory_stats(character_id)
 
         return {
             'success': True,
@@ -1738,7 +1738,7 @@ async def api_character_learning_status(
                     'ready': novel_ready,
                     'source_file': f'characters/{character_id}/novel.txt'
                 },
-                'qdrant_memory': qdrant_stats,
+                'vector_memory': memory_stats,
                 'persona_file': f'characters/{character_id}/persona.md',
                 'memories_file': f'characters/{character_id}/memories.md',
             }

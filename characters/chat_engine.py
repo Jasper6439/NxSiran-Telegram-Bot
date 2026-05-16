@@ -353,9 +353,9 @@ def get_chat_engine() -> ChatEngine:
     """获取全局 ChatEngine 实例（懒加载）"""
     global _engine_instance
     if _engine_instance is None:
-        # 注入 Qdrant 记忆系统
+        # 注入记忆系统
         try:
-            from characters.qdrant_memory import get_memory
+            from characters.memory import get_memory
             memory_mgr = get_memory()
         except Exception:
             memory_mgr = None

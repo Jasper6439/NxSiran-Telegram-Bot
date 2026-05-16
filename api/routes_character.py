@@ -104,8 +104,8 @@ class LearnChatRequest(BaseModel):
     character_id: str = 'chayewoon'
 
 
-class LearnQdrantRequest(BaseModel):
-    """从 Qdrant 记忆库学习请求体"""
+class LearnMemoryRequest(BaseModel):
+    """从向量记忆库学习请求体"""
     character_id: str = 'chayewoon'
 
 
@@ -614,7 +614,7 @@ async def api_character_evolve(
     执行：
     1. 从 novel.txt 学习 → 更新 persona.md
     2. 从聊天记录学习 → 更新 memories.md（用户画像）
-    3. 从 Qdrant 记忆学习 → 更新 memories.md（关键记忆）
+    3. 从向量记忆学习 → 更新 memories.md（关键记忆）
     """
     try:
         character_id = body.character_id
@@ -678,17 +678,17 @@ async def api_character_learn_chat(
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@router.post("/api/characters/learn/qdrant")
-async def api_character_learn_qdrant(
-    body: LearnQdrantRequest,
+@router.post("/api/characters/learn/memory")
+async def api_character_learn_memory(
+    body: LearnMemoryRequest,
     user_id: int = Depends(get_current_user),
 ):
-    """从 Qdrant 记忆库学习"""
+    """从向量记忆库学习"""
     try:
         character_id = body.character_id
 
         learning = get_learning(character_id)
-        result = await learning.learn_from_qdrant_memories(user_id)
+        result = await learning.learn_from_memories(user_id)
 
         return {
             'success': result.get('success', False),
@@ -696,7 +696,7 @@ async def api_character_learn_qdrant(
         }
 
     except Exception as e:
-        logger.error(f"[Learning API] Qdrant 学习失败: {e}")
+        logger.error(f"[Learning API] 记忆学习失败: {e}")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -709,10 +709,10 @@ async def api_character_learning_status(
     try:
         # 检查各学习源状态
         from characters.novel_knowledge import is_knowledge_ready
-        from characters.qdrant_memory import get_memory_stats
+        from characters.memory import get_memory_stats
 
         novel_ready = is_knowledge_ready(character_id)
-        qdrant_stats = get_memory_stats(character_id)
+        memory_stats = get_memory_stats(character_id)
 
         return {
             'success': True,
@@ -722,7 +722,7 @@ async def api_character_learning_status(
                     'ready': novel_ready,
                     'source_file': f'characters/{character_id}/novel.txt'
                 },
-                'qdrant_memory': qdrant_stats,
+                'vector_memory': memory_stats,
                 'persona_file': f'characters/{character_id}/persona.md',
                 'memories_file': f'characters/{character_id}/memories.md',
             }

@@ -6,7 +6,7 @@ v1.6.4.1 — 实现完整的自我进化链条：
 核心功能：
 1. 从 novel.txt 提取知识并更新角色设定
 2. 从聊天记录学习用户偏好，更新 memories.md
-3. 从 Qdrant 记忆提取高频话题，补充到角色知识
+3. 从向量记忆提取高频话题，补充到角色知识
 """
 
 import os
@@ -135,7 +135,7 @@ class CharacterLearning:
         - 用户的情绪反应模式
         """
         from database import get_db
-        from .qdrant_memory import get_memory
+        from .memory import get_memory
 
         db = get_db()
 
@@ -209,16 +209,16 @@ class CharacterLearning:
         logger.info(f"[Learning] 更新 memories.md，添加用户 {user_id} 画像")
 
     # ============================================================
-    # 3. 从 Qdrant 记忆提取高频话题
+    # 3. 从向量记忆提取高频话题
     # ============================================================
 
-    async def learn_from_qdrant_memories(self, user_id: int = None) -> Dict:
+    async def learn_from_memories(self, user_id: int = None) -> Dict:
         """从向量记忆库提取高频话题，更新到角色知识
 
-        分析 Qdrant 中的记忆，找出用户反复提及的话题和情感模式，
+        分析记忆中的内容，找出用户反复提及的话题和情感模式，
         补充到 memories.md 的共同记忆部分。
         """
-        from .qdrant_memory import get_memory
+        from .memory import get_memory
 
         memory = get_memory(self.character_id)
 
@@ -226,7 +226,7 @@ class CharacterLearning:
         recent = memory.get_recent_memories(user_id=user_id, limit=20)
 
         if not recent:
-            return {"success": False, "error": "Qdrant 记忆库为空"}
+            return {"success": False, "error": "记忆库为空"}
 
         # 提取关键词和情感（简化版）
         key_memories = []
@@ -278,7 +278,7 @@ class CharacterLearning:
         依次执行：
         1. 从 novel.txt 学习
         2. 从聊天记录学习
-        3. 从 Qdrant 记忆学习
+        3. 从向量记忆学习
 
         Returns:
             各阶段学习结果
@@ -304,12 +304,12 @@ class CharacterLearning:
             except Exception as e:
                 results["stages"]["chat_learning"] = {"success": False, "error": str(e)}
 
-        # Stage 3: 从 Qdrant 记忆学习
+        # Stage 3: 从向量记忆学习
         try:
-            qdrant_result = await self.learn_from_qdrant_memories(user_id)
-            results["stages"]["qdrant_learning"] = qdrant_result
+            memory_result = await self.learn_from_memories(user_id)
+            results["stages"]["memory_learning"] = memory_result
         except Exception as e:
-            results["stages"]["qdrant_learning"] = {"success": False, "error": str(e)}
+            results["stages"]["memory_learning"] = {"success": False, "error": str(e)}
 
         # 总结
         success_count = sum(1 for s in results["stages"].values() if s.get("success"))

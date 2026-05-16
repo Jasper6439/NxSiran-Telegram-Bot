@@ -2,8 +2,7 @@
 LightRAG 记忆技能 - 本地轻量级向量存储和语义搜索记忆
 让车如云能记住并搜索聊天内容
 
-替代 Qdrant Cloud，使用 LightRAG 自带存储，本地零外部依赖。
-接口与原 QdrantMemory 完全一致，可直接替换。
+使用 LightRAG 自带存储，本地零外部依赖。
 
 环境变量：
   OPENROUTER_API_KEY - OpenRouter API Key（用于 LLM）
@@ -104,11 +103,8 @@ def _get_llm_model_func():
 
 # ===== LightRAG 记忆系统 =====
 
-class QdrantMemory:
-    """LightRAG 本地向量记忆系统 - 支持多角色独立存储
-
-    类名保持 QdrantMemory 以兼容现有代码，实际使用 LightRAG 存储。
-    """
+class MemoryManager:
+    """LightRAG 本地向量记忆系统 - 支持多角色独立存储"""
 
     def __init__(self, character_id: str = 'chayewoon'):
         self.character_id = character_id
@@ -290,13 +286,13 @@ class QdrantMemory:
 
 # ===== 多角色记忆管理 =====
 
-_memory_instances: Dict[str, QdrantMemory] = {}
+_memory_instances: Dict[str, MemoryManager] = {}
 
 
-def get_memory(character_id: str = 'chayewoon') -> QdrantMemory:
+def get_memory(character_id: str = 'chayewoon') -> MemoryManager:
     """获取指定角色的记忆实例（懒加载）"""
     if character_id not in _memory_instances:
-        _memory_instances[character_id] = QdrantMemory(character_id)
+        _memory_instances[character_id] = MemoryManager(character_id)
     return _memory_instances[character_id]
 
 

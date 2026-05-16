@@ -103,7 +103,7 @@
 | `/api/characters/evolve` | POST | 角色进化（三阶段） |
 | `/api/characters/learn/novel` | POST | 小说学习 |
 | `/api/characters/learn/chat` | POST | 聊天记录学习 |
-| `/api/characters/learn/qdrant` | POST | Qdrant 记忆学习 |
+| `/api/characters/learn/memory` | POST | 向量记忆学习 |
 | `/api/characters/learning/status` | GET | 学习状态 |
 
 ---

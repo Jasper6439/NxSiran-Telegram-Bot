@@ -73,7 +73,7 @@ from packages.commands.import_cmds import import_chat_cmd, list_imported_cmd
 from packages.handlers.message import (
     handle_photo, handle_document, button_callback, handle_message,
     send_active_message, voice_cmd, voice_sample_cmd, voice_train_cmd, voice_status_cmd,
-    music_cmd, novel_cmd, tts_voice_toggle, tts_status_cmd, qdrant_memory_cmd,
+    music_cmd, novel_cmd, tts_voice_toggle, tts_status_cmd, semantic_memory_cmd,
 )
 
 # ============================================================
@@ -245,7 +245,7 @@ def register_handlers(tg_app: Application):
     tg_app.add_handler(CommandHandler("learned", learned_cmd))
     tg_app.add_handler(CommandHandler("forget", forget_cmd))
     tg_app.add_handler(CommandHandler("search", search_memory_cmd))
-    tg_app.add_handler(CommandHandler("semantic", qdrant_memory_cmd))  # 语义记忆搜索
+    tg_app.add_handler(CommandHandler("semantic", semantic_memory_cmd))  # 语义记忆搜索
 
     # Summary commands
     tg_app.add_handler(CommandHandler("summarize", summarize_cmd))

@@ -19,7 +19,7 @@ from packages.commands.utils import auto_delete_messages, _get_call_ai
 
 from characters.music_skill import music_skill
 from characters.novel_knowledge import query_novel, init_novel_knowledge
-from characters.qdrant_memory import search_memories
+from characters.memory import search_memories
 from characters.chat_history import load_chat_history, save_chat_history
 
 tts = TTSEngine()
@@ -39,7 +39,7 @@ __all__ = [
     "voice_status_cmd",
     "music_cmd",
     "novel_cmd",
-    "qdrant_memory_cmd",
+    "semantic_memory_cmd",
     "tts_voice_toggle",
     "tts_status_cmd",
     "user_voice_enabled",
@@ -534,10 +534,10 @@ async def novel_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
         logging.error(f"[Novel] 查询失败: {e}")
         await update.message.reply_text("...（查询失败）知识库还没准备好。")
 
-# [Skill: ChromaDB] 记忆搜索 - v1.4.7 修复：改为 /semantic 命令避免冲突
+# [Skill: 向量记忆] 记忆搜索 - v1.4.7 修复：改为 /semantic 命令避免冲突
 
-async def qdrant_memory_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """搜索Qdrant语义记忆 - 使用 /semantic 命令"""
+async def semantic_memory_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """搜索语义记忆 - 使用 /semantic 命令"""
     chat_id = update.effective_chat.id
     if YOUR_CHAT_ID != 0 and chat_id != YOUR_CHAT_ID:
         return

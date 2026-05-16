@@ -29,13 +29,13 @@ characters/{character_id}/
 | `chayewoon.py` | 车如云角色实现（完整蒸馏版） | `Character` |
 | `ai_client.py` | AI API 统一调用层, 模型 fallback 机制 | `call_ai`, `MAX_HISTORY_MESSAGES` |
 | `ai_core.py` | AI 调用核心逻辑, 系统提示词组装, 记忆提取 | `call_ai`, `summarize_and_save_memory` |
-| `ai_compete.py` | AI 竞争模块, 规则引擎评分 + 互评 + Qdrant 缓存 + 超时熔断 | `compete_ai` |
+| `ai_compete.py` | AI 竞争模块, 规则引擎评分 + 互评 + 语义缓存 + 超时熔断 | `compete_ai` |
 | `chat_engine.py` | 统一对话处理入口, Prompt 构建, 情感/觉醒/记忆整合 | `process_message` |
 | `chat_history.py` | 聊天历史持久化, 加载, 迁移 | `load_chat_history`, `append_user_message`, `append_bot_message` |
 | `emotion.py` | 情绪识别, 表情反应, 亲密度计算, 主动行为系统 | `detect_emotion`, `get_reaction` |
 | `emotion_analyzer.py` | 对话情感分析, 好感度/幸福度/觉醒度变化量计算 | `analyze_emotion` |
 | `memory_legacy.py` | 旧版 JSON 记忆系统, 语义记忆, 自我改进 | `save_memory_entry`, `search_memory` |
-| `qdrant_memory.py` | Qdrant Cloud 向量记忆, 语义搜索 | `QdrantMemory` |
+| `memory.py` | LightRAG 向量记忆, 语义搜索 | `MemoryManager` |
 | `image_gen.py` | 图片生成, 场景检测, AI 图像分析 | `generate_sticker_url`, `analyze_image_with_gemini` |
 | `tts_engine.py` | TTS 语音合成, GPT-SoVITS/Edge TTS/Fish Speech 三后端 | `TTSEngine` |
 | `music_skill.py` | 音乐搜索（yt-dlp）, 角色化评价 | `search_music` |
@@ -47,6 +47,6 @@ characters/{character_id}/
 ## 依赖关系
 
 - `ai_client.py` / `ai_core.py` → `config.py`, `httpx`
-- `chat_engine.py` → `ai_client`, `emotion`, `emotion_analyzer`, `memory_legacy`, `qdrant_memory`
-- `qdrant_memory.py` → `lightrag`, Qdrant Cloud
+- `chat_engine.py` → `ai_client`, `emotion`, `emotion_analyzer`, `memory_legacy`, `memory`
+- `memory.py` → `lightrag`
 - `tts_engine.py` → GPT-SoVITS / Edge TTS / Fish Speech 外部 API

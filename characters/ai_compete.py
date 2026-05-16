@@ -1,9 +1,9 @@
 """
 AI 竞争模块 - v1.4.12.13
-规则引擎 + 按需互评 + Qdrant 缓存 + 超时熔断
+规则引擎 + 按需互评 + 语义缓存 + 超时熔断
 
 流程：
-1. Qdrant 缓存（命中直接返回）
+1. 语义缓存（命中直接返回）
 2. 3个模型并行生成
 3. 本地规则引擎评分（<1ms，角色扮演专属规则）
 4. 只剩1个合规 → 直接用
@@ -233,13 +233,13 @@ async def _call_single_model(model: str, system_prompt: str, user_message: str,
 
 
 # ============================================================
-# Qdrant 缓存
+# 语义缓存
 # ============================================================
 
 async def _search_cache(user_message: str) -> Optional[str]:
     try:
-        from characters.qdrant_memory import QdrantMemoryManager
-        mgr = QdrantMemoryManager(collection_prefix="ai_cache")
+        from characters.memory import MemoryManager
+        mgr = MemoryManager(character_id="ai_cache")
         results = await mgr.search_memories(user_message, n_results=1)
         if results and results[0].get("distance", 1.0) < (1.0 - CACHE_SIMILARITY_THRESHOLD):
             cached = results[0].get("content", "")
@@ -253,9 +253,10 @@ async def _search_cache(user_message: str) -> Optional[str]:
 
 async def _save_to_cache(user_message: str, best_reply: str, winning_model: str):
     try:
-        from characters.qdrant_memory import QdrantMemoryManager
-        mgr = QdrantMemoryManager(collection_prefix="ai_cache")
+        from characters.memory import MemoryManager
+        mgr = MemoryManager(character_id="ai_cache")
         await mgr.add_memory(
+            user_id=0,
             content=best_reply,
             metadata={
                 "user_message_preview": user_message[:100],

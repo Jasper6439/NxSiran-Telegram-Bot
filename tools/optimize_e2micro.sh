@@ -69,19 +69,19 @@ else
     echo "    ls /etc/systemd/system/*.service"
 fi
 
-# Qdrant：允许大量 swap
+# Qdrant（已弃用，如仍运行则配置）
 QDRANT_SERVICE="qdrant.service"
 if [ -f "/etc/systemd/system/${QDRANT_SERVICE}" ]; then
     echo "  配置 ${QDRANT_SERVICE}..."
     if ! grep -q 'MemoryMax' /etc/systemd/system/${QDRANT_SERVICE}; then
         sed -i '/^\[Service\]/a MemoryMax=300M\nMemorySwapMax=500M' /etc/systemd/system/${QDRANT_SERVICE}
-        echo "    ✅ 添加 MemoryMax=300M, MemorySwapMax=500M"
+        echo "    已添加 MemoryMax=300M, MemorySwapMax=500M"
     else
-        echo "    ⏭️ 已有内存配置"
+        echo "    已有内存配置"
     fi
     systemctl daemon-reload
 else
-    echo "  ⚠️ 未找到 ${QDRANT_SERVICE}（可能用 Docker 运行）"
+    echo "  未找到 ${QDRANT_SERVICE}（已弃用，改用 LightRAG 本地存储）"
     echo "    如果用 Docker，可以配置 docker-compose.yml："
     echo "    deploy:"
     echo "      resources:"
