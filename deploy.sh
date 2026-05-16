@@ -31,8 +31,14 @@ if [ "$EUID" -ne 0 ]; then
     exit 1
 fi
 
-# 1. 进入项目目录并拉取最新代码
-echo -e "${YELLOW}[1/8] 进入项目目录...${NC}"
+# 1. 克隆或更新项目代码
+echo -e "${YELLOW}[1/8] 检查项目目录...${NC}"
+if [ ! -d "${PROJECT_DIR}" ]; then
+    echo -e "${YELLOW}  项目目录不存在，正在克隆...${NC}"
+    git clone https://github.com/Jasper6439/NxSiran-Telegram-Bot.git "${PROJECT_DIR}"
+    echo -e "${GREEN}  ✓ 项目克隆完成${NC}"
+fi
+
 cd "${PROJECT_DIR}"
 
 # 配置 git pull 策略（解决分支分叉问题）
