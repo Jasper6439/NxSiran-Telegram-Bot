@@ -64,7 +64,7 @@ AI_API_KEY = ""
 REDIS_URL = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
 AI_MODELS = [
     "deepseek/deepseek-chat-v3-0324:free",
-    "minimax/minimax-m2.5:free",
+    "google/gemini-2.0-flash-exp:free",
     "nousresearch/hermes-4-405b:free",
     "google/gemma-4-31b-it:free",
     "tencent/hy3-preview:free",
@@ -285,7 +285,7 @@ JUDGE_MODEL = os.environ.get("JUDGE_MODEL", "openrouter/google/gemini-2.5-flash:
 # 竞品模型列表（使用 free 零成本）
 COMPETE_MODELS = [
     "openrouter/deepseek/deepseek-chat-v3-0324:free",
-    "openrouter/minimax/minimax-m2.5:free",
+    "openrouter/google/gemini-2.0-flash-exp:free",
     "openrouter/google/gemma-4-31b-it:free",
 ]
 
