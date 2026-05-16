@@ -153,12 +153,22 @@ class GameDatabase:
 
     @contextmanager
     def get_connection(self):
-        """获取数据库连接（上下文管理器，已优化 PRAGMA 设置）"""
-        conn = sqlite3.connect(self.db_path, timeout=30)
+        """获取数据库连接（上下文管理器，已优化 PRAGMA 设置）
+
+        注意：
+        - check_same_thread=False 允许在多线程环境下使用
+        - 配合 threading.local() 使用，每个线程有自己的连接实例
+        - WAL 模式提供读写并发支持
+        """
+        conn = sqlite3.connect(
+            self.db_path,
+            timeout=30,
+            check_same_thread=False  # 允许多线程访问，依赖 threading.local() 管理连接
+        )
         conn.row_factory = sqlite3.Row
         conn.execute("PRAGMA journal_mode=WAL")
         conn.execute("PRAGMA synchronous=NORMAL")
-        conn.execute("PRAGMA foreign_keys=ON")
+        conn.execute("PRAGMA foreign_keys=ON")  # 启用外键约束（包括 CASCADE）
         conn.execute("PRAGMA cache_size=-64000")
         conn.execute("PRAGMA temp_store=MEMORY")
         try:

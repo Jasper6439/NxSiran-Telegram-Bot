@@ -5,6 +5,7 @@ SQLite 数据库操作模块 - 支持农场经营 + 角色互动游戏
 
 通过 Mixin 模式按业务域拆分：
 - base: 基类 + 连接管理 + 用户管理
+- auth: API Token 认证管理 (v1.9)
 - farm: 农场系统
 - relationship: 关系/亲密度 + 情感值 + 觉醒事件
 - cooking: 料理系统 + 每日奖励
@@ -21,6 +22,7 @@ from database.base import (
     get_db as _get_db_func,
     init_game_db as _init_game_db_func,
 )
+from database.auth import AuthMixin
 from database.farm import FarmMixin
 from database.relationship import RelationshipMixin
 from database.cooking import CookingMixin
@@ -32,7 +34,7 @@ from database.maps import MapMixin
 from database.world import WorldMixin
 
 
-class GameDatabase(WorldMixin, MapMixin, FarmMixin, RelationshipMixin, CookingMixin, EventsMixin, InventoryMixin, ChatMixin, PlayerMixin, _Base):
+class GameDatabase(AuthMixin, WorldMixin, MapMixin, FarmMixin, RelationshipMixin, CookingMixin, EventsMixin, InventoryMixin, ChatMixin, PlayerMixin, _Base):
     """游戏数据库管理类（组合所有业务域 Mixin）"""
     pass
 
