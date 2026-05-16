@@ -59,6 +59,9 @@ TELEGRAM_TOKEN = ""
 YOUR_CHAT_ID = 0
 AI_API_BASE = "https://openrouter.ai/api/v1"
 AI_API_KEY = ""
+
+# Redis 配置 (v1.7 Phase 7 - 短期记忆)
+REDIS_URL = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
 AI_MODELS = [
     "deepseek/deepseek-chat-v3-0324:free",
     "minimax/minimax-m2.5:free",

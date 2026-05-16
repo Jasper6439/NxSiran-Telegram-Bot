@@ -37,3 +37,6 @@ pydantic>=2.0.0
 
 # 压力测试 (v1.7 Phase 5)
 locust>=2.20.0
+
+# 短期记忆 - Redis (v1.7 Phase 7)
+redis>=5.0.0

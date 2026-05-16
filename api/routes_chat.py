@@ -91,9 +91,20 @@ async def _handle_non_stream_chat(req: ChatRequest, user_id: int) -> dict:
     if not system_prompt:
         system_prompt = "你是车如云，一个傲娇但内心温柔的角色。用简洁自然的中文回复。"
 
-    # 使用共享的聊天记录
+    # v1.7 Phase 7: 获取 Redis 短期记忆
+    from core.memory import get_chat_memory
+    chat_memory = get_chat_memory()
+    short_term_history = chat_memory.get_history(user_id, limit=10)
+
+    # 合并短期记忆到聊天历史
     from characters.chat_history import load_chat_history, save_chat_history
     history = load_chat_history(user_id)
+
+    # 将短期记忆插入到历史开头（作为上下文）
+    combined_history = short_term_history + history[-10:]  # 短期记忆 + 最近10条长期记忆
+
+    # 将用户消息存入短期记忆
+    chat_memory.add_message(user_id, "user", user_message)
 
     # AI 竞争模式，fallback 到单模型
     try:
@@ -101,7 +112,7 @@ async def _handle_non_stream_chat(req: ChatRequest, user_id: int) -> dict:
         response = await compete_reply(
             system_prompt=system_prompt,
             user_message=user_message,
-            chat_history=history,
+            chat_history=combined_history,
         )
     except Exception as e:
         logger.warning(f"[WebChat] AI竞争失败，fallback 单模型: {e}")
@@ -109,7 +120,7 @@ async def _handle_non_stream_chat(req: ChatRequest, user_id: int) -> dict:
         response = await ai_client_call_ai(
             system_prompt=system_prompt,
             user_message=user_message,
-            chat_history=history,
+            chat_history=combined_history,
         )
 
     # 使用蒸馏角色的格式化方法
@@ -121,7 +132,10 @@ async def _handle_non_stream_chat(req: ChatRequest, user_id: int) -> dict:
     except Exception:
         pass
 
-    # 保存到共享历史
+    # 将 AI 回复存入短期记忆
+    chat_memory.add_message(user_id, "assistant", response)
+
+    # 保存到长期历史
     timestamp = datetime.now(get_default_tz()).isoformat()
     history.append({"role": "user", "content": user_message, "timestamp": timestamp})
     history.append({"role": "assistant", "content": response, "timestamp": timestamp})
@@ -178,9 +192,15 @@ async def stream_chat_response(req: ChatRequest, user_id: int):
 
     使用 characters/ai_client.py 的 stream_chat_completion_generator 进行真正的逐 token 流式输出。
     包含连接保护：客户端断开时正确清理资源。
+    v1.7 Phase 7: 集成 Redis 短期记忆，在 finally 块中存储完整回复。
     """
     from characters.ai_client import stream_chat_completion_generator
     from starlette.requests import Request
+
+    # v1.7 Phase 7: 获取 Redis 短期记忆
+    from core.memory import get_chat_memory
+    chat_memory = get_chat_memory()
+    short_term_history = chat_memory.get_history(user_id, limit=10)
 
     # 获取用户显示名
     user_name = '学长'
@@ -209,9 +229,13 @@ async def stream_chat_response(req: ChatRequest, user_id: int):
     if not system_prompt:
         system_prompt = "你是车如云，一个傲娇但内心温柔的角色。用简洁自然的中文回复。"
 
-    # 加载聊天历史
+    # 加载聊天历史并合并短期记忆
     from characters.chat_history import load_chat_history, save_chat_history
     history = load_chat_history(user_id)
+    combined_history = short_term_history + history[-10:]  # 短期记忆 + 最近10条长期记忆
+
+    # v1.7 Phase 7: 将用户消息存入短期记忆（流式开始前）
+    chat_memory.add_message(user_id, "user", req.message)
 
     # 连接状态追踪
     is_connected = True
@@ -222,7 +246,7 @@ async def stream_chat_response(req: ChatRequest, user_id: int):
         async for token in stream_chat_completion_generator(
             system_prompt=system_prompt,
             user_message=req.message,
-            chat_history=history,
+            chat_history=combined_history,
         ):
             if not is_connected:
                 # 客户端已断开，停止生成
@@ -281,6 +305,18 @@ async def stream_chat_response(req: ChatRequest, user_id: int):
     finally:
         # 清理资源：确保生成器正确关闭
         is_connected = False
+
+        # v1.7 Phase 7: 在 finally 块中将完整的 AI 回复写入短期记忆
+        # 确保只存储完整的回复，避免存储未说完的半截话
+        if full_content:
+            try:
+                from core.memory import get_chat_memory
+                chat_memory = get_chat_memory()
+                chat_memory.add_message(user_id, "assistant", full_content)
+                logger.debug(f"[WebChat Stream] 完整回复已存入短期记忆 (user_id={user_id}, length={len(full_content)})")
+            except Exception as e:
+                logger.warning(f"[WebChat Stream] 存储短期记忆失败: {e}")
+
         logger.debug(f"[WebChat Stream] 连接清理完成 (user_id={user_id})")
 
 
