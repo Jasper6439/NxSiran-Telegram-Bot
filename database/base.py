@@ -223,11 +223,14 @@ class GameDatabase:
 
     def _ensure_relationships(self, conn, user_id: int):
         """确保用户与所有已注册角色都有关系记录"""
+        character_ids = ['chayewoon']  # 默认至少有车如云
         try:
             from characters import get_all_character_ids
-            character_ids = get_all_character_ids()
+            ids = get_all_character_ids()
+            if ids:  # 只在非空时覆盖默认值
+                character_ids = ids
         except Exception:
-            character_ids = ['chayewoon']
+            pass
 
         now = datetime.now(get_default_tz()).isoformat()
         for char_id in character_ids:
@@ -266,20 +269,30 @@ class GameDatabase:
 
 
 # 全局实例（向后兼容）
-_db_global: Optional[GameDatabase] = None
+_db_global = None
 
 
 # ============================================================
 # 便捷函数（兼容现有代码）
 # ============================================================
 
-def get_db() -> GameDatabase:
-    """获取数据库实例（优先线程本地，其次全局）"""
-    return _get_thread_db()
+def get_db():
+    """获取数据库实例（优先线程本地，其次全局）。
+
+    返回完整的 GameDatabase（含所有 Mixin）。
+    延迟导入避免循环引用。
+    """
+    # 延迟导入完整版本（含所有 Mixin）
+    from database import GameDatabase as FullGameDatabase
+
+    if not hasattr(_local, 'db_instance') or _local.db_instance is None:
+        _local.db_instance = FullGameDatabase()
+    return _local.db_instance
 
 
 def init_game_db():
     """初始化游戏数据库"""
     global _db_global
-    _db_global = GameDatabase()
+    from database import GameDatabase as FullGameDatabase
+    _db_global = FullGameDatabase()
     return _db_global

@@ -38,13 +38,22 @@ class GameDatabase(WorldMixin, MapMixin, FarmMixin, RelationshipMixin, CookingMi
 
 
 def get_db(user_id=None):
-    """获取数据库实例（优先线程本地，其次全局）"""
-    return _get_thread_db(user_id)
+    """获取数据库实例（优先线程本地，其次全局）。
+
+    返回完整的 GameDatabase（含所有 Mixin）。
+    """
+    import threading
+    _local = threading.local()
+    if not hasattr(_local, 'db_instance') or _local.db_instance is None:
+        _local.db_instance = GameDatabase()
+    return _local.db_instance
 
 
 def init_game_db():
     """初始化游戏数据库"""
-    return _init_game_db_func()
+    global _db_global
+    _db_global = GameDatabase()
+    return _db_global
 
 
 __all__ = [
