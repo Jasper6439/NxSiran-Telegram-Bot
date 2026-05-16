@@ -182,7 +182,7 @@ def register_user(username, password, chat_id):
 
     # 检查是否为管理员
     config = load_config()
-    role = "admin" if username == config.get("admin_username", "Ulysses") else "user"
+    role = "admin" if username == config.get("admin_username", "") else "user"
 
     # 创建用户
     now = datetime.now(get_default_tz()).isoformat()
@@ -669,7 +669,7 @@ def register_user_by_email(email, username, password):
             return False, "用户名已被使用"
 
     config = load_config()
-    role = "admin" if username == config.get("admin_username", "Ulysses") else "user"
+    role = "admin" if username == config.get("admin_username", "") else "user"
 
     now = datetime.now(get_default_tz()).isoformat()
     temp_key = f"email_{secrets.token_hex(8)}"

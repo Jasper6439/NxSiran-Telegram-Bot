@@ -129,7 +129,7 @@ async def register(req: RegisterRequest):
         # 创建用户
         user_id = str(uuid.uuid4())[:8]
         cfg = load_config()
-        role = "admin" if username == cfg.get("admin_username", "Ulysses") else "user"
+        role = "admin" if username == cfg.get("admin_username", "") else "user"
 
         users[user_id] = {
             "email": email,
@@ -230,7 +230,7 @@ async def login(req: LoginRequest):
 
         # 检查是否为管理员
         cfg = load_config()
-        if user_data['username'] == cfg.get('admin_username', 'Jasper'):
+        if user_data['username'] == cfg.get('admin_username', ''):
             user_data['role'] = 'admin'
 
         # 更新登录信息

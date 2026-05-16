@@ -63,7 +63,7 @@ async def api_register(request):
 
         user_id = str(uuid.uuid4())[:8]
         config = load_config()
-        role = "admin" if username == config.get("admin_username", "Ulysses") else "user"
+        role = "admin" if username == config.get("admin_username", "") else "user"
 
         users[user_id] = {
             "email": email,
@@ -166,7 +166,7 @@ async def api_login(request):
 
         # 检查是否为管理员（根据配置文件中的 admin_username）
         config = load_config()
-        if user_data['username'] == config.get('admin_username', 'Jasper'):
+        if user_data['username'] == config.get('admin_username', ''):
             user_data['role'] = 'admin'
 
         # 更新登录信息
