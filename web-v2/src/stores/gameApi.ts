@@ -2,7 +2,7 @@
 // LoveSupremacy Universe - Centralized API Client (Axios)
 // All backend communication goes through this module
 // ═══════════════════════════════════════════════════════════════════════════
-import axios, { type AxiosInstance, type AxiosRequestConfig } from 'axios';
+import axios, { type AxiosInstance } from 'axios';
 
 // ─── Types ────────────────────────────────────────────────────────────────
 
