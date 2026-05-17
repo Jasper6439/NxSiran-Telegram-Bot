@@ -4,20 +4,20 @@
 // ═══════════════════════════════════════════════════════════════════════════
 import { useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useWorldStore } from '../../stores/worldStore';
+import { useWorldStore } from '../../../stores/worldStore';
 import { useActionGame } from './useActionGame';
 
 export default function ActionPage() {
   const containerRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
-  const isAwakened = useWorldStore((s) => s.isAwakened);
-  const awakeningLevel = useWorldStore((s) => s.awakeningLevel);
-  const inventory = useWorldStore((s) => s.inventory);
+  const isAwakened = useWorldStore((s: any) => s.isAwakened);
+  const awakeningLevel = useWorldStore((s: any) => s.awakeningLevel);
+  const inventory = useWorldStore((s: any) => s.inventory);
 
   useActionGame(containerRef);
 
-  const fragmentCount = inventory.filter(i => i.item_type === 'story_fragment')
-    .reduce((sum, i) => sum + i.quantity, 0);
+  const fragmentCount = inventory.filter((i: any) => i.item_type === 'story_fragment')
+    .reduce((sum: number, i: any) => sum + i.quantity, 0);
 
   return (
     <div className="relative w-full h-screen overflow-hidden">

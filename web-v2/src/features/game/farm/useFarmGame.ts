@@ -5,7 +5,7 @@
 import { useEffect, useRef, useCallback } from 'react';
 import Phaser from 'phaser';
 import FarmScene from './FarmScene';
-import { useWorldStore } from '../../stores/worldStore';
+import { useWorldStore } from '../../../stores/worldStore';
 
 /**
  * Initializes a Phaser.Game instance targeting the given container ref.
@@ -14,10 +14,10 @@ import { useWorldStore } from '../../stores/worldStore';
  */
 export function useFarmGame(containerRef: React.RefObject<HTMLDivElement | null>): void {
   const gameRef = useRef<Phaser.Game | null>(null);
-  const isAwakened = useWorldStore((s) => s.isAwakened);
-  const addToInventory = useWorldStore((s) => s.addToInventory);
-  const updateFarmPlot = useWorldStore((s) => s.updateFarmPlot);
-  const farmPlots = useWorldStore((s) => s.farmPlots);
+  const isAwakened = useWorldStore((s: any) => s.isAwakened);
+  const addToInventory = useWorldStore((s: any) => s.addToInventory);
+  const updateFarmPlot = useWorldStore((s: any) => s.updateFarmPlot);
+  const farmPlots = useWorldStore((s: any) => s.farmPlots);
 
   const prevAwakenedRef = useRef(isAwakened);
 

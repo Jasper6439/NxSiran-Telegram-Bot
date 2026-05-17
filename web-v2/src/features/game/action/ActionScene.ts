@@ -72,7 +72,7 @@ export default class ActionScene extends Phaser.Scene {
   // ── Lifecycle ───────────────────────────────────────────────────────────
 
   create(): void {
-    const { width, height } = this.scale;
+    const { height } = this.scale;
     this.groundY = height - GROUND_Y_OFFSET;
     this.isAwakened = this.registry.get('isAwakened') ?? false;
 
@@ -204,7 +204,7 @@ export default class ActionScene extends Phaser.Scene {
       const rect = this.add.rectangle(p.x + p.width / 2, p.y + p.height / 2, p.width, p.height);
       this.platforms!.add(rect);
       rect.setVisible(false);
-      rect.body.updateFromGameObject();
+      (rect.body as Phaser.Physics.Arcade.Body).updateFromGameObject();
 
       if (!this.isAwakened) {
         // Scripted: brown earth + green grass
@@ -226,7 +226,7 @@ export default class ActionScene extends Phaser.Scene {
           const cy = p.y + 4 + (i % 8);
           g.lineBetween(p.x + i, cy, p.x + i + 10, cy + 4);
         }
-        g.lineStyle(0);
+        g.lineStyle(0, 0x000000);
       }
     }
   }
@@ -298,7 +298,7 @@ export default class ActionScene extends Phaser.Scene {
       for (let i = -12; i < 18; i += 4) {
         g.lineBetween(px - 10, py + i, px + 10, py + i);
       }
-      g.lineStyle(0);
+      g.lineStyle(0, 0x000000);
       // Legs
       g.fillStyle(0x1A1A2A);
       g.fillRect(px - 8, py + 14, 6, 8);
@@ -604,7 +604,7 @@ export default class ActionScene extends Phaser.Scene {
     g.fillRect(width - 130, 10, 120, 28);
     g.lineStyle(1, this.isAwakened ? 0xFF0040 : 0x4A90D9, 1);
     g.strokeRect(width - 130, 10, 120, 28);
-    g.lineStyle(0);
+    g.lineStyle(0, 0x000000);
     // Score text via bitmap-like drawing
     this.drawPixelText(g, `${this.score}`, width - 70, 18, 0x333333, 2);
   }
@@ -675,14 +675,14 @@ export default class ActionScene extends Phaser.Scene {
     g.beginPath(); g.moveTo(55, baseY); g.lineTo(70, baseY - 10); g.lineTo(70, baseY + 10); g.closePath(); g.strokePath();
     g.beginPath(); g.moveTo(105, baseY); g.lineTo(90, baseY - 10); g.lineTo(90, baseY + 10); g.closePath(); g.strokePath();
     g.beginPath(); g.moveTo(80, baseY - 25); g.lineTo(70, baseY - 10); g.lineTo(90, baseY - 10); g.closePath(); g.strokePath();
-    g.lineStyle(0);
+    g.lineStyle(0, 0x000000);
 
     // Action button
     g.fillStyle(0xFF4444, 0.3);
     g.fillCircle(width - 80, baseY, 32);
     g.lineStyle(2, 0xFF4444, 0.6);
     g.strokeCircle(width - 80, baseY, 32);
-    g.lineStyle(0);
+    g.lineStyle(0, 0x000000);
     g.fillStyle(0xFFFFFF, 0.6);
     this.drawPixelText(g, 'ATK', width - 92, baseY - 6, 0xFFFFFF, 1.5);
   }

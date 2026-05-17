@@ -5,11 +5,10 @@
 import { useEffect, useRef } from 'react';
 import Phaser from 'phaser';
 import ActionScene from './ActionScene';
-import { useWorldStore } from '../../stores/worldStore';
+import { useWorldStore } from '../../../stores/worldStore';
 
 export function useActionGame(containerRef: React.RefObject<HTMLDivElement | null>): void {
   const gameRef = useRef<Phaser.Game | null>(null);
-  const prevAwakenedRef = useRef<boolean | null>(null);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -27,7 +26,7 @@ export function useActionGame(containerRef: React.RefObject<HTMLDivElement | nul
       physics: {
         default: 'arcade',
         arcade: {
-          gravity: { y: 800 },
+          gravity: { x: 0, y: 800 },
           debug: false,
         },
       },
@@ -54,7 +53,7 @@ export function useActionGame(containerRef: React.RefObject<HTMLDivElement | nul
     game.registry.set('inventory', [...inventory]);
 
     // Subscribe to world store changes
-    const unsubscribe = useWorldStore.subscribe((state, prevState) => {
+    const unsubscribe = useWorldStore.subscribe((state: any, prevState: any) => {
       if (state.isAwakened !== prevState.isAwakened && !state.isTransitioning) {
         game.registry.set('isAwakened', state.isAwakened);
         game.registry.set('inventory', [...state.inventory]);

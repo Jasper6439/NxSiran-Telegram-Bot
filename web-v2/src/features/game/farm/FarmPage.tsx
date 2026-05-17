@@ -4,27 +4,27 @@
 // ═══════════════════════════════════════════════════════════════════════════
 import { useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useWorldStore } from '../../stores/worldStore';
+import { useWorldStore } from '../../../stores/worldStore';
 import { useFarmGame } from './useFarmGame';
 
 export default function FarmPage() {
   const containerRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
-  const isAwakened = useWorldStore((s) => s.isAwakened);
-  const inventory = useWorldStore((s) => s.inventory);
+  const isAwakened = useWorldStore((s: any) => s.isAwakened);
+  const inventory = useWorldStore((s: any) => s.inventory);
 
   // Initialize Phaser game
   useFarmGame(containerRef);
 
   // Count relevant inventory items
   const seedCount = inventory.filter(
-    (i) => i.item_id === 'tomato_seed' || i.item_id === 'void_seed'
-  ).reduce((sum, i) => sum + i.quantity, 0);
+    (i: any) => i.item_id === 'tomato_seed' || i.item_id === 'void_seed'
+  ).reduce((sum: number, i: any) => sum + i.quantity, 0);
 
   const harvestCount = inventory.filter(
-    (i) => i.item_id === 'perfect_tomato' || i.item_id === 'awakening_fragment'
-  ).reduce((sum, i) => sum + i.quantity, 0);
+    (i: any) => i.item_id === 'perfect_tomato' || i.item_id === 'awakening_fragment'
+  ).reduce((sum: number, i: any) => sum + i.quantity, 0);
 
   return (
     <div className="relative w-full h-screen overflow-hidden">

@@ -3,7 +3,7 @@
 // Dual-world farm with programmatic graphics (zero external assets)
 // ═══════════════════════════════════════════════════════════════════════════
 import Phaser from 'phaser';
-import type { FarmPlot, InventoryItem } from '../../stores/worldStore';
+import type { FarmPlot, InventoryItem } from '../../../stores/worldStore';
 
 // ─── Constants ────────────────────────────────────────────────────────────
 
@@ -85,9 +85,7 @@ export default class FarmScene extends Phaser.Scene {
   private plots: PlotCell[] = [];
   private bgGraphics!: Phaser.GameObjects.Graphics;
   private growthTimer?: Phaser.Time.TimerEvent;
-  private waterAnimations: { g: Phaser.GameObjects.Graphics; plotIdx: number }[] = [];
   private seedMenuOpen = false;
-  private selectedPlotIdx = -1;
 
   // Callbacks set from React via registry
   private onAddToInventory: ((item: InventoryItem) => void) | null = null;
@@ -392,14 +390,12 @@ export default class FarmScene extends Phaser.Scene {
   // ── Growth ────────────────────────────────────────────────────────────
 
   private advanceGrowth(): void {
-    let changed = false;
     for (let i = 0; i < this.plots.length; i++) {
       const cell = this.plots[i];
       if (cell.cropType && cell.growthStage < 3 && cell.isWatered) {
         cell.growthStage++;
         this.onUpdateFarmPlot?.(cell.plotId, { growth_stage: cell.growthStage });
         this.drawPlot(i);
-        changed = true;
       }
     }
   }
@@ -450,9 +446,6 @@ export default class FarmScene extends Phaser.Scene {
 
   private showSeedMenu(idx: number): void {
     this.seedMenuOpen = true;
-    this.selectedPlotIdx = idx;
-    const cell = this.plots[idx];
-    const t = this.theme;
 
     // Create a DOM element for the seed menu
     const menuContainer = document.createElement('div');
@@ -603,7 +596,7 @@ export default class FarmScene extends Phaser.Scene {
     this.showHarvestFeedback(cell.x + PLOT_SIZE / 2, cell.y + PLOT_SIZE / 2, item);
   }
 
-  private showHarvestFeedback(x: number, y: number, item: InventoryItem): void {
+  private showHarvestFeedback(x: number, y: number, _item: InventoryItem): void {
     const t = this.theme;
     const label = this.isAwakened ? '+1 Fragment' : '+1 Tomato';
 
