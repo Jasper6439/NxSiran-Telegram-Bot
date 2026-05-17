@@ -44,6 +44,8 @@ export interface CharacterData {
   title: string;          // 头衔/身份
   x: number;
   y: number;
+  targetX?: number;       // 移动目标 X（闲逛用）
+  targetY?: number;       // 移动目标 Y（闲逛用）
   // 关系系统
   heartLevel: number;     // 心级 0-10
   awakening: number;      // 觉醒值 0-100

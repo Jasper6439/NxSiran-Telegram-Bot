@@ -132,7 +132,7 @@ export const useCampusStore = create<CampusState>()(
 
       // 移动玩家
       movePlayer: (dx, dy) => {
-        const { player, worldZone } = get();
+        const { player } = get();
         const speed = 5;
         const newX = Math.max(20, Math.min(580, player.x + dx * speed));
         const newY = Math.max(20, Math.min(480, player.y + dy * speed));

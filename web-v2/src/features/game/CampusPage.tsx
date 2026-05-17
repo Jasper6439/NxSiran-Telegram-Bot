@@ -55,8 +55,8 @@ export default function CampusPage() {
   const [dialogueStep, setDialogueStep] = useState<'choose' | 'result'>('choose');
   
   const containerRef = useRef<HTMLDivElement>(null);
-  const moveIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const charUpdateIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const moveIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const charUpdateIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // 键盘控制
   useEffect(() => {
@@ -176,11 +176,6 @@ export default function CampusPage() {
   const currentDialogue = activeChar
     ? activeChar.dialogues[activeChar.currentDialogueIndex]
     : null;
-
-  // 获取可用对话选项
-  const availableDialogues = activeChar
-    ? activeChar.dialogues.filter(d => d.type !== 'hidden' || activeChar.awakening > 50)
-    : [];
 
   const isCollapse = worldZone === 'collapse';
 

@@ -43,7 +43,7 @@ export default function FarmPage() {
   const [showShop, setShowShop] = useState(false);
   
   const floatingIdRef = useRef(0);
-  const tickIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const tickIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // 添加飘字效果
   const addFloatingText = useCallback((x: number, y: number, text: string, color: string) => {
