@@ -15,6 +15,12 @@ const SettingsPage = lazy(() => import('../features/settings/SettingsPage'));
 // 游戏容器 (dual-world layout)
 const GameContainer = lazy(() => import('../features/game/GameContainer'));
 
+// 游戏场景
+const ActionPage = lazy(() => import('../features/game/action/ActionPage'));
+
+// 农场页面 (Phaser + React hybrid)
+const FarmPage = lazy(() => import('../features/game/farm/FarmPage'));
+
 // 加载占位
 const PageLoader = () => (
   <div className="min-h-screen flex items-center justify-center">
@@ -43,8 +49,8 @@ export const router = createBrowserRouter([
         element: withSuspense(GameContainer),
         children: [
           { index: true, element: <Navigate to="/game/farm" replace /> },
-          { path: 'farm', element: <div className="p-4 text-center text-gray-500">Farm Scene - Coming Soon</div> },
-          { path: 'action', element: <div className="p-4 text-center text-gray-500">Action Scene - Coming Soon</div> },
+          { path: 'farm', element: withSuspense(FarmPage) },
+          { path: 'action', element: withSuspense(ActionPage) },
         ],
       },
       { path: '*', element: <Navigate to="/" replace /> },
