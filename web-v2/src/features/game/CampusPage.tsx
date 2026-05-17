@@ -1,16 +1,14 @@
 // ═══════════════════════════════════════════════════════════════════════════
-// 漫游模式 v1.6.0 - 漫画世界觉醒 RPG
-// 校园地图 + 角色系统 + 剧本区/崩坏区切换
+// 校园页面 v1.9.5 - 完全独立的校园漫游游戏
+// 与农场彻底解耦，独立生命周期
 // ═══════════════════════════════════════════════════════════════════════════
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useGameStore } from '../../stores/gameStore';
+import { useCampusStore } from '../../stores/campusStore';
 import { MAP_AREAS } from '../../stores/constants';
-import { getCropStageEmoji } from '../../stores/farmStore';
-import { getNearbyCharacter, getAvailableDialogues } from '../../stores/characterStore';
-import type { CharacterData, DialogueType } from '../../stores/types';
+import type { DialogueType } from '../../stores/types';
 
-// 校园世界物体渲染
+// 世界物体表情映射
 const WORLD_OBJECT_EMOJI: Record<string, string[]> = {
   tree: ['🌳', '🌲', '🎄'],
   bench: ['🪑'],
@@ -24,40 +22,41 @@ const WORLD_OBJECT_EMOJI: Record<string, string[]> = {
   fence: ['🏗️'],
 };
 
-// 对话选项样式映射
+// 对话选项样式
 const DIALOGUE_OPTION_STYLES: Record<DialogueType, { label: string; color: string; icon: string }> = {
   script: { label: '剧本', color: 'bg-gray-500/80 text-white', icon: '📜' },
   heart: { label: '真心', color: 'bg-pink-500/80 text-white', icon: '💗' },
   hidden: { label: '隐藏', color: 'bg-purple-600/80 text-white', icon: '✨' },
 };
 
-export default function RoamMode() {
+export default function CampusPage() {
+  // 使用独立的 campusStore
   const {
     player,
     characters,
     worldObjects,
-    crops,
-    money,
     worldZone,
     collapseEnergy,
-    movePlayer,
-    interactWithCharacter,
-    closeDialogue,
     showDialogue,
     activeCharacterId,
-    harvestCrop,
-    updateCharacters,
-    tick,
-    selectDialogueOption,
     selectedDialogueType,
-  } = useGameStore();
+    movePlayer,
+    setPlayerMoving,
+    shiftWorldZone,
+    interactWithCharacter,
+    closeDialogue,
+    selectDialogueOption,
+    updateCharacters,
+  } = useCampusStore();
 
+  // 本地状态
   const [keys, setKeys] = useState({ up: false, down: false, left: false, right: false });
-  const [floatingTexts, setFloatingTexts] = useState<{ id: number; x: number; y: number; text: string; color?: string }[]>([]);
   const [currentArea, setCurrentArea] = useState<string>('');
   const [dialogueStep, setDialogueStep] = useState<'choose' | 'result'>('choose');
+  
   const containerRef = useRef<HTMLDivElement>(null);
-  const floatingIdRef = useRef(0);
+  const moveIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const charUpdateIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   // 键盘控制
   useEffect(() => {
@@ -70,6 +69,7 @@ export default function RoamMode() {
       if (key === 'e') handleInteract();
       if (key === 'escape' && showDialogue) closeDialogue();
     };
+    
     const handleKeyUp = (e: KeyboardEvent) => {
       const key = e.key.toLowerCase();
       if (key === 'w' || key === 'arrowup') setKeys(k => ({ ...k, up: false }));
@@ -77,6 +77,7 @@ export default function RoamMode() {
       if (key === 'a' || key === 'arrowleft') setKeys(k => ({ ...k, left: false }));
       if (key === 'd' || key === 'arrowright') setKeys(k => ({ ...k, right: false }));
     };
+    
     window.addEventListener('keydown', handleKeyDown);
     window.addEventListener('keyup', handleKeyUp);
     return () => {
@@ -87,28 +88,35 @@ export default function RoamMode() {
 
   // 移动循环
   useEffect(() => {
-    const interval = setInterval(() => {
+    moveIntervalRef.current = setInterval(() => {
       let dx = 0, dy = 0;
       if (keys.up) dy = -1;
       if (keys.down) dy = 1;
       if (keys.left) dx = -1;
       if (keys.right) dx = 1;
-      if (dx !== 0 || dy !== 0) movePlayer(dx, dy);
+      if (dx !== 0 || dy !== 0) {
+        movePlayer(dx, dy);
+      } else {
+        setPlayerMoving(false);
+      }
     }, 16);
-    return () => clearInterval(interval);
-  }, [keys, movePlayer]);
+    
+    return () => {
+      if (moveIntervalRef.current) {
+        clearInterval(moveIntervalRef.current);
+      }
+    };
+  }, [keys, movePlayer, setPlayerMoving]);
 
   // 角色闲逛更新
   useEffect(() => {
-    const interval = setInterval(updateCharacters, 1000);
-    return () => clearInterval(interval);
+    charUpdateIntervalRef.current = setInterval(updateCharacters, 1000);
+    return () => {
+      if (charUpdateIntervalRef.current) {
+        clearInterval(charUpdateIntervalRef.current);
+      }
+    };
   }, [updateCharacters]);
-
-  // 作物生长
-  useEffect(() => {
-    const interval = setInterval(tick, 1000);
-    return () => clearInterval(interval);
-  }, [tick]);
 
   // 检测当前区域
   useEffect(() => {
@@ -134,40 +142,18 @@ export default function RoamMode() {
   // 互动处理
   const handleInteract = useCallback(() => {
     if (showDialogue) return;
-    const nearbyChar = getNearbyCharacter(player, characters, 60);
+    
+    // 检查附近角色
+    const nearbyChar = characters.find(char => {
+      const dx = char.x - player.x;
+      const dy = char.y - player.y;
+      return Math.sqrt(dx * dx + dy * dy) < 60;
+    });
+    
     if (nearbyChar) {
       interactWithCharacter(nearbyChar.id);
-      return;
     }
-    // 农田区收获
-    const farmArea = MAP_AREAS.farmArea;
-    if (
-      player.x >= farmArea.x &&
-      player.x <= farmArea.x + farmArea.width &&
-      player.y >= farmArea.y &&
-      player.y <= farmArea.y + farmArea.height
-    ) {
-      const gridX = Math.floor((player.x - farmArea.x) / 50);
-      const gridY = Math.floor((player.y - farmArea.y) / 50);
-      if (gridX >= 0 && gridX < 6 && gridY >= 0 && gridY < 6) {
-        const result = harvestCrop(gridX, gridY);
-        if (result) {
-          const id = floatingIdRef.current++;
-          setFloatingTexts(prev => [...prev, { id, x: player.x, y: player.y - 20, text: `+💰${result.money}`, color: '#C68E17' }]);
-          setTimeout(() => setFloatingTexts(prev => prev.filter(t => t.id !== id)), 1000);
-        }
-      }
-    }
-  }, [player, characters, showDialogue, interactWithCharacter, harvestCrop]);
-
-  // 当前对话的角色
-  const activeChar: CharacterData | undefined = activeCharacterId
-    ? characters.find(c => c.id === activeCharacterId)
-    : undefined;
-
-  // 获取可用对话选项
-  const availableDialogues = activeChar ? getAvailableDialogues(activeChar) : [];
-  const currentDialogue = activeChar ? activeChar.dialogues[activeChar.currentDialogueIndex] : null;
+  }, [player, characters, showDialogue, interactWithCharacter]);
 
   // 选择对话选项
   const handleSelectOption = (type: DialogueType) => {
@@ -181,25 +167,45 @@ export default function RoamMode() {
     setDialogueStep('choose');
   };
 
-  // 剧本区/崩坏区背景
+  // 当前对话的角色
+  const activeChar = activeCharacterId
+    ? characters.find(c => c.id === activeCharacterId)
+    : undefined;
+
+  // 当前对话
+  const currentDialogue = activeChar
+    ? activeChar.dialogues[activeChar.currentDialogueIndex]
+    : null;
+
+  // 获取可用对话选项
+  const availableDialogues = activeChar
+    ? activeChar.dialogues.filter(d => d.type !== 'hidden' || activeChar.awakening > 50)
+    : [];
+
   const isCollapse = worldZone === 'collapse';
 
   return (
-    <div ref={containerRef} className={`relative w-full h-full overflow-hidden transition-colors duration-700 ${
-      isCollapse
-        ? 'bg-gradient-to-b from-purple-900 via-indigo-900 to-slate-900'
-        : 'bg-gradient-to-b from-brand-200 to-brand-400'
-    }`}>
+    <div
+      ref={containerRef}
+      className={`relative w-full h-screen overflow-hidden transition-colors duration-700 ${
+        isCollapse
+          ? 'bg-gradient-to-b from-purple-900 via-indigo-900 to-slate-900'
+          : 'bg-gradient-to-b from-brand-200 to-brand-400'
+      }`}
+    >
       {/* 地图背景 */}
       <div className="absolute inset-0">
         {/* 区域纹理 */}
-        <div className="absolute inset-0 opacity-30" style={{
-          backgroundImage: isCollapse
-            ? 'radial-gradient(circle at 30% 40%, #7C3AED 0%, transparent 50%), radial-gradient(circle at 70% 60%, #4F46E5 0%, transparent 50%)'
-            : 'radial-gradient(circle at 20% 30%, #95D5B2 0%, transparent 50%), radial-gradient(circle at 80% 70%, #B8E0D2 0%, transparent 50%)',
-        }} />
+        <div
+          className="absolute inset-0 opacity-30"
+          style={{
+            backgroundImage: isCollapse
+              ? 'radial-gradient(circle at 30% 40%, #7C3AED 0%, transparent 50%), radial-gradient(circle at 70% 60%, #4F46E5 0%, transparent 50%)'
+              : 'radial-gradient(circle at 20% 30%, #95D5B2 0%, transparent 50%), radial-gradient(circle at 80% 70%, #B8E0D2 0%, transparent 50%)',
+          }}
+        />
 
-        {/* 崩坏区特效 - 闪烁粒子 */}
+        {/* 崩坏区特效 */}
         {isCollapse && (
           <div className="absolute inset-0 pointer-events-none">
             {Array.from({ length: 8 }).map((_, i) => (
@@ -233,40 +239,6 @@ export default function RoamMode() {
             </span>
           </div>
         ))}
-
-        {/* 农田区 - 显示作物（双区差异化） */}
-        {(() => {
-          const farmArea = MAP_AREAS.farmArea;
-          const cellSize = 50;
-          const plots = [];
-          for (let y = 0; y < 6; y++) {
-            for (let x = 0; x < 6; x++) {
-              const plotKey = `${x},${y}`;
-              const crop = crops[plotKey];
-              plots.push(
-                <div
-                  key={plotKey}
-                  className="absolute w-10 h-10 rounded-lg flex items-center justify-center transition-colors duration-300"
-                  style={{
-                    left: farmArea.x + x * cellSize + 5,
-                    top: farmArea.y + y * cellSize + 5,
-                    backgroundColor: crop
-                      ? (isCollapse ? '#4C1D9540' : '#DDB892')
-                      : (isCollapse ? '#4C1D9520' : '#C9A67A50'),
-                    border: `2px solid ${isCollapse ? '#7C3AED' : '#B8956A'}`,
-                  }}
-                >
-                  {crop && (
-                    <span className="text-2xl">
-                      {getCropStageEmoji(crop.type, crop.growthStage, worldZone)}
-                    </span>
-                  )}
-                </div>
-              );
-            }
-          }
-          return plots;
-        })()}
       </div>
 
       {/* 世界物体 */}
@@ -300,7 +272,6 @@ export default function RoamMode() {
           }`}>
             {char.name}
           </span>
-          {/* 觉醒指示器 */}
           {char.awakening > 0 && (
             <div className="flex gap-0.5 mt-0.5">
               {Array.from({ length: Math.min(5, Math.ceil(char.awakening / 20)) }).map((_, i) => (
@@ -318,11 +289,7 @@ export default function RoamMode() {
         transition={{ type: 'spring', stiffness: 500, damping: 30 }}
       >
         <div className="relative">
-          <span className="text-4xl">
-            {player.direction === 'up' ? '🧑‍🎨' :
-             player.direction === 'down' ? '🧑‍🎨' :
-             player.direction === 'left' ? '🧑‍🎨' : '🧑‍🎨'}
-          </span>
+          <span className="text-4xl">🧑‍🎨</span>
           {player.isMoving && (
             <motion.div
               className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-3 h-1 bg-black/30 rounded-full"
@@ -333,30 +300,11 @@ export default function RoamMode() {
         </div>
       </motion.div>
 
-      {/* 飘字效果 */}
-      <AnimatePresence>
-        {floatingTexts.map(ft => (
-          <motion.div
-            key={ft.id}
-            className="absolute text-lg font-bold z-30"
-            style={{ left: ft.x, top: ft.y, color: ft.color || '#FBBF24' }}
-            initial={{ opacity: 1, y: 0 }}
-            animate={{ opacity: 0, y: -40 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 1 }}
-          >
-            {ft.text}
-          </motion.div>
-        ))}
-      </AnimatePresence>
-
       {/* HUD - 顶部 */}
       <div className="absolute top-4 left-4 right-4 flex justify-between items-start pointer-events-none z-10">
-        {/* 状态面板 */}
         <div className={`px-3 py-2 rounded-ios-lg flex items-center gap-3 pointer-events-auto ${
           isCollapse ? 'bg-purple-900/70 backdrop-blur-md' : 'glass-card'
         }`}>
-          <span className="text-lg">💰 {money}</span>
           <span className={`text-xs px-2 py-0.5 rounded-full ${
             isCollapse ? 'bg-purple-500/50 text-purple-200' : 'bg-indigo-100 text-indigo-700'
           }`}>
@@ -364,7 +312,6 @@ export default function RoamMode() {
           </span>
         </div>
 
-        {/* 当前区域 + 世界区标签 */}
         <div className="flex flex-col items-end gap-1">
           {currentArea && (
             <div className={`px-3 py-2 rounded-ios-lg pointer-events-auto ${
@@ -375,14 +322,16 @@ export default function RoamMode() {
               </span>
             </div>
           )}
-          {/* 世界区标识 */}
-          <div className={`px-3 py-1 rounded-full text-xs font-bold pointer-events-auto ${
-            isCollapse
-              ? 'bg-purple-500/80 text-white animate-pulse'
-              : 'bg-white/70 text-gray-600'
-          }`}>
+          <button
+            onClick={shiftWorldZone}
+            className={`px-3 py-1 rounded-full text-xs font-bold pointer-events-auto transition-all ${
+              isCollapse
+                ? 'bg-purple-500/80 text-white animate-pulse'
+                : 'bg-white/70 text-gray-600 hover:bg-white'
+            }`}
+          >
             {isCollapse ? '🌀 崩坏区' : '📖 剧本区'}
-          </div>
+          </button>
         </div>
       </div>
 
@@ -395,9 +344,12 @@ export default function RoamMode() {
           <p>E 互动 | ESC 关闭</p>
         </div>
 
-        {/* 附近角色提示 */}
         {(() => {
-          const nearby = getNearbyCharacter(player, characters, 60);
+          const nearby = characters.find(char => {
+            const dx = char.x - player.x;
+            const dy = char.y - player.y;
+            return Math.sqrt(dx * dx + dy * dy) < 60;
+          });
           return nearby ? (
             <div className={`px-3 py-2 rounded-ios-lg text-sm pointer-events-auto ${
               isCollapse ? 'bg-purple-900/70 backdrop-blur-md text-purple-200' : 'glass-card'
@@ -436,7 +388,6 @@ export default function RoamMode() {
                       {activeChar.title}
                     </span>
                   </div>
-                  {/* 关系指标 */}
                   <div className="flex gap-3 mt-1">
                     <span className="text-xs text-pink-400">
                       💗 {activeChar.heartLevel}/10
@@ -458,7 +409,6 @@ export default function RoamMode() {
                     选择对话方式：
                   </p>
                   <div className="grid grid-cols-3 gap-2">
-                    {/* 剧本选项 */}
                     <button
                       onClick={() => handleSelectOption('script')}
                       className={`py-3 px-2 rounded-ios-lg text-center transition-all ${DIALOGUE_OPTION_STYLES.script.color} hover:scale-105 active:scale-95`}
@@ -466,7 +416,6 @@ export default function RoamMode() {
                       <span className="text-lg">{DIALOGUE_OPTION_STYLES.script.icon}</span>
                       <p className="text-xs mt-1">{DIALOGUE_OPTION_STYLES.script.label}</p>
                     </button>
-                    {/* 真心选项 */}
                     <button
                       onClick={() => handleSelectOption('heart')}
                       className={`py-3 px-2 rounded-ios-lg text-center transition-all ${DIALOGUE_OPTION_STYLES.heart.color} hover:scale-105 active:scale-95`}
@@ -474,12 +423,11 @@ export default function RoamMode() {
                       <span className="text-lg">{DIALOGUE_OPTION_STYLES.heart.icon}</span>
                       <p className="text-xs mt-1">{DIALOGUE_OPTION_STYLES.heart.label}</p>
                     </button>
-                    {/* 隐藏选项（仅当有隐藏对话时可用） */}
                     <button
                       onClick={() => handleSelectOption('hidden')}
-                      disabled={!availableDialogues.some(d => d.type === 'hidden')}
+                      disabled={activeChar.awakening <= 50}
                       className={`py-3 px-2 rounded-ios-lg text-center transition-all ${
-                        availableDialogues.some(d => d.type === 'hidden')
+                        activeChar.awakening > 50
                           ? `${DIALOGUE_OPTION_STYLES.hidden.color} hover:scale-105 active:scale-95`
                           : 'bg-gray-300/50 text-gray-400 cursor-not-allowed'
                       }`}
@@ -491,7 +439,6 @@ export default function RoamMode() {
                 </>
               ) : (
                 <>
-                  {/* 对话结果 */}
                   <div className={`p-3 rounded-ios-lg mb-3 ${
                     selectedDialogueType === 'hidden'
                       ? 'bg-purple-500/20 border border-purple-400/30'
@@ -513,7 +460,6 @@ export default function RoamMode() {
                     </p>
                   </div>
 
-                  {/* 效果展示 */}
                   {(currentDialogue?.heartGain || currentDialogue?.awakeningGain) && (
                     <div className="flex gap-2 mb-3 text-xs">
                       {currentDialogue.heartGain && currentDialogue.heartGain > 0 && (
