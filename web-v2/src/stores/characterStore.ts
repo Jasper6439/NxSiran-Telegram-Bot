@@ -53,10 +53,14 @@ export const createCharacterSlice = (
     const now = Date.now();
     set(state => ({
       characters: state.characters.map(char => {
-        if (now - char.lastWanderTime < 5000) return char;
+        if (!char.lastWanderTime || now - char.lastWanderTime < 5000) return char;
         const area = char.wanderArea;
-        const newX = Math.max(area.x, Math.min(area.x + area.width, char.x + (Math.random() - 0.5) * 80));
-        const newY = Math.max(area.y, Math.min(area.y + area.height, char.y + (Math.random() - 0.5) * 60));
+        const areaX = area?.x ?? 0;
+        const areaY = area?.y ?? 0;
+        const areaW = area?.width ?? 600;
+        const areaH = area?.height ?? 500;
+        const newX = Math.max(areaX, Math.min(areaX + areaW, char.x + (Math.random() - 0.5) * 80));
+        const newY = Math.max(areaY, Math.min(areaY + areaH, char.y + (Math.random() - 0.5) * 60));
         return { ...char, x: newX, y: newY, lastWanderTime: now };
       }),
     }));
@@ -69,8 +73,8 @@ export const createCharacterSlice = (
     const giftItem = state.inventory.find(item => item.id === giftId && (item.type === 'crop' || item.type === 'gift'));
     if (!giftItem || giftItem.quantity < 1) return false;
 
-    const isLiked = char.likedGifts.includes(giftId);
-    const isDisliked = char.dislikedGifts.includes(giftId);
+    const isLiked = (char.likedGifts ?? []).includes(giftId);
+    const isDisliked = (char.dislikedGifts ?? []).includes(giftId);
     const heartChange = isLiked ? 3 : isDisliked ? -2 : 1;
     const awakeningChange = isLiked ? 2 : 0;
 
