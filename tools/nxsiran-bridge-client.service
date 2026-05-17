@@ -1,13 +1,13 @@
 [Unit]
 Description=LoveSupremacy Bridge Client
-After=network-online.target
+After=network-online.target nxsiran-webhook.service
 Wants=network-online.target
 
 [Service]
 Type=simple
 User=root
-WorkingDirectory=/opt/NxSiran
-ExecStart=/usr/bin/python3 /opt/NxSiran-Telegram-Bot/tools/bridge_client.py
+WorkingDirectory=/opt/LoveSupremacy-Telegram-Bot
+ExecStart=/usr/bin/python3 /opt/LoveSupremacy-Telegram-Bot/tools/bridge_client.py
 Restart=always
 RestartSec=5
 Environment=BRIDGE_URL=http://localhost:8082
