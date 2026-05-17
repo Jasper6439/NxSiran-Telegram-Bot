@@ -11,6 +11,9 @@ FastAPI + python-telegram-bot 共享事件循环。
 import asyncio
 import logging
 import os
+import signal
+import atexit
+import sys
 import threading
 from datetime import datetime
 
@@ -330,10 +333,50 @@ def register_handlers(tg_app: Application):
 # 统一入口
 # ============================================================
 
+
+# ============================================================
+# PID Lock - 防止重复启动
+# ============================================================
+PID_FILE = "/tmp/lovesupremacy-bot.pid"
+
+def check_pid_lock():
+    if os.path.exists(PID_FILE):
+        try:
+            with open(PID_FILE, "r") as f:
+                old_pid = int(f.read().strip())
+            try:
+                os.kill(old_pid, 0)
+                print(f"[PID Lock] 进程 {old_pid} 已在运行，退出")
+                sys.exit(0)
+            except OSError:
+                pass
+        except (ValueError, OSError):
+            pass
+    with open(PID_FILE, "w") as f:
+        f.write(str(os.getpid()))
+
+def release_pid_lock():
+    try:
+        if os.path.exists(PID_FILE):
+            with open(PID_FILE, "r") as f:
+                stored_pid = int(f.read().strip())
+            if stored_pid == os.getpid():
+                os.remove(PID_FILE)
+    except (ValueError, OSError):
+        pass
+
+atexit.register(release_pid_lock)
 async def main():
     """v1.7 统一入口：FastAPI + Telegram Bot 共享事件循环。"""
     # 初始化配置（必须在其他操作之前）
     init_config()
+
+    # PID Lock 检查
+    check_pid_lock()
+
+    # SIGTERM 信号处理 - 清理 PID 文件
+    loop = asyncio.get_running_loop()
+    loop.add_signal_handler(signal.SIGTERM, lambda: (release_pid_lock(), sys.exit(0)))
     # 同步 config 模块中的全局变量（from system.config import * 是绑定副本）
     import system.config as config_module
     global TELEGRAM_TOKEN, YOUR_CHAT_ID, AI_API_BASE, AI_API_KEY

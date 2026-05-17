@@ -9,7 +9,7 @@ import logging
 import uuid
 from datetime import datetime
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Header
 from pydantic import BaseModel
 
 from system.config import BOT_VERSION, APP_NAME, load_config, get_default_tz
@@ -292,6 +292,12 @@ async def user_profile(authorization: str = None):
     except Exception as e:
         logging.error(f"[API用户资料] 错误: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/api/user/info")
+async def user_info(authorization: str = Header(None)):
+    """前端兼容的 /api/user/info 端点"""
+    return await user_profile(authorization)
 
 
 @router.post("/api/user/preferred-name")
