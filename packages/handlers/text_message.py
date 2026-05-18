@@ -219,7 +219,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             # 30% 概率回复，避免太频繁
             if random.random() < 0.3:
                 asyncio.create_task(
-                    send_active_message(context.bot, chat_id, random.choice(correction_responses))
+                    send_active_message(context.bot, random.choice(correction_responses))
                 )
 
     # [Skill: 表情反应] 后台添加emoji反应
