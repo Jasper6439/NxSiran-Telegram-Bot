@@ -1,0 +1,235 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  color-scheme: dark;
+  color: rgba(255, 255, 255, 0.87);
+  background-color: #0f172a;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   双界穿梭全局 CSS 变量系统
+   由 document.body.setAttribute('data-world-mode', mode) 驱动
+   切换时：0ms 瞬变，无动画，符合"无缝切换"需求
+   ───────────────────────────────────────────────────────────────────────────── */
+
+body {
+  margin: 0;
+  min-height: 100vh;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+/* ── 剧本模式（Script Mode）— 唯美彩色系 ───────────────────────────────── */
+[data-world-mode="script"],
+:root:not([data-world-mode="broken"]) {
+  --realm-bg:          #fdf6f0;
+  --realm-text:       #5c4033;
+  --realm-accent:     #f8a5c2;
+  --realm-secondary:  #ffeaa7;
+  --realm-success:    #55efc4;
+  --realm-danger:     #fd79a8;
+  --farm-bg:          #fff5ee;
+  --farm-soil:        #8b7355;
+  --farm-grid-line:   rgba(139, 115, 85, 0.2);
+  --card-bg:          rgba(255, 255, 255, 0.85);
+  --card-border:      rgba(248, 165, 194, 0.3);
+  --dialogue-bg:      rgba(253, 246, 240, 0.95);
+  --dialogue-border:  #f8a5c2;
+  --toggle-bg:       linear-gradient(135deg, #f8a5c2, #fd79a8);
+  --world-filter:     none;
+}
+
+/* ── 崩坏模式（Broken Mode）— 黑白纸张纹理系 ──────────────────────────── */
+[data-world-mode="broken"] {
+  --realm-bg:          #1a1a1a;
+  --realm-text:       #e0e0e0;
+  --realm-accent:     #888888;
+  --realm-secondary:  #444444;
+  --realm-success:    #666666;
+  --realm-danger:     #333333;
+  --farm-bg:          #2a2a2a;
+  --farm-soil:        #555555;
+  --farm-grid-line:   rgba(85, 85, 85, 0.4);
+  --card-bg:          rgba(30, 30, 30, 0.9);
+  --card-border:      rgba(100, 100, 100, 0.3);
+  --dialogue-bg:      rgba(26, 26, 26, 0.95);
+  --dialogue-border:  #555555;
+  --toggle-bg:       linear-gradient(135deg, #333333, #1a1a1a);
+  --world-filter:     grayscale(100%) contrast(1.2);
+}
+
+/* ── 整体滤镜（崩坏模式时应用于 #root） ──────────────────────────────── */
+[data-world-mode="broken"] #root {
+  filter: var(--world-filter);
+  background-color: var(--realm-bg);
+  /* 纸张噪点纹理叠加 */
+  background-image:
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(255, 255, 255, 0.02) 2px,
+      rgba(255, 255, 255, 0.02) 4px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      transparent,
+      transparent 2px,
+      rgba(255, 255, 255, 0.015) 2px,
+      rgba(255, 255, 255, 0.015) 4px
+    );
+}
+
+/* ── 全局过渡控制：0ms 瞬切 ─────────────────────────────────────────── */
+*,
+*::before,
+*::after {
+  transition: none !important;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   双界适配基础组件
+   ───────────────────────────────────────────────────────────────────────────── */
+
+/* 农场容器 */
+.farm-container {
+  background-color: var(--farm-bg);
+  border-color: var(--farm-grid-line);
+}
+
+/* 地块 */
+.farm-plot {
+  background-color: var(--farm-soil);
+  border: 1px solid var(--farm-grid-line);
+}
+
+/* 玻璃卡片 */
+.glass {
+  background: var(--card-bg);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+}
+
+.glass-dark {
+  background: var(--card-bg);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--card-border);
+}
+
+/* 橙光对话框 */
+.dialogue-box {
+  background: var(--dialogue-bg);
+  border: 2px solid var(--dialogue-border);
+  border-radius: 16px;
+  color: var(--realm-text);
+}
+
+/* 收获弹窗 */
+.harvest-modal {
+  background: var(--card-bg);
+  border: 2px solid var(--card-border);
+  color: var(--realm-text);
+}
+
+.harvest-modal .item-card {
+  background: var(--farm-bg);
+  border: 1px solid var(--farm-grid-line);
+  border-radius: 8px;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   模式切换按钮
+   ───────────────────────────────────────────────────────────────────────────── */
+
+.mode-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: var(--toggle-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 999px;
+  color: white;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.mode-toggle:hover {
+  opacity: 0.9;
+}
+
+.mode-toggle.locked {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+[data-world-mode="broken"] .mode-toggle {
+  background: linear-gradient(135deg, #333, #111);
+  border-color: #555;
+}
+
+/* 模式锁定徽章 */
+.mode-lock-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(128, 128, 128, 0.3);
+  font-size: 18px;
+  cursor: help;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   觉醒值进度条
+   ───────────────────────────────────────────────────────────────────────────── */
+
+.awakening-bar {
+  background: var(--farm-bg);
+  border: 1px solid var(--farm-grid-line);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.awakening-fill {
+  background: linear-gradient(90deg, var(--realm-accent), var(--realm-secondary));
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.5s ease;
+}
+
+[data-world-mode="broken"] .awakening-fill {
+  background: linear-gradient(90deg, #555, #333);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   物品类型差异化样式
+   ───────────────────────────────────────────────────────────────────────────── */
+
+.item-type-gift {
+  border-left: 3px solid #f8a5c2;
+}
+
+.item-type-combat {
+  border-left: 3px solid #888888;
+}
+
+[data-world-mode="broken"] .item-type-gift,
+[data-world-mode="broken"] .item-type-combat {
+  border-left-color: #666;
+}
