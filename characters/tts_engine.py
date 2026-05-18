@@ -93,7 +93,7 @@ class SoVITSBackend:
     name = "sovits"
 
     @classmethod
-    def is_available(cls) -> bool:
+    async def is_available(cls) -> bool:
         return bool(SOVITS_API_URL)
 
     @classmethod
@@ -139,7 +139,7 @@ class FishSpeechBackend:
     name = "fish"
 
     @classmethod
-    def is_available(cls) -> bool:
+    async def is_available(cls) -> bool:
         return bool(FISH_API_KEY and FISH_REFERENCE_ID)
 
     @classmethod
