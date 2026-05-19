@@ -3,7 +3,7 @@ import Phaser from 'phaser'
 import { useGameStore, useFarmStore, useInventoryStore, CROP_DEFINITIONS, type CropId } from '../../stores'
 import { farmApi } from '../../api/gameApi'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Sprout, Droplets, Scissors, X } from 'lucide-react'
+import { X } from 'lucide-react'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 阶段四核心：Phaser 农场场景

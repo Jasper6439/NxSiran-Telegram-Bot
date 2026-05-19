@@ -233,3 +233,335 @@ body {
 [data-world-mode="broken"] .item-type-combat {
   border-left-color: #666;
 }
+
+/* ═════════════════════════════════════════════════════════════════════════════
+   iOS 设计系统
+   ═════════════════════════════════════════════════════════════════════════════ */
+
+/* ── iOS 颜色 ────────────────────────────────────────────────────────────── */
+:root {
+  /* 系统色（参考 iOS 16+） */
+  --ios-blue:          #007aff;
+  --ios-red:           #ff3b30;
+  --ios-green:         #34c759;
+  --ios-orange:        #ff9500;
+  --ios-yellow:        #ffcc00;
+  --ios-purple:        #af52de;
+  --ios-pink:          #ff2d55;
+  --ios-teal:          #5ac8fa;
+  --ios-gray:          #8e8e93;
+  --ios-gray2:         #aeaeb2;
+  --ios-gray3:         #c7c7cc;
+  --ios-gray4:         #d1d1d6;
+  --ios-gray5:         #e5e5ea;
+  --ios-gray6:         #f2f2f7;
+
+  /* 背景层次 */
+  --ios-bg:            #f2f2f7;
+  --ios-bg2:           #ffffff;
+  --ios-bg3:           #ffffff;
+  --ios-separator:     rgba(60, 60, 67, 0.12);
+  --ios-opaque-sep:    #c6c6c8;
+
+  /* 标签栏 */
+  --ios-tab-bg:        rgba(242, 242, 247, 0.92);
+  --ios-tab-border:    rgba(60, 60, 67, 0.08);
+
+  /* 字体 */
+  --ios-font:          -apple-system, 'SF Pro Display', 'SF Pro Text', 'Helvetica Neue', sans-serif;
+}
+
+/* ── 崩坏模式下 iOS 色值适配 ────────────────────────────────────────────── */
+[data-world-mode="broken"] {
+  --ios-bg:            #000000;
+  --ios-bg2:           #1c1c1e;
+  --ios-bg3:           #2c2c2e;
+  --ios-separator:     rgba(255, 255, 255, 0.15);
+  --ios-opaque-sep:    #38383a;
+  --ios-tab-bg:        rgba(0, 0, 0, 0.94);
+  --ios-tab-border:    rgba(255, 255, 255, 0.08);
+}
+
+/* ── 整体背景遵循 iOS ──────────────────────────────────────────────────── */
+body {
+  background: var(--ios-bg);
+  font-family: var(--ios-font);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   iOS TabBar
+   ───────────────────────────────────────────────────────────────────────────── */
+.ios-tabbar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-around;
+  height: 50px;
+  padding: 6px env(safe-area-inset-right, 0) env(safe-area-inset-bottom, 0) env(safe-area-inset-left, 0);
+  background: var(--ios-tab-bg);
+  backdrop-filter: blur(30px) saturate(180%);
+  -webkit-backdrop-filter: blur(30px) saturate(180%);
+  border-top: 0.5px solid var(--ios-tab-border);
+  z-index: 100;
+  user-select: none;
+}
+
+.ios-tab-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  padding: 2px 0;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: opacity 0.15s ease;
+  position: relative;
+}
+
+.ios-tab-item:active {
+  opacity: 0.5;
+}
+
+.ios-tab-icon {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ios-tab-label {
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.2px;
+  line-height: 1;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   iOS Navigation Bar
+   ───────────────────────────────────────────────────────────────────────────── */
+.ios-navbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 44px;
+  padding: 0 16px;
+  background: transparent;
+}
+
+.ios-nav-title {
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: -0.3px;
+}
+
+.ios-nav-large-title {
+  font-size: 34px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  padding: 0 16px;
+  margin-bottom: 4px;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   iOS Widget / Card
+   ───────────────────────────────────────────────────────────────────────────── */
+.ios-widget {
+  background: var(--ios-bg2, var(--card-bg));
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.06);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.ios-widget:active {
+  transform: scale(0.98);
+}
+
+.ios-widget-glass {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(40px) saturate(180%);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  border: 0.5px solid rgba(255, 255, 255, 0.3);
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+}
+
+[data-world-mode="broken"] .ios-widget-glass {
+  background: rgba(28, 28, 30, 0.8);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   iOS 药丸 (Pill/Segmented Control)
+   ───────────────────────────────────────────────────────────────────────────── */
+.ios-pill-group {
+  display: inline-flex;
+  background: var(--ios-gray5);
+  border-radius: 8px;
+  padding: 2px;
+  gap: 0;
+}
+
+[data-world-mode="broken"] .ios-pill-group {
+  background: #2c2c2e;
+}
+
+.ios-pill {
+  padding: 6px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  white-space: nowrap;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  color: var(--ios-gray);
+}
+
+.ios-pill.active {
+  background: var(--ios-bg2, #ffffff);
+  color: var(--realm-text);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+[data-world-mode="broken"] .ios-pill.active {
+  background: #3a3a3c;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   iOS 列表样式
+   ───────────────────────────────────────────────────────────────────────────── */
+.ios-list {
+  background: var(--ios-bg2);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.ios-list-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  min-height: 44px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.ios-list-item + .ios-list-item {
+  border-top: 0.5px solid var(--ios-separator);
+}
+
+.ios-list-item:active {
+  background: var(--ios-gray5);
+  opacity: 0.7;
+}
+
+.ios-list-label {
+  font-size: 16px;
+  color: var(--realm-text);
+}
+
+.ios-list-value {
+  font-size: 16px;
+  color: var(--ios-gray);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   iOS Button 风格
+   ───────────────────────────────────────────────────────────────────────────── */
+.ios-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 24px;
+  font-size: 17px;
+  font-weight: 600;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: opacity 0.15s;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.ios-btn:active {
+  opacity: 0.6;
+}
+
+.ios-btn-primary {
+  background: var(--ios-blue);
+  color: #ffffff;
+}
+
+.ios-btn-secondary {
+  background: var(--ios-gray5);
+  color: var(--ios-blue);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   iOS 安全区域
+   ───────────────────────────────────────────────────────────────────────────── */
+.ios-safe-top {
+  padding-top: env(safe-area-inset-top, 0);
+}
+
+.ios-safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   iOS 页面容器
+   ───────────────────────────────────────────────────────────────────────────── */
+.ios-page {
+  min-height: 100vh;
+  background: var(--ios-bg);
+  padding-bottom: 56px; /* TabBar 高度 */
+}
+
+[data-world-mode="broken"] .ios-page {
+  background: #000000;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   iOS 滚动指示器隐藏 (保持可滚动)
+   ───────────────────────────────────────────────────────────────────────────── */
+.ios-scroll {
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.ios-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   iOS 头像圆形
+   ───────────────────────────────────────────────────────────────────────────── */
+.ios-avatar {
+  border-radius: 50%;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   过渡动画 (仅 UI 交互启用)
+   ───────────────────────────────────────────────────────────────────────────── */
+.ios-fade-enter {
+  opacity: 0;
+  transform: translateY(4px);
+}
+
+.ios-fade-enter-active {
+  opacity: 1;
+  transform: translateY(0);
+  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}

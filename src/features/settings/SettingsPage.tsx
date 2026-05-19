@@ -179,7 +179,7 @@ export default function SettingsPage() {
   // API 调用函数
   const fetchTelegramStatus = async () => {
     try {
-      const token = localStorage.getItem('auth_token');
+      const token = localStorage.getItem('ls_token');
       const res = await fetch('/api/telegram/link', {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -197,7 +197,7 @@ export default function SettingsPage() {
 
   const fetchCharacterBindings = async () => {
     try {
-      const token = localStorage.getItem('auth_token');
+      const token = localStorage.getItem('ls_token');
       const res = await fetch('/api/character-bindings', {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -212,7 +212,7 @@ export default function SettingsPage() {
 
   const fetchCharacters = async () => {
     try {
-      const token = localStorage.getItem('auth_token');
+      const token = localStorage.getItem('ls_token');
       const res = await fetch('/api/characters', {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -244,7 +244,7 @@ export default function SettingsPage() {
 
   const fetchUserRole = async () => {
     try {
-      const token = localStorage.getItem('auth_token');
+      const token = localStorage.getItem('ls_token');
       const res = await fetch('/api/auth/me', {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -288,7 +288,7 @@ export default function SettingsPage() {
 
     setSaving(true);
     try {
-      const token = localStorage.getItem('auth_token');
+      const token = localStorage.getItem('ls_token');
       const res = await fetch('/api/telegram/link', {
         method: 'POST',
         headers: {
@@ -316,7 +316,7 @@ export default function SettingsPage() {
   const handleUnlinkTelegram = async () => {
     setSaving(true);
     try {
-      const token = localStorage.getItem('auth_token');
+      const token = localStorage.getItem('ls_token');
       const res = await fetch('/api/telegram/unlink', {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` }
@@ -349,7 +349,7 @@ export default function SettingsPage() {
 
     setSaving(true);
     try {
-      const token = localStorage.getItem('auth_token');
+      const token = localStorage.getItem('ls_token');
       const res = await fetch('/api/bind-character', {
         method: 'POST',
         headers: {

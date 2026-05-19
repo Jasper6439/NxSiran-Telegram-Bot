@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Send, Gift, Loader2, Sparkles } from 'lucide-react'
-import { chatApi, inventoryApi, gameApi } from '../../api/gameApi'
+import { Send, Gift, Loader2 } from 'lucide-react'
+import { chatApi } from '../../api/gameApi'
 import { useGameStore, useInventoryStore, SCRIPT_ITEMS, BROKEN_ITEMS } from '../../stores'
 
 // ── 类型 ────────────────────────────────────────────────────────────────────
@@ -64,7 +64,7 @@ function useTypewriter(text: string, speed = 30) {
 }
 
 // ── 聊天气泡组件 ─────────────────────────────────────────────────────────────
-const ChatBubble = ({ msg, emotion }: { msg: ChatMessage; emotion: Emotion }) => {
+const ChatBubble = ({ msg }: { msg: ChatMessage }) => {
   const isUser = msg.role === 'user'
   const { displayed, done } = useTypewriter(msg.content, isUser ? 15 : 35)
 
@@ -79,7 +79,7 @@ const ChatBubble = ({ msg, emotion }: { msg: ChatMessage; emotion: Emotion }) =>
           className="w-10 h-10 rounded-full flex items-center justify-center text-xl mr-2 shrink-0"
           style={{ backgroundColor: 'var(--realm-accent)', color: 'white' }}
         >
-          {EMOTION_EXPRESSIONS[emotion]}
+          ☁️
         </div>
       )}
 
@@ -112,7 +112,6 @@ const ChatBubble = ({ msg, emotion }: { msg: ChatMessage; emotion: Emotion }) =>
 export default function ChatInterface() {
   const worldMode = useGameStore((s) => s.worldMode)
   const addAwakening = useGameStore((s) => s.addAwakening)
-  const addItem = useInventoryStore((s) => s.addItem)
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)

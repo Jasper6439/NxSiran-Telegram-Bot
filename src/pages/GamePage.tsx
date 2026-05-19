@@ -1,82 +1,137 @@
-import { useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Heart, Home, Shovel, Sword, Settings } from 'lucide-react'
-import { useGameStore, useFarmStore } from '../stores'
-import { gameApi, farmApi } from '../api/gameApi'
+import { MessageCircle, Swords, Sparkles } from 'lucide-react'
+import { useGameStore } from '../stores'
+import { gameApi } from '../api/gameApi'
 import ModeToggle from '../components/ModeToggle'
 import ChatInterface from '../features/chat/ChatInterface'
-import FarmScene from '../features/farm/FarmScene'
 
-// 导航按钮类型
-type NavItem = {
-  id: 'chat' | 'farm' | 'action'
-  label: string
-  icon: typeof Heart
-  requireUnlock?: boolean
+// ─────────────────────────────────────────────────────────────────────────────
+// 药丸选项
+// ─────────────────────────────────────────────────────────────────────────────
+
+type GameMode = 'chat' | 'action'
+
+const PILLS: { id: GameMode; label: string; icon: typeof MessageCircle }[] = [
+  { id: 'chat',   label: '剧本区',   icon: MessageCircle },
+  { id: 'action', label: '崩坏区',   icon: Swords },
+]
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 崩坏区占位（空区域，待 Phaser 横板战斗实现）
+// ─────────────────────────────────────────────────────────────────────────────
+
+function ActionZone() {
+  const awakeningLevel = useGameStore((s) => s.awakeningLevel)
+  const worldMode = useGameStore((s) => s.worldMode)
+  const isUnlocked = awakeningLevel >= 100
+
+  if (!isUnlocked) {
+    return (
+      <div
+        style={{
+          flex: 1,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: 40,
+          gap: 16,
+        }}
+      >
+        <div
+          style={{
+            width: 80,
+            height: 80,
+            borderRadius: 20,
+            background: worldMode === 'broken'
+              ? 'rgba(100,100,100,0.15)'
+              : 'rgba(248,165,194,0.12)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <Sparkles size={36} style={{ opacity: 0.3, color: 'var(--realm-text)' }} />
+        </div>
+        <h2 style={{ fontSize: 20, fontWeight: 700, color: 'var(--realm-text)', margin: 0 }}>
+          崩坏战斗区
+        </h2>
+        <p style={{ fontSize: 14, color: 'var(--ios-gray)', textAlign: 'center', lineHeight: 1.5 }}>
+          觉醒值达到 100 后解锁
+          <br />
+          在这里拯救被困在小说中的角色，让他觉醒独立人格
+        </p>
+        <div className="awakening-bar" style={{ width: 200, height: 6 }}>
+          <div
+            className="awakening-fill"
+            style={{ width: `${Math.min(100, (awakeningLevel / 100) * 100)}%` }}
+          />
+        </div>
+        <span style={{ fontSize: 12, color: 'var(--ios-gray)' }}>
+          {awakeningLevel} / 100
+        </span>
+      </div>
+    )
+  }
+
+  // 已解锁——空白区域，留待 Phaser 横板游戏填充
+  return (
+    <div
+      style={{
+        flex: 1,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 40,
+        gap: 12,
+        background: worldMode === 'broken'
+          ? 'rgba(0,0,0,0.3)'
+          : 'rgba(248,165,194,0.04)',
+      }}
+    >
+      <Swords size={48} style={{ opacity: 0.2, color: 'var(--realm-text)' }} />
+      <p style={{ fontSize: 14, color: 'var(--ios-gray)' }}>
+        崩坏区 — 横版动作游戏（开发中）
+      </p>
+    </div>
+  )
 }
 
-const NAV_ITEMS: NavItem[] = [
-  { id: 'chat', label: '剧本', icon: Heart },
-  { id: 'farm', label: '农场', icon: Shovel },
-  { id: 'action', label: '战斗', icon: Sword, requireUnlock: true },
-]
+// ─────────────────────────────────────────────────────────────────────────────
+// 游戏页
+// ─────────────────────────────────────────────────────────────────────────────
 
 export default function GamePage() {
   const navigate = useNavigate()
   const worldMode = useGameStore((s) => s.worldMode)
   const awakeningLevel = useGameStore((s) => s.awakeningLevel)
-  const isModeLocked = useGameStore((s) => s.isModeLocked)
-  const currentScene = useGameStore((s) => s.currentScene)
   const setWorldMode = useGameStore((s) => s.setWorldMode)
-  const setScene = useGameStore((s) => s.setScene)
   const addAwakening = useGameStore((s) => s.addAwakening)
-  const tickGrowth = useFarmStore((s) => s.tickGrowth)
+  const [activeMode, setActiveMode] = useState<GameMode>('chat')
 
-  // ── 初始化：从后端加载状态 ──────────────────────────────────────────────
+  // 从后端加载
   useEffect(() => {
     const token = localStorage.getItem('ls_token')
     if (!token) { navigate('/login'); return }
-
     gameApi.getState()
       .then(({ data }) => {
         const { state } = data
-        // 同步到 Zustand
         if (state) {
-          setWorldMode(state.world_mode === 'broken' ? 'broken' : 'script')
+          setWorldMode((state as any).world_mode === 'broken' ? 'broken' : 'script')
         }
       })
-      .catch(() => {
-        // 无网络时使用本地状态继续
-      })
+      .catch(() => {})
   }, [])
 
-  // ── 同步 worldMode 到 DOM ───────────────────────────────────────────────
+  // 同步 worldMode 到 DOM
   useEffect(() => {
     document.body.setAttribute('data-world-mode', worldMode)
   }, [worldMode])
 
-  // ── Farm growth tick ────────────────────────────────────────────────────
-  const tickRef = useRef<ReturnType<typeof setInterval> | null>(null)
-  useEffect(() => {
-    tickRef.current = setInterval(() => {
-      tickGrowth()
-      // 同步到后端（节流：每10秒一次）
-      if (Math.random() < 0.1) {
-        farmApi.getState().catch(() => {})
-      }
-    }, 1000)
-    return () => { if (tickRef.current) clearInterval(tickRef.current) }
-  }, [tickGrowth])
-
-  // ── 场景切换（同时更新后端） ───────────────────────────────────────────
-  const handleNavClick = (sceneId: 'chat' | 'farm' | 'action') => {
-    if (sceneId === 'action' && isModeLocked) return
-    setScene(sceneId)
-    gameApi.saveState({ currentScene: sceneId }).catch(() => {})
-  }
-
-  // ── 开发调试 ────────────────────────────────────────────────────────────
+  // 调试按键 D → +10 觉醒
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key === 'd' || e.key === 'D') addAwakening(10)
@@ -86,126 +141,75 @@ export default function GamePage() {
   }, [addAwakening])
 
   return (
-    <div
-      className="min-h-screen flex flex-col"
-      style={{ backgroundColor: 'var(--realm-bg)', color: 'var(--realm-text)' }}
-    >
-      {/* ── 顶部 HUD ───────────────────────────────────────────────────── */}
-      <header
-        className="flex items-center justify-between px-6 py-3 border-b"
-        style={{ borderColor: 'var(--card-border)', backgroundColor: 'var(--card-bg)' }}
-      >
-        {/* 左：标题 */}
-        <div className="flex items-center gap-2">
-          <span className="text-xl">💕</span>
-          <span className="font-bold text-sm">恋爱至上主义</span>
-        </div>
-
-        {/* 中：觉醒进度 */}
-        <div className="flex items-center gap-3">
-          <span style={{ fontSize: 12, opacity: 0.7 }}>
-            觉醒 {awakeningLevel}
-            <span style={{ opacity: 0.5 }}>/100</span>
+    <div className="ios-page" style={{ display: 'flex', flexDirection: 'column' }}>
+      {/* ── Navigation Bar ──────────────────────────────────────────── */}
+      <div className="ios-safe-top" />
+      <div className="ios-navbar" style={{ padding: '8px 16px 4px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ fontSize: 17, fontWeight: 600, color: 'var(--realm-text)' }}>
+            游戏
           </span>
-          <div className="awakening-bar" style={{ width: 100, height: 8 }}>
-            <div
-              className="awakening-fill"
-              style={{ width: `${Math.min(100, (awakeningLevel / 100) * 100)}%` }}
-            />
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          {/* 觉醒值 */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <Sparkles size={14} style={{ color: worldMode === 'broken' ? 'var(--ios-gray)' : 'var(--realm-accent)' }} />
+            <span style={{ fontSize: 12, color: 'var(--ios-gray)' }}>{awakeningLevel}</span>
           </div>
-        </div>
-
-        {/* 右：模式切换 + 设置 */}
-        <div className="flex items-center gap-3">
           <ModeToggle />
-          <button
-            onClick={() => navigate('/settings')}
-            className="p-2 rounded-lg hover:bg-white/10 transition-colors"
-            title="设置"
-          >
-            <Settings size={18} />
-          </button>
         </div>
-      </header>
+      </div>
 
-      {/* ── 主体内容 ───────────────────────────────────────────────────── */}
-      <main className="flex-1 flex flex-col overflow-hidden">
+      {/* ── 药丸切换器 ──────────────────────────────────────────────── */}
+      <div style={{ display: 'flex', justifyContent: 'center', padding: '4px 16px 10px' }}>
+        <div className="ios-pill-group">
+          {PILLS.map((pill) => {
+            const Icon = pill.icon
+            return (
+              <button
+                key={pill.id}
+                className={`ios-pill ${activeMode === pill.id ? 'active' : ''}`}
+                onClick={() => setActiveMode(pill.id)}
+                style={{ display: 'flex', alignItems: 'center', gap: 6 }}
+              >
+                <Icon size={14} />
+                {pill.label}
+              </button>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* ── 内容 ────────────────────────────────────────────────────── */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         <AnimatePresence mode="wait">
-          {currentScene === 'chat' && (
+          {activeMode === 'chat' && (
             <motion.div
               key="chat"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="flex-1"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+              style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
             >
               <ChatInterface />
             </motion.div>
           )}
 
-          {currentScene === 'farm' && (
-            <motion.div
-              key="farm"
-              initial={{ opacity: 0, scale: 0.98 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0 }}
-              className="flex-1 flex items-center justify-center p-4"
-            >
-              <FarmScene />
-            </motion.div>
-          )}
-
-          {currentScene === 'action' && (
+          {activeMode === 'action' && (
             <motion.div
               key="action"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="flex-1 flex items-center justify-center"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+              style={{ flex: 1, display: 'flex', flexDirection: 'column' }}
             >
-              <div className="text-center">
-                <Sword size={64} className="mx-auto mb-4 opacity-30" />
-                <h2 className="text-2xl font-bold mb-2">崩坏战斗区</h2>
-                <p className="opacity-60">觉醒值达到 100 后解锁</p>
-              </div>
+              <ActionZone />
             </motion.div>
           )}
         </AnimatePresence>
-      </main>
-
-      {/* ── 底部导航 ───────────────────────────────────────────────────── */}
-      <nav
-        className="flex justify-around py-3 border-t"
-        style={{
-          borderColor: 'var(--card-border)',
-          backgroundColor: 'var(--card-bg)',
-        }}
-      >
-        {NAV_ITEMS.map(({ id, label, icon: Icon, requireUnlock }) => {
-          const locked = requireUnlock && isModeLocked
-          const active = currentScene === id
-          return (
-            <button
-              key={id}
-              onClick={() => handleNavClick(id)}
-              disabled={locked}
-              title={locked ? `觉醒值达到100后解锁` : label}
-              className={`flex flex-col items-center gap-1 px-6 py-2 rounded-xl transition-all ${
-                active
-                  ? 'opacity-100 scale-105'
-                  : locked
-                  ? 'opacity-30 cursor-not-allowed'
-                  : 'opacity-60 hover:opacity-100'
-              }`}
-              style={active ? { color: 'var(--realm-accent)' } : undefined}
-            >
-              <Icon size={22} />
-              <span style={{ fontSize: 11 }}>{label}</span>
-              {locked && <span style={{ fontSize: 9 }}>🔒</span>}
-            </button>
-          )
-        })}
-      </nav>
+      </div>
     </div>
   )
 }

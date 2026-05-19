@@ -28,8 +28,11 @@ export const authApi = {
   login: (username: string, password: string) =>
     api.post<{ token: string; userId: number; gameState: object }>('/api/login', { username, password }),
 
-  register: (username: string, password: string) =>
-    api.post<{ token: string; userId: number; gameState: object }>('/api/register', { username, password }),
+  register: (username: string, password: string, email?: string, verificationCode?: string, telegramChatId?: string) =>
+    api.post<{ token: string; userId: number; gameState: object }>('/api/register', { username, password, email, verificationCode, telegramChatId }),
+
+  sendVerificationCode: (email: string) =>
+    api.post<{ success: boolean; message: string }>('/api/send-verification-code', { email }),
 
   me: () => api.get<{ userId: number; username: string }>('/api/auth/me'),
 }
