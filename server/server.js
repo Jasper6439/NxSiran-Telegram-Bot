@@ -2,6 +2,7 @@ import express from 'express'
 import cors from 'cors'
 import bcrypt from 'bcryptjs'
 import nodemailer from 'nodemailer'
+import crypto from 'crypto'
 import dotenv from 'dotenv'
 import { signToken, authMiddleware } from './middleware/auth.js'
 
@@ -553,18 +554,25 @@ app.get('/api/health', (_, res) => res.json({ status: 'ok', time: new Date().toI
 
 // POST /api/forgot-password
 app.post('/api/forgot-password', async (req, res) => {
-  const { email } = req.body
-  if (!email || !/^\S+@\S+\.\S+$/.test(email)) {
-    return res.status(400).json({ error: '请输入有效的邮箱地址' })
+  const { username, email } = req.body
+
+  // 优先 username 查找，其次 email
+  let user = null
+  let lookupField = ''
+
+  if (username && username.trim()) {
+    user = get('SELECT id, username, email FROM users WHERE username = ?', username.trim())
+    lookupField = username.trim()
+  } else if (email && /^\S+@\S+\.\S+$/.test(email)) {
+    user = get('SELECT id, username, email FROM users WHERE email = ?', email.trim())
+    lookupField = email.trim()
   }
 
-  const user = get('SELECT id, username FROM users WHERE email = ?', email.trim())
   if (!user) {
-    // 出于安全考虑，不透露邮箱是否注册
-    return res.json({ success: true, message: '如果该邮箱已注册，重置链接已发送' })
+    return res.json({ success: true, message: '如果该用户已注册，重置链接已生成（请查看服务器日志）' })
   }
 
-  const token = require('crypto').randomBytes(32).toString('hex')
+  const token = crypto.randomBytes(32).toString('hex')
   const expiresAt = new Date(Date.now() + 3600 * 1000).toISOString()
 
   db.run('INSERT INTO password_resets (user_id, token, expires_at) VALUES (?, ?, ?)', [user.id, token, expiresAt])
@@ -572,11 +580,12 @@ app.post('/api/forgot-password', async (req, res) => {
 
   const resetUrl = `${req.protocol}://${req.get('host')}/reset-password?token=${token}`
 
-  if (mailTransporter) {
+  // 尝试发送邮件；如果用户有邮箱且邮件系统可用则发邮件，否则输出日志
+  if (user.email && mailTransporter) {
     try {
       await mailTransporter.sendMail({
         from: `"恋爱至上主义" <${SMTP_FROM}>`,
-        to: email,
+        to: user.email,
         subject: '重置密码',
         text: `重置链接（1小时内有效）：${resetUrl}`,
         html: `<p>点击重置密码（1小时内有效）：</p><p><a href="${resetUrl}">${resetUrl}</a></p>`
@@ -587,8 +596,8 @@ app.post('/api/forgot-password', async (req, res) => {
       res.status(500).json({ error: '邮件发送失败，请稍后重试' })
     }
   } else {
-    console.log(`[重置密码] ${email} -> ${resetUrl}`)
-    res.json({ success: true, message: '重置链接已发送（测试模式：请查看服务器日志）' })
+    console.log(`[重置密码] ${lookupField} -> ${resetUrl}`)
+    res.json({ success: true, message: '重置链接已生成（测试模式：请查看服务器日志）', devToken: token })
   }
 })
 

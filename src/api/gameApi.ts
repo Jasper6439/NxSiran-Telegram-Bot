@@ -35,6 +35,12 @@ export const authApi = {
     api.post<{ success: boolean; message: string }>('/api/send-verification-code', { email }),
 
   me: () => api.get<{ userId: number; username: string }>('/api/auth/me'),
+
+  forgotPassword: (username: string) =>
+    api.post<{ success: boolean; message: string; devToken?: string }>('/api/forgot-password', { username }),
+
+  resetPassword: (token: string, newPassword: string) =>
+    api.post<{ success: boolean; message: string }>('/api/reset-password', { token, newPassword }),
 }
 
 // ── 游戏状态 ─────────────────────────────────────────────────────────────────

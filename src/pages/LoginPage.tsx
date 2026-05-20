@@ -1,21 +1,25 @@
 import { useState, FormEvent, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import { authApi } from '../api/gameApi'
 
 const LS_REMEMBER = 'ls_remember_username'
 
 export default function LoginPage() {
   const navigate = useNavigate()
-  const [mode, setMode] = useState<'login' | 'register'>('login')
+  const [mode, setMode] = useState<'login' | 'register' | 'forgot'>('login')
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
+  const [newPassword, setNewPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [resetToken, setResetToken] = useState('')
   const [email, setEmail] = useState('')
   const [verificationCode, setVerificationCode] = useState('')
   const [telegramChatId, setTelegramChatId] = useState('')
   const [rememberMe, setRememberMe] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [successMsg, setSuccessMsg] = useState('')
   const [codeSending, setCodeSending] = useState(false)
   const [codeCountdown, setCodeCountdown] = useState(0)
 
@@ -57,6 +61,57 @@ export default function LoginPage() {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
     setError('')
+    setSuccessMsg('')
+
+    if (mode === 'forgot') {
+      // ── 忘记密码流程 ──
+      if (!username.trim()) {
+        setError('请输入用户名')
+        return
+      }
+      if (resetToken && newPassword) {
+        // Step 2: 重置密码
+        if (newPassword.length < 6) {
+          setError('密码至少6位')
+          return
+        }
+        if (newPassword !== confirmPassword) {
+          setError('两次密码输入不一致')
+          return
+        }
+        setLoading(true)
+        try {
+          const res = await authApi.resetPassword(resetToken, newPassword)
+          setSuccessMsg(res.data.message || '密码已重置')
+          setTimeout(() => { setMode('login'); setResetToken(''); setNewPassword(''); setConfirmPassword('') }, 2000)
+        } catch (err: unknown) {
+          const axiosErr = err as { response?: { data?: { error?: string } } }
+          setError(axiosErr.response?.data?.error || '重置失败')
+        } finally {
+          setLoading(false)
+        }
+      } else {
+        // Step 1: 获取重置令牌
+        setLoading(true)
+        try {
+          const res = await authApi.forgotPassword(username.trim())
+          // 开发模式: 直接从响应拿到 devToken
+          if (res.data.devToken) {
+            setResetToken(res.data.devToken)
+            setSuccessMsg('重置令牌已生成，请设置新密码')
+          } else {
+            setSuccessMsg(res.data.message || '如果该用户已注册，重置链接已发送')
+          }
+        } catch (err: unknown) {
+          const axiosErr = err as { response?: { data?: { error?: string } } }
+          setError(axiosErr.response?.data?.error || '请求失败')
+        } finally {
+          setLoading(false)
+        }
+      }
+      return
+    }
+
     if (!username.trim() || !password.trim()) {
       setError('请填写所有字段')
       return
@@ -115,22 +170,38 @@ export default function LoginPage() {
 
         {/* 表单卡片 — 白色背景 + 深色文字 */}
         <div className="bg-white/95 backdrop-blur-md p-8 rounded-2xl shadow-2xl">
-          {/* Tab 切换 */}
-          <div className="flex mb-6 bg-gray-100 rounded-lg p-1">
-            {(['login', 'register'] as const).map((m) => (
+          {/* Tab 切换 —— 仅登录和注册 */}
+          {mode !== 'forgot' && (
+            <div className="flex mb-6 bg-gray-100 rounded-lg p-1">
+              {(['login', 'register'] as const).map((m) => (
+                <button
+                  key={m}
+                  onClick={() => { setMode(m); setError(''); setSuccessMsg('') }}
+                  className={`flex-1 py-2 rounded-md text-sm font-medium transition-all ${
+                    mode === m
+                      ? 'bg-white text-purple-700 shadow-sm'
+                      : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  {m === 'login' ? '登录' : '注册'}
+                </button>
+              ))}
+            </div>
+          )}
+          {/* 忘记密码 —— 返回按钮 */}
+          {mode === 'forgot' && (
+            <div className="mb-6">
               <button
-                key={m}
-                onClick={() => { setMode(m); setError('') }}
-                className={`flex-1 py-2 rounded-md text-sm font-medium transition-all ${
-                  mode === m
-                    ? 'bg-white text-purple-700 shadow-sm'
-                    : 'text-gray-500 hover:text-gray-700'
-                }`}
+                onClick={() => { setMode('login'); setError(''); setSuccessMsg(''); setResetToken(''); setNewPassword(''); setConfirmPassword('') }}
+                className="text-sm text-purple-600 hover:text-purple-800 flex items-center gap-1"
               >
-                {m === 'login' ? '登录' : '注册'}
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                  <path d="M10 12L6 8L10 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+                返回登录
               </button>
-            ))}
-          </div>
+            </div>
+          )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
@@ -147,7 +218,18 @@ export default function LoginPage() {
             </div>
 
             <div>
-              <label className="block text-sm text-gray-600 mb-1">密码</label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-sm text-gray-600">密码</label>
+                {mode === 'login' && (
+                  <button
+                    type="button"
+                    onClick={() => { setMode('forgot'); setError(''); setSuccessMsg(''); setPassword('') }}
+                    className="text-xs text-purple-500 hover:text-purple-700"
+                  >
+                    忘记密码？
+                  </button>
+                )}
+              </div>
               <input
                 type="password"
                 value={password}
@@ -158,6 +240,55 @@ export default function LoginPage() {
                 autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
               />
             </div>
+
+            {/* 忘记密码模式 */}
+            {mode === 'forgot' && (
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={resetToken ? 'step2' : 'step1'}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0 }}
+                  className="space-y-4"
+                >
+                  {resetToken ? (
+                    <>
+                      <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-sm text-green-700">
+                        ✅ 令牌已生成，请设置新密码
+                      </div>
+                      <div>
+                        <label className="block text-sm text-gray-600 mb-1">新密码</label>
+                        <input
+                          type="password"
+                          value={newPassword}
+                          onChange={(e) => setNewPassword(e.target.value)}
+                          placeholder="至少6位字符"
+                          className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg
+                            text-gray-800 placeholder-gray-400 focus:outline-none focus:border-purple-400 focus:ring-1 focus:ring-purple-400"
+                          autoComplete="new-password"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm text-gray-600 mb-1">确认密码</label>
+                        <input
+                          type="password"
+                          value={confirmPassword}
+                          onChange={(e) => setConfirmPassword(e.target.value)}
+                          placeholder="再次输入新密码"
+                          className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg
+                            text-gray-800 placeholder-gray-400 focus:outline-none focus:border-purple-400 focus:ring-1 focus:ring-purple-400"
+                          autoComplete="new-password"
+                        />
+                      </div>
+                    </>
+                  ) : (
+                    <p className="text-sm text-gray-500">
+                      输入用户名，系统将生成密码重置令牌
+                    </p>
+                  )}
+                </motion.div>
+              </AnimatePresence>
+            )}
 
             {/* 注册模式：邮箱 + 验证码 */}
             {mode === 'register' && (
@@ -256,6 +387,16 @@ export default function LoginPage() {
               </label>
             )}
 
+            {successMsg && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="text-green-600 text-sm text-center py-2 bg-green-50 rounded-lg border border-green-100"
+              >
+                {successMsg}
+              </motion.div>
+            )}
+
             {error && (
               <motion.div
                 initial={{ opacity: 0 }}
@@ -272,7 +413,13 @@ export default function LoginPage() {
               className="w-full py-3 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700
                 text-white font-semibold rounded-lg transition-all disabled:opacity-50 shadow-md"
             >
-              {loading ? '处理中...' : mode === 'login' ? '登录' : '创建账号'}
+              {loading
+                ? '处理中...'
+                : mode === 'login'
+                  ? '登录'
+                  : mode === 'register'
+                    ? '创建账号'
+                    : resetToken ? '重置密码' : '获取重置令牌'}
             </button>
           </form>
         </div>
