@@ -15,12 +15,6 @@ interface Character {
   color?: string
 }
 
-const DEFAULT_CHARACTERS: Character[] = [
-  { id: 'cheruyun', name: '车如云', description: '温柔体贴的女主角', color: '#8B5CF6' },
-  { id: 'linmeng', name: '林梦', description: '神秘优雅的少女', color: '#EC4899' },
-  { id: 'xiaoxue', name: '小雪', description: '活泼可爱的妹妹', color: '#06B6D4' },
-]
-
 // ─────────────────────────────────────────────────────────────────────────────
 // 组件
 // ─────────────────────────────────────────────────────────────────────────────
@@ -30,6 +24,7 @@ export default function WorldPage() {
   const [characters, setCharacters] = useState<Character[]>([])
   const [selectedChar, setSelectedChar] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(false)
 
   useEffect(() => {
     const fetchCharacters = async () => {
@@ -42,16 +37,12 @@ export default function WorldPage() {
         })
         if (res.ok) {
           const data = await res.json()
-          if (data.characters?.length) {
-            setCharacters(data.characters)
-          } else {
-            setCharacters(DEFAULT_CHARACTERS)
-          }
+          setCharacters(data.characters || [])
         } else {
-          setCharacters(DEFAULT_CHARACTERS)
+          setError(true)
         }
       } catch {
-        setCharacters(DEFAULT_CHARACTERS)
+        setError(true)
       }
       setLoading(false)
     }
@@ -173,14 +164,14 @@ export default function WorldPage() {
               </motion.div>
             ))}
 
-            {characters.length === 0 && (
+            {characters.length === 0 && !loading && (
               <div style={{
                 textAlign: 'center',
                 padding: 40,
                 color: 'var(--ios-gray)',
                 fontSize: 14,
               }}>
-                暂无可用角色
+                {error ? '加载角色失败，请稍后重试' : '暂无可用角色'}
               </div>
             )}
           </div>
