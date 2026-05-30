@@ -10,7 +10,7 @@ from datetime import datetime
 
 from aiohttp import web
 
-from system.config import *
+from system.config import get_default_tz, VIDEO_DIR
 
 from packages.analysis.chatlog import (
     parse_wechat_chatlog,
@@ -63,7 +63,7 @@ async def api_analyze_chatlog(request):
 
     except Exception as e:
         logging.error(f"Mini App聊天记录分析错误: {e}")
-        return web.json_response({'success': False, 'error': str(e)})
+        return web.json_response({'success': False, 'error': 'Analysis error'})
 
 
 async def api_analyze_video(request):
@@ -133,4 +133,4 @@ async def api_analyze_video(request):
 
     except Exception as e:
         logging.error(f"Mini App视频分析错误: {e}")
-        return web.json_response({'success': False, 'error': str(e)})
+        return web.json_response({'success': False, 'error': 'Analysis error'})

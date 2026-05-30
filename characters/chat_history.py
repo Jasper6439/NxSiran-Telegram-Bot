@@ -70,7 +70,10 @@ async def human_typing_delay(chat_id: int, bot, text_length: int = 20):
     length_delay = min(text_length * 0.05, 2.0)
     total_delay = base_delay + length_delay
 
-    # 先发送typing状态
-    await bot.send_chat_action(chat_id=chat_id, action="typing")
+    # 先发送typing状态（权限不足时静默跳过）
+    try:
+        await bot.send_chat_action(chat_id=chat_id, action="typing")
+    except Exception:
+        pass
     # 等待一段时间（typing状态会自动持续）
     await asyncio.sleep(min(total_delay, 10.0))

@@ -12,6 +12,7 @@
   audio_path = await tts.synthesize("你好呀~")
 """
 
+import asyncio
 import logging
 import os
 import tempfile
@@ -20,6 +21,12 @@ from typing import Optional
 from system.config import DATA_DIR
 
 logger = logging.getLogger(__name__)
+
+
+def _write_file(path: str, data: bytes) -> None:
+    """同步写入文件，供 asyncio.to_thread 调用。"""
+    with open(path, "wb") as f:
+        f.write(data)
 
 # ============================================================
 # 配置区域 - 根据实际情况修改
@@ -118,8 +125,7 @@ class SoVITSBackend:
                 ) as resp:
                     if resp.status == 200:
                         audio_data = await resp.read()
-                        with open(output_path, "wb") as f:
-                            f.write(audio_data)
+                        await asyncio.to_thread(_write_file, output_path, audio_data)
                         return True
                     else:
                         logger.error(f"SoVITS API 返回 {resp.status}")
@@ -163,8 +169,7 @@ class FishSpeechBackend:
                 ) as resp:
                     if resp.status == 200:
                         audio_data = await resp.read()
-                        with open(output_path, "wb") as f:
-                            f.write(audio_data)
+                        await asyncio.to_thread(_write_file, output_path, audio_data)
                         return True
                     else:
                         logger.error(f"Fish API 返回 {resp.status}")

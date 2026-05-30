@@ -22,14 +22,14 @@
     "timezone": "Asia/Seoul",
     "world_layer": "stage",
     "emotion_defaults": {
-        "affection": -20,
-        "happiness": 10,
+        "affection": -50,
+        "happiness": 5,
         "awakening": 0
     },
     "awakening_conditions": {
-        "min_affection": 8,
-        "min_happiness": 6,
-        "required_events": ["first_meet", "roof_night", "ice_cream", "grandma"]
+        "min_affection": 30,
+        "min_happiness": 20,
+        "required_events": []
     },
     "is_novel_character": true,
     "world_role": "trapped_character",

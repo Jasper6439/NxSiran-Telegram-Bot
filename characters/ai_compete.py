@@ -51,6 +51,9 @@ LEAK_KEYWORDS = [
     'respond as', 'following the style', 'we need to respond',
     'calling user', 'system prompt', 'you are a', 'as an ai',
     'i need to', 'i should respond', 'according to the',
+    'i am an ai', 'ai language model', 'ai assistant',
+    'i am a language model', 'helpful assistant',
+    'roleplay as', 'in character', 'stay in character',
 ]
 
 # 默认规则（当角色没有配置 ai_rules 时使用）
@@ -329,6 +332,16 @@ async def compete_reply(system_prompt: str, user_message: str,
     cached = await _search_cache(user_message)
     if cached:
         return cached
+
+    # 1.5 模型不足时跳过竞争，直接调用单模型
+    if len(ALL_MODELS) < 3:
+        from characters.ai_client import call_ai as ai_client_call_ai
+        logger.info(f"[AI竞争] 模型不足({len(ALL_MODELS)})，跳过竞争直接调用")
+        return await ai_client_call_ai(
+            system_prompt=system_prompt,
+            user_message=user_message,
+            chat_history=chat_history,
+        )
 
     # 2. 轮换决定评委
     judge_index = _rotate_counter % len(ALL_MODELS)

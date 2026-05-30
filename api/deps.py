@@ -73,14 +73,14 @@ async def get_current_user(authorization: str = Header(None)) -> int:
             raw_user_id = API_TOKENS[token].get("user_id")
             logger.debug(f"[Auth] 内存 Token 验证成功: user_id={raw_user_id}")
 
-    # 3. Fallback: 直接用数字 token 作为 telegram_id 认证
-    if not raw_user_id:
+    # 3. Fallback: 直接用数字 token 作为 telegram_id 认证（仅开发模式）
+    if not raw_user_id and os.environ.get("DEBUG", "").lower() in ("1", "true", "yes"):
         try:
             cfg = load_config()
             chat_id = cfg.get("your_chat_id", 0) or cfg.get("chat_id", 0)
             if chat_id and str(token) == str(chat_id):
                 raw_user_id = str(chat_id)
-                logger.debug(f"[Auth] Chat ID 认证成功: {raw_user_id}")
+                logger.warning(f"[Auth] Chat ID 认证成功 (DEBUG模式): {raw_user_id}")
         except Exception as e:
             logger.debug(f"[Auth] Chat ID 认证失败: {e}")
 

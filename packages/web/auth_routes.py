@@ -98,7 +98,7 @@ async def api_register(request):
 
     except Exception as e:
         logging.error(f"[API注册] 错误: {e}")
-        return web.json_response({'success': False, 'error': str(e)})
+        return web.json_response({'success': False, 'error': 'Authentication failed'})
 
 
 async def api_login(request):
@@ -136,6 +136,14 @@ async def api_login(request):
         if not username or not password:
             return web.json_response({'success': False, 'error': '用户名和密码不能为空'})
 
+        # 暴力破解保护: 每用户名每 10 分钟最多 5 次失败尝试
+        from system.rate_limiter import login_bruteforce_limiter
+        if not login_bruteforce_limiter.is_allowed(username.lower()):
+            return web.json_response({
+                'success': False,
+                'error': '登录尝试次数过多，请 10 分钟后再试'
+            })
+
         # 验证用户（支持用户名或邮箱登录）
         user_data_loaded = load_users()
         users = user_data_loaded.get("users", {})
@@ -158,11 +166,16 @@ async def api_login(request):
                     break
 
         if not user_data:
+            logging.warning(f"[API登录] 用户不存在: {username}")
             return web.json_response({'success': False, 'error': '用户名或密码错误'})
 
         # 验证密码
         if not _verify_password(password, user_data['password_hash']):
+            logging.warning(f"[API登录] 密码错误: {username}")
             return web.json_response({'success': False, 'error': '用户名或密码错误'})
+
+        # 登录成功，重置该用户的失败计数
+        login_bruteforce_limiter.reset(username.lower())
 
         # 检查是否为管理员（根据配置文件中的 admin_username）
         config = load_config()
@@ -198,7 +211,7 @@ async def api_login(request):
 
     except Exception as e:
         logging.error(f"[API登录] 错误: {e}")
-        return web.json_response({'success': False, 'error': str(e)})
+        return web.json_response({'success': False, 'error': 'Authentication failed'})
 
 
 async def api_user_profile(request):
@@ -231,7 +244,7 @@ async def api_user_profile(request):
         })
     except Exception as e:
         logging.error(f"[API用户资料] 错误: {e}")
-        return web.json_response({'success': False, 'error': str(e)}, status=500)
+        return web.json_response({'success': False, 'error': 'Authentication failed'}, status=500)
 
 
 async def api_update_preferred_name(request):
@@ -264,7 +277,7 @@ async def api_update_preferred_name(request):
         return web.json_response({'success': True, 'message': f'角色现在会叫你「{preferred_name}」', 'preferred_name': preferred_name})
     except Exception as e:
         logging.error(f"[API更新称呼] 错误: {e}")
-        return web.json_response({'success': False, 'error': str(e)}, status=500)
+        return web.json_response({'success': False, 'error': 'Authentication failed'}, status=500)
 
 
 async def api_bind_telegram(request):
@@ -300,7 +313,7 @@ async def api_bind_telegram(request):
         return web.json_response({'success': True, 'message': '绑定成功'})
     except Exception as e:
         logging.error(f"[API绑定Telegram] 错误: {e}")
-        return web.json_response({'success': False, 'error': str(e)}, status=500)
+        return web.json_response({'success': False, 'error': 'Authentication failed'}, status=500)
 
 
 async def api_forgot_password(request):
@@ -338,31 +351,30 @@ async def api_forgot_password(request):
                             'sent_email': True
                         })
                     else:
+                        logging.info(f"[找回密码] 邮件发送失败，验证码: {code} (用户: {email_or_username})")
                         return web.json_response({
                             'success': True,
-                            'message': '邮件发送失败，请使用下方测试验证码',
-                            'code': code  # fallback: 测试模式
+                            'message': '邮件发送失败，请检查服务器日志获取验证码',
                         })
                 else:
+                    logging.info(f"[找回密码] 未找到关联邮箱，验证码: {code} (用户: {email_or_username})")
                     return web.json_response({
                         'success': True,
-                        'message': '未找到关联邮箱，请使用下方测试验证码',
-                        'code': code
+                        'message': '未找到关联邮箱，请检查服务器日志获取验证码',
                     })
             else:
                 # SMTP 未配置，测试模式
-                logging.info(f"[找回密码] 验证码: {code}")
+                logging.info(f"[找回密码] 验证码: {code} (用户: {email_or_username})")
                 return web.json_response({
                     'success': True,
-                    'message': '验证码已生成（测试模式：SMTP 未配置）',
-                    'code': code
+                    'message': '验证码已生成。如 SMTP 未配置，请检查服务器日志获取验证码。',
                 })
         else:
             return web.json_response({'success': False, 'error': message})
 
     except Exception as e:
         logging.error(f"[找回密码] 错误: {e}")
-        return web.json_response({'success': False, 'error': str(e)})
+        return web.json_response({'success': False, 'error': 'Authentication failed'})
 
 
 async def api_verify_reset_code(request):
@@ -389,7 +401,7 @@ async def api_verify_reset_code(request):
 
     except Exception as e:
         logging.error(f"[验证重置码] 错误: {e}")
-        return web.json_response({'success': False, 'error': str(e)})
+        return web.json_response({'success': False, 'error': 'Authentication failed'})
 
 
 async def api_reset_password(request):
@@ -415,4 +427,4 @@ async def api_reset_password(request):
 
     except Exception as e:
         logging.error(f"[重置密码] 错误: {e}")
-        return web.json_response({'success': False, 'error': str(e)})
+        return web.json_response({'success': False, 'error': 'Authentication failed'})

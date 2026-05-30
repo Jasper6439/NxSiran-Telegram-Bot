@@ -17,6 +17,10 @@ import sys
 import threading
 from datetime import datetime
 
+# 加载 .env 文件
+from dotenv import load_dotenv
+load_dotenv(os.path.join(os.path.dirname(__file__), '.env'))
+
 from telegram import Update, BotCommand
 from telegram.ext import Application, CommandHandler, MessageHandler, CallbackQueryHandler, filters, ContextTypes
 from telegram.request import HTTPXRequest
@@ -29,7 +33,12 @@ import uvicorn
 # TTS engine
 from characters.tts_engine import TTSEngine
 
-from system.config import *
+from system.config import (
+    CHARACTERS_DIR, BOT_VERSION, LOG_DIR, YOUR_CHAT_ID,
+    AI_MODEL, PORT, AI_API_BASE, AI_API_KEY, TELEGRAM_TOKEN,
+    APP_NAME,
+    init_config, load_json, get_user_memory_file, get_user_selfie_dir,
+)
 
 from characters.emotion import check_proactive_actions
 from characters.stats import load_stats
@@ -210,6 +219,35 @@ def init_characters():
 def register_handlers(tg_app: Application):
     """注册所有 Telegram handler（与 bot.py main() 中的 app.add_handler(...) 完全一致）"""
 
+    # ============================================================
+    # 全局话题过滤器（group=-1，最先执行）
+    # 只在 CHAT_TOPIC_THREAD_ID 指定的话题中响应，其他话题全部忽略
+    # ============================================================
+    ALLOWED_TOPIC_THREAD_ID = int(os.environ.get("CHAT_TOPIC_THREAD_ID", "0"))
+
+    async def _global_topic_filter(update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """全局话题过滤：非目标话题的所有消息一律忽略"""
+        if ALLOWED_TOPIC_THREAD_ID <= 0:
+            return  # 未配置话题ID，不过滤
+        # 提取 thread_id（消息、频道帖子、callback 都可能有）
+        thread_id = None
+        if update.message:
+            thread_id = getattr(update.message, 'message_thread_id', None)
+        elif update.edited_message:
+            thread_id = getattr(update.edited_message, 'message_thread_id', None)
+        elif update.callback_query and update.callback_query.message:
+            thread_id = getattr(update.callback_query.message, 'message_thread_id', None)
+        elif update.channel_post:
+            thread_id = getattr(update.channel_post, 'message_thread_id', None)
+        # 不在目标话题 → 阻断（不调用其他 handler）
+        if thread_id is not None and thread_id != ALLOWED_TOPIC_THREAD_ID:
+            logging.debug(f"[TopicFilter] 忽略非目标话题消息 thread_id={thread_id}")
+            return
+        # 私聊（thread_id=None）不过滤，允许私聊交互
+
+    from telegram.ext import TypeHandler
+    tg_app.add_handler(TypeHandler(Update, _global_topic_filter), group=-1)
+
     # Basic commands
     tg_app.add_handler(CommandHandler("start", start))
     tg_app.add_handler(CommandHandler("reset", reset))
@@ -337,7 +375,7 @@ def register_handlers(tg_app: Application):
 # ============================================================
 # PID Lock - 防止重复启动
 # ============================================================
-PID_FILE = "/tmp/lovesupremacy-bot.pid"
+PID_FILE = os.path.join(os.environ.get("TEMP", "/tmp"), "lovesupremacy-bot.pid")
 
 def check_pid_lock():
     if os.path.exists(PID_FILE):
@@ -374,9 +412,13 @@ async def main():
     # PID Lock 检查
     check_pid_lock()
 
-    # SIGTERM 信号处理 - 清理 PID 文件
+    # SIGTERM 信号处理 - 清理 PID 文件 (Windows 不支持 add_signal_handler)
     loop = asyncio.get_running_loop()
-    loop.add_signal_handler(signal.SIGTERM, lambda: (release_pid_lock(), sys.exit(0)))
+    try:
+        loop.add_signal_handler(signal.SIGTERM, lambda: (release_pid_lock(), sys.exit(0)))
+    except (NotImplementedError, AttributeError):
+        # Windows: signal handlers not supported in asyncio, use atexit instead
+        pass
     # 同步 config 模块中的全局变量（from system.config import * 是绑定副本）
     import system.config as config_module
     global TELEGRAM_TOKEN, YOUR_CHAT_ID, AI_API_BASE, AI_API_KEY

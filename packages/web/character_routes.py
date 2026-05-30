@@ -49,7 +49,7 @@ async def api_bind_character(request):
 
     except Exception as e:
         logging.error(f"[绑定角色] 错误: {e}")
-        return web.json_response({'success': False, 'error': str(e)})
+        return web.json_response({'success': False, 'error': 'Character error'})
 
 
 async def api_get_character_bindings(request):
@@ -68,7 +68,7 @@ async def api_get_character_bindings(request):
         })
     except Exception as e:
         logging.error(f"[获取角色绑定] 错误: {e}")
-        return web.json_response({'success': False, 'error': str(e)})
+        return web.json_response({'success': False, 'error': 'Character error'})
 
 
 async def api_get_config(request):
@@ -95,7 +95,8 @@ async def api_get_config(request):
         }
         return web.json_response({'success': True, 'config': safe_config})
     except Exception as e:
-        return web.json_response({'success': False, 'error': str(e)})
+        logging.error(f"[配置获取] 错误: {e}")
+        return web.json_response({'success': False, 'error': 'Character error'})
 
 
 async def api_update_config(request):
@@ -131,12 +132,19 @@ async def api_update_config(request):
 
         return web.json_response({'success': True, 'updated': updated, 'message': f'已更新: {", ".join(updated)}'})
     except Exception as e:
-        return web.json_response({'success': False, 'error': str(e)})
+        logging.error(f"[配置更新] 错误: {e}")
+        return web.json_response({'success': False, 'error': 'Character error'})
 
 
 async def api_list_characters(request):
     """列出所有可用角色"""
     try:
+        user_id = validate_session_token(request)
+        if not user_id:
+            user_id = validate_api_token(request)
+        if not user_id:
+            return web.json_response({'success': False, 'error': '未登录'}, status=401)
+
         characters = list_characters()
         current = get_current_character()
         return web.json_response({
@@ -146,12 +154,19 @@ async def api_list_characters(request):
             'count': len(characters),
         })
     except Exception as e:
-        return web.json_response({'success': False, 'error': str(e)})
+        logging.error(f"[角色列表] 错误: {e}")
+        return web.json_response({'success': False, 'error': 'Character error'})
 
 
 async def api_switch_character(request):
     """切换当前角色"""
     try:
+        user_id = validate_session_token(request)
+        if not user_id:
+            user_id = validate_api_token(request)
+        if not user_id:
+            return web.json_response({'success': False, 'error': '未登录'}, status=401)
+
         data = await request.json()
         character_id = data.get('character_id', '')
 
@@ -168,4 +183,5 @@ async def api_switch_character(request):
         else:
             return web.json_response({'success': False, 'error': f'角色 "{character_id}" 不存在'})
     except Exception as e:
-        return web.json_response({'success': False, 'error': str(e)})
+        logging.error(f"[切换角色] 错误: {e}")
+        return web.json_response({'success': False, 'error': 'Character error'})

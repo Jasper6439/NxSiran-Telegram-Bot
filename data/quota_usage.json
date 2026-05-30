@@ -1,0 +1,12 @@
+{
+  "2026-05": {
+    "requests": 39,
+    "cpu_seconds": 3.900000000000002,
+    "memory_gib_seconds": 0.48750000000000027,
+    "network_gb": 0.0,
+    "ai_requests": 0,
+    "image_generations": 0,
+    "warnings_sent": [],
+    "shutdown_triggered": false
+  }
+}

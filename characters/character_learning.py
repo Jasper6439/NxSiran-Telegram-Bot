@@ -23,6 +23,13 @@ logger = logging.getLogger(__name__)
 class CharacterLearning:
     """角色学习进化引擎"""
 
+    # 不可变文件列表 — 学习系统不能修改这些文件
+    IMMUTABLE_FILES = frozenset({
+        "persona.md",       # 原作设定（Layer 0-5）
+        "exemplars.md",     # 原作示例对话
+        "config.json",      # 角色基础配置
+    })
+
     def __init__(self, character_id: str):
         self.character_id = character_id
         self.char_dir = os.path.join(
@@ -43,7 +50,13 @@ class CharacterLearning:
         return ""
 
     def _write_file(self, filename: str, content: str):
-        """写入角色文件"""
+        """写入角色文件（带不可变保护）"""
+        if filename in self.IMMUTABLE_FILES:
+            logger.warning(
+                f"[Learning] 拒绝写入不可变文件: {filename} "
+                f"(受 IMMUTABLE_FILES 保护)"
+            )
+            return
         path = os.path.join(self.char_dir, filename)
         with open(path, 'w', encoding='utf-8') as f:
             f.write(content)

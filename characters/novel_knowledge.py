@@ -9,9 +9,16 @@ from typing import List, Dict
 
 from system.config import DATA_DIR
 
-# LightRAG
-from lightrag import LightRAG, QueryParam
-from lightrag.utils import EmbeddingFunc
+# LightRAG (可选依赖)
+try:
+    from lightrag import LightRAG, QueryParam
+    from lightrag.utils import EmbeddingFunc
+    LIGHTRAG_AVAILABLE = True
+except ImportError:
+    LIGHTRAG_AVAILABLE = False
+    LightRAG = None
+    QueryParam = None
+    EmbeddingFunc = None
 
 logger = logging.getLogger(__name__)
 
@@ -38,13 +45,11 @@ class NovelKnowledge:
         
         async def llm_model_func(prompt, system_prompt="", history_messages=[], **kwargs) -> str:
             """调用 OpenRouter API"""
-            import httpx
-            
             headers = {
                 "Authorization": f"Bearer {AI_API_KEY}",
                 "Content-Type": "application/json"
             }
-            
+
             messages = []
             if system_prompt:
                 messages.append({"role": "system", "content": system_prompt})
@@ -52,21 +57,22 @@ class NovelKnowledge:
                 messages.append(msg)
             messages.append({"role": "user", "content": prompt})
             
-            async with httpx.AsyncClient(timeout=120) as client:
-                resp = await client.post(
-                    f"{AI_API_BASE}/chat/completions",
-                    headers=headers,
-                    json={
-                        "model": AI_MODELS[0],
-                        "messages": messages,
-                        "max_tokens": 1000,
-                        "temperature": 0.3,
-                    }
-                )
-                if resp.status_code == 200:
-                    return resp.json()['choices'][0]['message']['content']
-                else:
-                    raise Exception(f"API error: {resp.status_code}")
+            from characters.ai_client import _get_http_client
+            client = _get_http_client()
+            resp = await client.post(
+                f"{AI_API_BASE}/chat/completions",
+                headers=headers,
+                json={
+                    "model": AI_MODELS[0],
+                    "messages": messages,
+                    "max_tokens": 1000,
+                    "temperature": 0.3,
+                }
+            )
+            if resp.status_code == 200:
+                return resp.json()['choices'][0]['message']['content']
+            else:
+                raise Exception(f"API error: {resp.status_code}")
         
         return llm_model_func
     
@@ -238,6 +244,9 @@ async def query_novel(question: str, character_id: str = 'chayewoon') -> str:
 
 async def init_novel_knowledge(character_id: str = 'chayewoon') -> bool:
     """初始化并加载小说"""
+    if not LIGHTRAG_AVAILABLE:
+        logger.warning("[NovelKnowledge] lightrag 未安装，小说知识库不可用")
+        return False
     kg = get_knowledge(character_id)
     return await kg.load_novel()
 

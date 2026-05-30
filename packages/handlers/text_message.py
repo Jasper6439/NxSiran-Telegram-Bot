@@ -38,9 +38,9 @@ from services.llm_service import get_llm_service
 # Lazy import for bot.call_ai (the high-level AI function with character/memory/emotion integration)
 from packages.commands.utils import _get_call_ai
 
-# Lazy import for summarize_and_save_memory (defined in bot.py, the entry point)
+# Lazy import for summarize_and_save_memory
 def _get_summarize_func():
-    from bot import summarize_and_save_memory
+    from characters.ai_core import summarize_and_save_memory
     return summarize_and_save_memory
 
 # Lazy import for voice functions (defined in voice module to avoid circular imports)
@@ -62,7 +62,17 @@ __all__ = ["handle_message", "send_active_message", "send_smart_reply", "message
 message_count = {}
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not update.message or not update.message.text:
+        return
     chat_id = update.effective_chat.id
+    msg_thread_id = getattr(update.message, 'message_thread_id', None)
+    logging.info(f"[Topic] chat_id={chat_id}, thread_id={msg_thread_id}, text={update.message.text[:20]}")
+    
+    # 话题过滤：只在指定话题回复（群组Topics模式）
+    ALLOWED_TOPIC_THREAD_ID = int(os.environ.get("CHAT_TOPIC_THREAD_ID", "0"))
+    if ALLOWED_TOPIC_THREAD_ID > 0:
+        if msg_thread_id != ALLOWED_TOPIC_THREAD_ID:
+            return  # 不在目标话题，忽略
 
     # [Skill: TTS v1.4.7.2] 处理语音语料上传
     _pending_voice_samples = _get_pending_voice_samples()
@@ -476,7 +486,7 @@ async def send_active_message(app, msg):
     if YOUR_CHAT_ID == 0:
         return
     try:
-        await app.bot.send_message(chat_id=YOUR_CHAT_ID, text=msg)
+        await app.bot.send_message(chat_id=YOUR_CHAT_ID, text=msg, message_thread_id=CHAT_TOPIC_THREAD_ID)
     except Exception as e:
         logging.error(f"发送主动消息失败: {e}")
 

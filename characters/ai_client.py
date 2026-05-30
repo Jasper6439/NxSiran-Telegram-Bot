@@ -20,6 +20,25 @@ logger = logging.getLogger(__name__)
 from system.config import AI_API_BASE, AI_API_KEY, AI_MODEL, AI_MODELS, DATA_DIR, MAX_CONTEXT_TOKENS
 from .token_utils import truncate_messages_for_api
 
+# ── Reusable httpx client singleton ─────────────────────────
+_http_client: Optional[httpx.AsyncClient] = None
+
+
+def _get_http_client() -> httpx.AsyncClient:
+    """Lazily create and reuse a single httpx.AsyncClient."""
+    global _http_client
+    if _http_client is None or _http_client.is_closed:
+        _http_client = httpx.AsyncClient(timeout=httpx.Timeout(DEFAULT_TIMEOUT))
+    return _http_client
+
+
+async def close_http_client():
+    """Close the shared httpx client. Call on application shutdown."""
+    global _http_client
+    if _http_client is not None and not _http_client.is_closed:
+        await _http_client.aclose()
+        _http_client = None
+
 # ── 统一的模型列表（从 config 导入） ──────────────────────────
 FALLBACK_MODELS: List[str] = AI_MODELS
 
@@ -138,10 +157,13 @@ async def call_ai(
                     await asyncio.sleep(1 * (attempt + 1))  # 指数退避
                 continue
             except httpx.HTTPStatusError as e:
+                status = e.response.status_code
                 logger.warning(f"Model {current_model} HTTP error (attempt {attempt + 1}/{MAX_RETRIES}): {e}")
-                last_error = f"HTTP {e.response.status_code}"
+                last_error = f"HTTP {status}"
                 if attempt < MAX_RETRIES - 1:
-                    await asyncio.sleep(1 * (attempt + 1))
+                    # 429 限流用更长退避
+                    delay = (5 * (attempt + 1)) if status == 429 else (1 * (attempt + 1))
+                    await asyncio.sleep(delay)
                 continue
             except Exception as e:
                 logger.warning(f"Model {current_model} failed (attempt {attempt + 1}/{MAX_RETRIES}): {e}")
@@ -149,8 +171,10 @@ async def call_ai(
                 if attempt < MAX_RETRIES - 1:
                     await asyncio.sleep(1 * (attempt + 1))
                 continue
-        # 当前模型所有重试失败，尝试下一个模型
+        # 当前模型所有重试失败，尝试下一个模型（429限流时加长间隔）
         logger.warning(f"Model {current_model} all {MAX_RETRIES} retries exhausted, trying next")
+        if "429" in str(last_error):
+            await asyncio.sleep(3)
 
     logger.error(f"All AI models failed. Last error: {last_error}")
     raise RuntimeError(f"All AI models failed. Last error: {last_error}")
@@ -180,28 +204,34 @@ async def _make_api_request(
     if tools:
         payload["tools"] = tools
 
-    async with httpx.AsyncClient(timeout=httpx.Timeout(timeout)) as client:
-        response = await client.post(
-            f"{api_base}/chat/completions",
-            headers={
-                "Authorization": f"Bearer {api_key}",
-                "Content-Type": "application/json",
-            },
-            json=payload,
-        )
-        response.raise_for_status()
-        data = response.json()
+    client = _get_http_client()
+    response = await client.post(
+        f"{api_base}/chat/completions",
+        headers={
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+        },
+        json=payload,
+    )
+    response.raise_for_status()
+    data = response.json()
 
-        if "choices" not in data or not data["choices"]:
-            logger.warning(f"Model {model} returned empty choices")
-            return None
+    if "choices" not in data or not data["choices"]:
+        logger.warning(f"Model {model} returned empty choices")
+        return None
 
-        content = data["choices"][0].get("message", {}).get("content", "")
-        if not content.strip():
-            logger.warning(f"Model {model} returned empty content")
-            return None
+    content = data["choices"][0].get("message", {}).get("content", "")
+    # SenseNova 等模型可能返回 reasoning_content（思考 token）
+    if not content.strip():
+        reasoning = data["choices"][0].get("message", {}).get("reasoning_content", "")
+        if reasoning.strip():
+            logger.info(f"Model {model} returned reasoning_content instead of content")
+            content = reasoning
+    if not content.strip():
+        logger.warning(f"Model {model} returned empty content")
+        return None
 
-        return content
+    return content
 
 
 # ============================================================
@@ -242,44 +272,44 @@ async def generate_image(
         "height": height,
         "n": 1,
     }
-    
-    async with httpx.AsyncClient(timeout=httpx.Timeout(timeout)) as client:
-        try:
-            response = await client.post(
-                f"{api_base}/images/generations",
-                headers={
-                    "Authorization": f"Bearer {api_key}",
-                    "Content-Type": "application/json",
-                },
-                json=payload,
-            )
-            response.raise_for_status()
-            data = response.json()
-            
-            if "data" in data and len(data["data"]) > 0:
-                image_data = data["data"][0]
-                
-                # 可能是 base64 或 URL
-                if "b64_json" in image_data:
-                    return image_data["b64_json"]
-                elif "url" in image_data:
-                    # 下载图片并转为 base64
-                    async with client.get(image_data["url"]) as img_resp:
-                        img_data = img_resp.content
-                        return base64.b64encode(img_data).decode('utf-8')
-                else:
-                    logger.warning(f"Unknown image response format: {image_data.keys()}")
-                    return None
+
+    client = _get_http_client()
+    try:
+        response = await client.post(
+            f"{api_base}/images/generations",
+            headers={
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json",
+            },
+            json=payload,
+        )
+        response.raise_for_status()
+        data = response.json()
+
+        if "data" in data and len(data["data"]) > 0:
+            image_data = data["data"][0]
+
+            # 可能是 base64 或 URL
+            if "b64_json" in image_data:
+                return image_data["b64_json"]
+            elif "url" in image_data:
+                # 下载图片并转为 base64
+                img_resp = await client.get(image_data["url"])
+                img_data = img_resp.content
+                return base64.b64encode(img_data).decode('utf-8')
             else:
-                logger.warning(f"Image generation returned no data: {data}")
+                logger.warning(f"Unknown image response format: {image_data.keys()}")
                 return None
-                
-        except httpx.HTTPStatusError as e:
-            logger.error(f"Image generation HTTP error: {e}")
+        else:
+            logger.warning(f"Image generation returned no data: {data}")
             return None
-        except Exception as e:
-            logger.error(f"Image generation failed: {e}")
-            return None
+
+    except httpx.HTTPStatusError as e:
+        logger.error(f"Image generation HTTP error: {e}")
+        return None
+    except Exception as e:
+        logger.error(f"Image generation failed: {e}")
+        return None
 
 
 async def generate_image_from_context(

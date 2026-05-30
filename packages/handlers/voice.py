@@ -12,7 +12,7 @@ import aiohttp
 from telegram import Update
 from telegram.ext import ContextTypes
 
-from system.config import YOUR_CHAT_ID
+from system.config import CHAT_TOPIC_THREAD_ID, YOUR_CHAT_ID
 from characters.tts_engine import TTSEngine
 
 from packages.commands.utils import auto_delete_messages, _get_call_ai
@@ -117,7 +117,7 @@ async def _send_edge_tts_voice(app, chat_id: int, text: str, config: dict):
         await communicate.save(tmp_path)
 
         with open(tmp_path, "rb") as f:
-            await app.bot.send_voice(chat_id=chat_id, voice=f)
+            await app.bot.send_voice(chat_id=chat_id, voice=f, message_thread_id=CHAT_TOPIC_THREAD_ID)
 
         os.unlink(tmp_path)
         return True
@@ -135,23 +135,24 @@ async def _send_sovits_voice(app, chat_id: int, text: str, config: dict):
 
         sovits_url = os.environ.get("SOVITS_API_URL", "http://localhost:9880")
 
-        async with httpx.AsyncClient(timeout=60.0) as client:
-            resp = await client.post(
-                f"{sovits_url}/tts",
-                json={
-                    "text": text,
-                    "text_language": "ko",
-                    "refer_wav_path": config.get("sovits_model"),
-                    "prompt_text": "",
-                    "prompt_language": "ko",
-                }
-            )
+        from characters.ai_client import _get_http_client
+        client = _get_http_client()
+        resp = await client.post(
+            f"{sovits_url}/tts",
+            json={
+                "text": text,
+                "text_language": "ko",
+                "refer_wav_path": config.get("sovits_model"),
+                "prompt_text": "",
+                "prompt_language": "ko",
+            }
+        )
 
-            if resp.status_code == 200:
-                voice_buf = io.BytesIO(resp.content)
-                voice_buf.name = "voice.wav"
-                await app.bot.send_voice(chat_id=chat_id, voice=voice_buf)
-                return True
+        if resp.status_code == 200:
+            voice_buf = io.BytesIO(resp.content)
+            voice_buf.name = "voice.wav"
+            await app.bot.send_voice(chat_id=chat_id, voice=voice_buf, message_thread_id=CHAT_TOPIC_THREAD_ID)
+            return True
 
     except Exception as e:
         logging.warning(f"SoVITS TTS 失败，回退到 Edge TTS: {e}")

@@ -20,7 +20,7 @@ from datetime import datetime
 
 import aiohttp
 
-from system.config import DATA_DIR
+from system.config import CHAT_TOPIC_THREAD_ID, DATA_DIR
 
 logger = logging.getLogger(__name__)
 
@@ -325,7 +325,7 @@ async def send_voice_to_telegram(
         await bot.send_chat_action(chat_id=chat_id, action="record_voice")
         
         with open(audio_path, "rb") as f:
-            await bot.send_voice(
+            await bot.send_voice(message_thread_id=CHAT_TOPIC_THREAD_ID,
                 chat_id=chat_id,
                 voice=f,
                 caption="🎵"

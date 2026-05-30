@@ -1,7 +1,8 @@
 import logging
 import re
 
-import httpx
+
+from characters.ai_client import _get_http_client
 from telegram import Update
 from telegram.ext import ContextTypes
 
@@ -16,30 +17,30 @@ from packages.commands.utils import auto_delete_messages
 async def fetch_url_content(url: str) -> str:
     """抓取网页内容，提取纯文本"""
     try:
-        async with httpx.AsyncClient(timeout=15.0, follow_redirects=True) as client:
-            headers = {
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-                "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
-            }
-            response = await client.get(url, headers=headers)
-            if response.status_code != 200:
-                return ""
-            html_content = response.text
-            # 提取 <body> 中的文本
-            body_match = re.search(r'<body[^>]*>([\s\S]*?)</body>', html_content, re.IGNORECASE)
-            if body_match:
-                body_text = body_match.group(1)
-            else:
-                body_text = html_content
-            # 去除 HTML 标签
-            text = re.sub(r'<script[^>]*>[\s\S]*?</script>', '', body_text, flags=re.IGNORECASE)
-            text = re.sub(r'<style[^>]*>[\s\S]*?</style>', '', text, flags=re.IGNORECASE)
-            text = re.sub(r'<[^>]+>', ' ', text)
-            # 清理空白
-            text = re.sub(r'\s+', ' ', text).strip()
-            # 限制长度
-            return text[:5000]
+        client = _get_http_client()
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
+        }
+        response = await client.get(url, headers=headers, follow_redirects=True)
+        if response.status_code != 200:
+            return ""
+        html_content = response.text
+        # 提取 <body> 中的文本
+        body_match = re.search(r'<body[^>]*>([\s\S]*?)</body>', html_content, re.IGNORECASE)
+        if body_match:
+            body_text = body_match.group(1)
+        else:
+            body_text = html_content
+        # 去除 HTML 标签
+        text = re.sub(r'<script[^>]*>[\s\S]*?</script>', '', body_text, flags=re.IGNORECASE)
+        text = re.sub(r'<style[^>]*>[\s\S]*?</style>', '', text, flags=re.IGNORECASE)
+        text = re.sub(r'<[^>]+>', ' ', text)
+        # 清理空白
+        text = re.sub(r'\s+', ' ', text).strip()
+        # 限制长度
+        return text[:5000]
     except Exception as e:
         logging.error(f"[摘要] 抓取网页失败: {e}")
         return ""
@@ -63,28 +64,28 @@ async def generate_summary(text: str) -> str:
 只输出摘要内容，不要加标题或其他说明。"""
 
     try:
-        async with httpx.AsyncClient(timeout=60.0) as client:
-            response = await client.post(
-                f"{AI_API_BASE}/chat/completions",
-                headers={
-                    "Authorization": f"Bearer {AI_API_KEY}",
-                    "Content-Type": "application/json",
-                },
-                json={
-                    "model": AI_MODELS[0],
-                    "messages": [
-                        {"role": "system", "content": "你是一个专业的摘要生成助手。请简洁准确地总结内容。"},
-                        {"role": "user", "content": prompt}
-                    ],
-                    "max_tokens": 500,
-                    "temperature": 0.3,
-                },
-            )
-            if response.status_code == 200:
-                data = response.json()
-                return data["choices"][0]["message"]["content"].strip()
-            else:
-                return f"...摘要生成失败（HTTP {response.status_code}）。"
+        client = _get_http_client()
+        response = await client.post(
+            f"{AI_API_BASE}/chat/completions",
+            headers={
+                "Authorization": f"Bearer {AI_API_KEY}",
+                "Content-Type": "application/json",
+            },
+            json={
+                "model": AI_MODELS[0],
+                "messages": [
+                    {"role": "system", "content": "你是一个专业的摘要生成助手。请简洁准确地总结内容。"},
+                    {"role": "user", "content": prompt}
+                ],
+                "max_tokens": 500,
+                "temperature": 0.3,
+            },
+        )
+        if response.status_code == 200:
+            data = response.json()
+            return data["choices"][0]["message"]["content"].strip()
+        else:
+            return f"...摘要生成失败（HTTP {response.status_code}）。"
     except Exception as e:
         logging.error(f"[摘要] AI生成失败: {e}")
         return "...摘要生成出错了。"

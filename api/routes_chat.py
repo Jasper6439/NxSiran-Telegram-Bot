@@ -15,7 +15,8 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 from api.deps import get_current_user
-from system.config import get_default_tz
+from system.config import get_default_tz, FALLBACK_SYSTEM_PROMPT
+from system.rate_limiter import chat_rate_limiter
 
 router = APIRouter(tags=["chat"])
 
@@ -43,6 +44,14 @@ async def chat(req: ChatRequest, user_id: int = Depends(get_current_user)):
     支持 SSE 流式和非流式两种模式。
     复用 characters/ai_core.py 的 call_ai 和 characters/ai_client.py 的 stream_chat_completion。
     """
+    # 限流检查: 每用户每分钟最多 20 次请求
+    if not chat_rate_limiter.is_allowed(str(user_id)):
+        from fastapi.responses import JSONResponse
+        return JSONResponse(
+            status_code=429,
+            content={"error": "请求过于频繁，请稍后再试"}
+        )
+
     if not req.message.strip():
         return {"error": "消息不能为空"}
 
@@ -89,12 +98,16 @@ async def _handle_non_stream_chat(req: ChatRequest, user_id: int) -> dict:
         logger.warning(f"[WebChat] 加载蒸馏角色失败，使用默认: {e}")
 
     if not system_prompt:
-        system_prompt = "你是车如云，一个傲娇但内心温柔的角色。用简洁自然的中文回复。"
+        system_prompt = FALLBACK_SYSTEM_PROMPT
 
-    # v1.7 Phase 7: 获取 Redis 短期记忆
-    from core.memory import get_chat_memory
-    chat_memory = get_chat_memory()
-    short_term_history = chat_memory.get_history(user_id, limit=10)
+    # v1.7 Phase 7: 获取 Redis 短期记忆 (可选)
+    short_term_history = []
+    try:
+        from core.memory import get_chat_memory
+        chat_memory = get_chat_memory()
+        short_term_history = chat_memory.get_history(user_id, limit=10)
+    except Exception:
+        pass  # Redis 不可用时跳过短期记忆
 
     # 合并短期记忆到聊天历史
     from characters.chat_history import load_chat_history, save_chat_history
@@ -104,7 +117,10 @@ async def _handle_non_stream_chat(req: ChatRequest, user_id: int) -> dict:
     combined_history = short_term_history + history[-10:]  # 短期记忆 + 最近10条长期记忆
 
     # 将用户消息存入短期记忆
-    chat_memory.add_message(user_id, "user", user_message)
+    try:
+        chat_memory.add_message(user_id, "user", user_message)
+    except Exception:
+        pass
 
     # AI 竞争模式，fallback 到单模型
     try:
@@ -133,7 +149,10 @@ async def _handle_non_stream_chat(req: ChatRequest, user_id: int) -> dict:
         pass
 
     # 将 AI 回复存入短期记忆
-    chat_memory.add_message(user_id, "assistant", response)
+    try:
+        chat_memory.add_message(user_id, "assistant", response)
+    except Exception:
+        pass
 
     # 保存到长期历史
     timestamp = datetime.now(get_default_tz()).isoformat()
@@ -197,10 +216,15 @@ async def stream_chat_response(req: ChatRequest, user_id: int):
     from characters.ai_client import stream_chat_completion_generator
     from starlette.requests import Request
 
-    # v1.7 Phase 7: 获取 Redis 短期记忆
-    from core.memory import get_chat_memory
-    chat_memory = get_chat_memory()
-    short_term_history = chat_memory.get_history(user_id, limit=10)
+    # v1.7 Phase 7: 获取 Redis 短期记忆 (可选)
+    short_term_history = []
+    chat_memory = None
+    try:
+        from core.memory import get_chat_memory
+        chat_memory = get_chat_memory()
+        short_term_history = chat_memory.get_history(user_id, limit=10)
+    except Exception:
+        pass  # Redis 不可用时跳过短期记忆
 
     # 获取用户显示名
     user_name = '学长'
@@ -227,7 +251,7 @@ async def stream_chat_response(req: ChatRequest, user_id: int):
         logger.warning(f"[WebChat Stream] 加载蒸馏角色失败: {e}")
 
     if not system_prompt:
-        system_prompt = "你是车如云，一个傲娇但内心温柔的角色。用简洁自然的中文回复。"
+        system_prompt = FALLBACK_SYSTEM_PROMPT
 
     # 加载聊天历史并合并短期记忆
     from characters.chat_history import load_chat_history, save_chat_history
@@ -235,7 +259,11 @@ async def stream_chat_response(req: ChatRequest, user_id: int):
     combined_history = short_term_history + history[-10:]  # 短期记忆 + 最近10条长期记忆
 
     # v1.7 Phase 7: 将用户消息存入短期记忆（流式开始前）
-    chat_memory.add_message(user_id, "user", req.message)
+    try:
+        if chat_memory:
+            chat_memory.add_message(user_id, "user", req.message)
+    except Exception:
+        pass
 
     # 连接状态追踪
     is_connected = True

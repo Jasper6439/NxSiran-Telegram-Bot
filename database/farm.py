@@ -44,8 +44,17 @@ class FarmMixin:
         if not kwargs:
             return
 
+        # Whitelist of allowed column names to prevent SQL injection
+        _ALLOWED_FARM_COLUMNS = {
+            "farm_name", "level", "experience", "coins",
+            "last_harvest", "last_watered", "farm_data",
+        }
+
         with self.get_connection() as conn:
             now = datetime.now(get_default_tz()).isoformat()
+            invalid = set(kwargs.keys()) - _ALLOWED_FARM_COLUMNS
+            if invalid:
+                raise ValueError(f"Invalid column names: {invalid}")
             set_clauses = [f"{k} = ?" for k in kwargs.keys()]
             set_clauses.append("updated_at = ?")
             values = list(kwargs.values()) + [now, user_id]

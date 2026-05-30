@@ -108,6 +108,12 @@ class EvolutionService:
     def __init__(self, db_path: str = None):
         self.db_path = db_path or os.path.join(DATA_DIR, "game.db")
         self._session: Optional[aiohttp.ClientSession] = None
+
+    def _get_connection(self):
+        """获取数据库连接（上下文管理器），复用 GameDatabase 的连接管理。"""
+        from database.base import get_db
+        db = get_db()
+        return db.get_connection()
     
     async def _get_session(self) -> aiohttp.ClientSession:
         """获取或创建 HTTP 会话"""
@@ -396,7 +402,48 @@ class EvolutionService:
                 thing = key.replace("knows_user_dislikes_", "")
                 additions.append(f"用户不喜欢{thing}，避免提及相关话题。")
         
+        # 将学习到的偏好写入 persona_mutable.md（可变层）
+        await self._update_mutable_preferences(state.character_id, additions)
+        
         return "\n".join(additions[:5])  # 最多 5 条
+
+    async def _update_mutable_preferences(self, character_id: str, additions: list):
+        """将学习到的用户偏好写入 persona_mutable.md"""
+        import pathlib
+        char_dir = pathlib.Path(__file__).parent.parent / "characters" / character_id
+        mutable_path = char_dir / "persona_mutable.md"
+        
+        if not mutable_path.exists():
+            return
+        
+        content = mutable_path.read_text(encoding='utf-8')
+        
+        # 替换"学习到的用户偏好"部分
+        marker = "## 学习到的用户偏好"
+        if marker not in content:
+            return
+        
+        # 找到该段落的起止位置
+        start = content.find(marker)
+        end_marker = "\n## "
+        end = content.find(end_marker, start + len(marker))
+        if end < 0:
+            end = len(content)
+        
+        # 构建新的偏好段落
+        prefs_lines = [marker, "", "> 由进化系统从对话中自动提取", ""]
+        if additions:
+            for a in additions[:5]:
+                prefs_lines.append(f"- {a}")
+        else:
+            prefs_lines.append("（暂无记录）")
+        prefs_lines.append("")
+        
+        new_section = "\n".join(prefs_lines)
+        content = content[:start] + new_section + content[end:]
+        
+        mutable_path.write_text(content, encoding='utf-8')
+        logger.info(f"[Evolution] 更新 persona_mutable.md 偏好: {len(additions)} 条")
     
     # ============================================================
     # 数据库操作
@@ -404,36 +451,31 @@ class EvolutionService:
     
     async def save_memory(self, memory: CharacterMemory) -> int:
         """保存记忆到数据库"""
-        import sqlite3
-        
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
-        
-        try:
-            cursor.execute("""
-                INSERT INTO character_memory 
-                (user_id, character_id, memory_content, memory_type, importance, created_at, last_accessed)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
-            """, (
-                memory.user_id,
-                memory.character_id,
-                memory.memory_content,
-                memory.memory_type,
-                memory.importance,
-                memory.created_at,
-                memory.last_accessed or memory.created_at,
-            ))
-            
-            conn.commit()
-            memory_id = cursor.lastrowid
-            logger.info(f"[Evolution] 保存记忆: {memory.memory_content[:30]}...")
-            return memory_id
-            
-        except Exception as e:
-            logger.error(f"[Evolution] 保存记忆失败: {e}")
-            return 0
-        finally:
-            conn.close()
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+
+            try:
+                cursor.execute("""
+                    INSERT INTO character_memory 
+                    (user_id, character_id, memory_content, memory_type, importance, created_at, last_accessed)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                """, (
+                    memory.user_id,
+                    memory.character_id,
+                    memory.memory_content,
+                    memory.memory_type,
+                    memory.importance,
+                    memory.created_at,
+                    memory.last_accessed or memory.created_at,
+                ))
+
+                memory_id = cursor.lastrowid
+                logger.info(f"[Evolution] 保存记忆: {memory.memory_content[:30]}...")
+                return memory_id
+
+            except Exception as e:
+                logger.error(f"[Evolution] 保存记忆失败: {e}")
+                return 0
     
     async def get_user_memories(
         self, 
@@ -442,39 +484,38 @@ class EvolutionService:
         limit: int = 10
     ) -> List[CharacterMemory]:
         """获取用户的记忆"""
-        import sqlite3
-        
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
-        
-        try:
-            cursor.execute("""
-                SELECT id, user_id, character_id, memory_content, memory_type, importance, created_at, last_accessed
-                FROM character_memory
-                WHERE user_id = ? AND character_id = ?
-                ORDER BY importance DESC, created_at DESC
-                LIMIT ?
-            """, (user_id, character_id, limit))
-            
-            rows = cursor.fetchall()
-            
-            memories = []
-            for row in rows:
-                memories.append(CharacterMemory(
-                    id=row[0],
-                    user_id=row[1],
-                    character_id=row[2],
-                    memory_content=row[3],
-                    memory_type=row[4],
-                    importance=row[5],
-                    created_at=row[6],
-                    last_accessed=row[7],
-                ))
-            
-            return memories
-            
-        finally:
-            conn.close()
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+
+            try:
+                cursor.execute("""
+                    SELECT id, user_id, character_id, memory_content, memory_type, importance, created_at, last_accessed
+                    FROM character_memory
+                    WHERE user_id = ? AND character_id = ?
+                    ORDER BY importance DESC, created_at DESC
+                    LIMIT ?
+                """, (user_id, character_id, limit))
+
+                rows = cursor.fetchall()
+
+                memories = []
+                for row in rows:
+                    memories.append(CharacterMemory(
+                        id=row[0],
+                        user_id=row[1],
+                        character_id=row[2],
+                        memory_content=row[3],
+                        memory_type=row[4],
+                        importance=row[5],
+                        created_at=row[6],
+                        last_accessed=row[7],
+                    ))
+
+                return memories
+
+            except Exception as e:
+                logger.error(f"[Evolution] 获取记忆失败: {e}")
+                return []
     
     async def get_or_create_state(
         self, 
@@ -482,90 +523,84 @@ class EvolutionService:
         character_id: str
     ) -> CharacterState:
         """获取或创建角色状态"""
-        import sqlite3
-        
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
-        
-        try:
-            cursor.execute("""
-                SELECT id, user_id, character_id, emotion_state, emotion_valence, emotion_arousal,
-                       evolution_points, personality_traits, system_prompt_additions, updated_at
-                FROM character_state
-                WHERE user_id = ? AND character_id = ?
-            """, (user_id, character_id))
-            
-            row = cursor.fetchone()
-            
-            if row:
-                return CharacterState(
-                    id=row[0],
-                    user_id=row[1],
-                    character_id=row[2],
-                    emotion_state=row[3],
-                    emotion_valence=row[4],
-                    emotion_arousal=row[5],
-                    evolution_points=row[6],
-                    personality_traits=row[7],
-                    system_prompt_additions=row[8],
-                    updated_at=row[9],
-                )
-            else:
-                # 创建新状态
-                now = datetime.now().isoformat()
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+
+            try:
                 cursor.execute("""
-                    INSERT INTO character_state 
-                    (user_id, character_id, emotion_state, emotion_valence, emotion_arousal,
-                     evolution_points, personality_traits, system_prompt_additions, updated_at)
-                    VALUES (?, ?, 'neutral', 0.0, 0.0, 0, '{}', '', ?)
-                """, (user_id, character_id, now))
-                
-                conn.commit()
-                
-                return CharacterState(
-                    id=cursor.lastrowid,
-                    user_id=user_id,
-                    character_id=character_id,
-                    emotion_state="neutral",
-                    emotion_valence=0.0,
-                    emotion_arousal=0.0,
-                    evolution_points=0,
-                    personality_traits="{}",
-                    system_prompt_additions="",
-                    updated_at=now,
-                )
-                
-        finally:
-            conn.close()
+                    SELECT id, user_id, character_id, emotion_state, emotion_valence, emotion_arousal,
+                           evolution_points, personality_traits, system_prompt_additions, updated_at
+                    FROM character_state
+                    WHERE user_id = ? AND character_id = ?
+                """, (user_id, character_id))
+
+                row = cursor.fetchone()
+
+                if row:
+                    return CharacterState(
+                        id=row[0],
+                        user_id=row[1],
+                        character_id=row[2],
+                        emotion_state=row[3],
+                        emotion_valence=row[4],
+                        emotion_arousal=row[5],
+                        evolution_points=row[6],
+                        personality_traits=row[7],
+                        system_prompt_additions=row[8],
+                        updated_at=row[9],
+                    )
+                else:
+                    # 创建新状态
+                    now = datetime.now().isoformat()
+                    cursor.execute("""
+                        INSERT INTO character_state 
+                        (user_id, character_id, emotion_state, emotion_valence, emotion_arousal,
+                         evolution_points, personality_traits, system_prompt_additions, updated_at)
+                        VALUES (?, ?, 'neutral', 0.0, 0.0, 0, '{}', '', ?)
+                    """, (user_id, character_id, now))
+
+                    return CharacterState(
+                        id=cursor.lastrowid,
+                        user_id=user_id,
+                        character_id=character_id,
+                        emotion_state="neutral",
+                        emotion_valence=0.0,
+                        emotion_arousal=0.0,
+                        evolution_points=0,
+                        personality_traits="{}",
+                        system_prompt_additions="",
+                        updated_at=now,
+                    )
+
+            except Exception as e:
+                logger.error(f"[Evolution] 获取角色状态失败: {e}")
+                raise
     
     async def update_state(self, state: CharacterState):
         """更新角色状态"""
-        import sqlite3
-        
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
-        
-        try:
-            cursor.execute("""
-                UPDATE character_state
-                SET emotion_state = ?, emotion_valence = ?, emotion_arousal = ?,
-                    evolution_points = ?, personality_traits = ?, system_prompt_additions = ?, updated_at = ?
-                WHERE id = ?
-            """, (
-                state.emotion_state,
-                state.emotion_valence,
-                state.emotion_arousal,
-                state.evolution_points,
-                state.personality_traits,
-                state.system_prompt_additions,
-                datetime.now().isoformat(),
-                state.id,
-            ))
-            
-            conn.commit()
-            
-        finally:
-            conn.close()
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+
+            try:
+                cursor.execute("""
+                    UPDATE character_state
+                    SET emotion_state = ?, emotion_valence = ?, emotion_arousal = ?,
+                        evolution_points = ?, personality_traits = ?, system_prompt_additions = ?, updated_at = ?
+                    WHERE id = ?
+                """, (
+                    state.emotion_state,
+                    state.emotion_valence,
+                    state.emotion_arousal,
+                    state.evolution_points,
+                    state.personality_traits,
+                    state.system_prompt_additions,
+                    datetime.now().isoformat(),
+                    state.id,
+                ))
+
+            except Exception as e:
+                logger.error(f"[Evolution] 更新角色状态失败: {e}")
+                raise
     
     async def close(self):
         """关闭 HTTP 会话"""

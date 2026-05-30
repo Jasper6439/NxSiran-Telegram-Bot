@@ -1,4 +1,4 @@
-# 🏗️ LoveSupremacy Universe - 技术设计蓝图 (design.md)
+# 🏗️ LoveSupremacy Universe - 技术设计蓝图 (DESIGN.md)
 
 > **核心目标**：在 1GB RAM 环境下，提供角色扮演聊天 + 农场游戏 + Web 界面的一体化体验。
 
@@ -9,23 +9,21 @@
 **统一入口**：`main.py`（FastAPI + python-telegram-bot 共享事件循环）
 **回滚入口**：`bot.py`（aiohttp，仅紧急回滚使用）
 
-### 1.1 目录结构与职责
+### 1.1 目录结构与职责 (v1.9.5)
 
 | 目录/文件 | 职责概要 | 关键技术/约束 |
 |:----------|:---------|:--------------|
-| **main.py** | 当前生产入口，FastAPI + Telegram 共享事件循环 | 无 TOKEN 时仅启动 Web |
-| **bot.py** | 旧版入口（回滚用），aiohttp | 保留不删除 |
-| **api/** | FastAPI 路由层，Web/Mini App 端的 HTTP API | `create_app()` 工厂模式 |
-| **system/** | 核心框架与配置 | `config.py` (全局配置), `webhook_server.py` |
-| **characters/** | 角色逻辑与记忆 | AI 调用、情感分析、对话引擎、TTS |
-| **core/** | 统一核心模块 | 聊天引擎、农场/料理、记忆、通知 |
-| **database/** | SQLite 数据库操作 | Mixin 模式，`get_db()` 单例 |
-| **game_api/** | 游戏 HTTP API (aiohttp) | 农场/角色/料理/地图/SSE 推送 |
-| **packages/** | Telegram Bot 子包 | handlers/(5), commands/(12), web/(10), bridge/(2) |
-| **tools/** | 运维与开发工具 | 内存监控、Bridge 客户端、版本管理 |
-| **web-v2/** | React 前端 | React 19 + TypeScript + Vite + Phaser 4 |
-| **data/** | 运行时数据 | JSON 配置 + SQLite 数据库 |
-| **tests/** | 测试用例 | pytest |
+| **main.py** | 生产入口，FastAPI + Telegram 共享事件循环 | 无 TOKEN 时仅启动 Web |
+| **api/** | FastAPI 路由层 | `create_app()` 工厂模式 |
+| **services/** | 服务层 | TTS、图像生成、角色进化 |
+| **system/** | 核心框架与配置 | `config.py`, `auth.py`, `scheduler.py` |
+| **characters/** | 角色蒸馏系统（三层分离） | `base.py` 唯一 prompt 权威 |
+| **core/** | 核心业务模块 | 农场/料理、记忆、通知 |
+| **database/** | SQLite 数据库 | Mixin 模式，`get_db()` 单例 |
+| **packages/** | Telegram Bot 子包 | handlers, commands, analysis, importers |
+| **data/** | 运行时数据 | `world/` 共享游戏世界, `user/` 用户画像 |
+| **web-v2/** | React 前端 | React 19 + Phaser 4 + PWA |
+| **tools/** | 运维工具 | create_character, version_manager |
 
 ### 1.2 核心检索架构 (RAG)
 

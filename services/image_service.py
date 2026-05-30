@@ -20,9 +20,10 @@ import logging
 from typing import Optional, List, Dict, Any, Tuple
 from datetime import datetime
 
-import httpx
 
-from system.config import DATA_DIR
+from characters.ai_client import _get_http_client
+
+from system.config import CHAT_TOPIC_THREAD_ID, DATA_DIR
 
 logger = logging.getLogger(__name__)
 
@@ -70,21 +71,6 @@ class ImageGenerationService:
     2. SiliconFlow SDXL (兜底，LoRA 未生效)
     3. OpenRouter SD3 (备选，LoRA 未生效)
     """
-
-    def __init__(self):
-        self._client: Optional[httpx.AsyncClient] = None
-
-    def _get_client(self, timeout: float = IMAGE_TIMEOUT) -> httpx.AsyncClient:
-        """获取或创建 httpx 异步客户端"""
-        if self._client is None or self._client.is_closed:
-            self._client = httpx.AsyncClient(timeout=httpx.Timeout(timeout))
-        return self._client
-
-    async def close(self):
-        """关闭 HTTP 客户端"""
-        if self._client and not self._client.is_closed:
-            await self._client.aclose()
-
     # ============================================================
     # 统一入口
     # ============================================================
@@ -179,7 +165,7 @@ class ImageGenerationService:
         full_prompt = self._build_lora_prompt(prompt)
 
         # 使用较长超时应对冷启动
-        client = self._get_client(timeout=HF_SPACE_TIMEOUT)
+        client = _get_http_client()
 
         payload = {
             "data": [full_prompt, width, height],
@@ -245,7 +231,7 @@ class ImageGenerationService:
         if not SILICONFLOW_API_KEY:
             raise ValueError("SILICONFLOW_API_KEY 未配置")
 
-        client = self._get_client()
+        client = _get_http_client()
         payload = {
             "model": SILICONFLOW_IMAGE_MODEL,
             "prompt": prompt,
@@ -299,7 +285,7 @@ class ImageGenerationService:
         if not OPENROUTER_API_KEY:
             raise ValueError("OPENROUTER_API_KEY 未配置")
 
-        client = self._get_client()
+        client = _get_http_client()
         payload = {
             "model": OPENROUTER_IMAGE_MODEL,
             "prompt": prompt,
@@ -470,7 +456,7 @@ async def send_image_to_telegram(
     try:
         await bot.send_chat_action(chat_id=chat_id, action="upload_photo")
         with open(image_path, "rb") as f:
-            await bot.send_photo(chat_id=chat_id, photo=f, caption=caption or None)
+            await bot.send_photo(chat_id=chat_id, photo=f, caption=caption or None, message_thread_id=CHAT_TOPIC_THREAD_ID)
         logger.info(f"[ImageGen] 图片发送成功: chat_id={chat_id}")
         return True
     except Exception as e:

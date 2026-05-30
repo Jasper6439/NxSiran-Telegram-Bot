@@ -16,6 +16,7 @@ from packages.web.character_routes import *
 from packages.web.skills_routes import *
 from packages.web.sync_routes import *
 from packages.web.mobile_routes import *
+logger = logging.getLogger(__name__)
 
 
 __all__ = [
@@ -77,7 +78,9 @@ async def cors_middleware(request, handler):
         response = web.Response()
     else:
         response = await handler(request)
-    response.headers['Access-Control-Allow-Origin'] = '*'
+    origin = request.headers.get('Origin', '')
+    if origin:
+        response.headers['Access-Control-Allow-Origin'] = origin
     response.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS'
     response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
     return response
@@ -93,10 +96,11 @@ async def api_version(request):
             'app_name': '恋爱至上主义区域'
         })
     except Exception as e:
+        logger.error(f"{type(e).__name__}: {e}")
         return web.json_response({
             'success': False,
             'version': 'unknown',
-            'error': str(e)
+            'error': 'Internal error'
         })
 
 

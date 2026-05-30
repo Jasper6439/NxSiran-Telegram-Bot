@@ -248,31 +248,34 @@ class ChatEngine:
                              user_id: int, user_message: str,
                              emotion_values: Dict, world_layer: str,
                              platform: str, location: str) -> str:
-        """构建完整的 System Prompt"""
+        """构建完整的 System Prompt
+
+        v1.9.5: 统一调用 character.get_system_prompt(context)，
+        只追加游戏特有的场景信息。
+        """
         parts = []
 
-        # 1. 角色系统提示词
+        # 1. 角色系统提示词（统一入口）
         char_module = self._load_character_module(character_id)
         if char_module and hasattr(char_module, 'get_character'):
             char_instance = char_module.get_character()
             if char_instance and hasattr(char_instance, 'get_system_prompt'):
-                char_prompt = char_instance.get_system_prompt({
+                context = {
                     'user_name': '完成者',
                     'world_layer': world_layer,
                     'awakening_level': emotion_values.get('awakening', 0),
-                })
+                    'emotion_values': emotion_values,
+                }
+                char_prompt = char_instance.get_system_prompt(context)
                 parts.append(char_prompt)
 
-        # 2. 世界层级上下文
-        layer_context = self._get_layer_context(world_layer)
-        if layer_context:
-            parts.append(f"\n\n【当前世界层级】{layer_context}")
+        # 2. 情感状态（数值级，角色 hook 只提供叙事描述）
+        affection = emotion_values.get('affection', 0)
+        happiness = emotion_values.get('happiness', 0)
+        awakening = emotion_values.get('awakening', 0)
+        parts.append(f"\n\n【情感数值】好感度:{affection}/100 幸福度:{happiness}/100 觉醒度:{awakening}/100")
 
-        # 3. 情感状态上下文
-        emotion_context = self._get_emotion_context(emotion_values)
-        parts.append(f"\n\n【情感状态】{emotion_context}")
-
-        # 4. 记忆上下文
+        # 3. 记忆上下文（向量检索，base.py 无法访问 memory_manager）
         if self.memory_manager:
             try:
                 memories = self.memory_manager.search_memories(
@@ -286,7 +289,7 @@ class ChatEngine:
             except Exception as e:
                 logger.warning(f"Memory search failed: {e}")
 
-        # 5. 平台和场景上下文
+        # 4. 平台和场景上下文（游戏特有）
         if platform == 'web':
             scene_context = (
                 f"\n\n【场景信息】"

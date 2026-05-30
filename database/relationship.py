@@ -87,13 +87,16 @@ class RelationshipMixin:
     def update_emotion_values(self, user_id: int, character_id: str,
                               affection_delta: int = 0, happiness_delta: int = 0,
                               awakening_delta: int = 0) -> Dict:
-        """更新角色的情感值（好感度/幸福度/觉醒度）
+        """更新角色的情感值
+
+        三维情感值定义：
+        - affection（好感度）：角色对用户的情感，从敌意→冷淡→好感→深爱
+        - happiness（幸福感）：角色自身的幸福状态，受互动质量影响
+        - awakening（觉醒度）：角色突破原著限制的程度，自然的情感积累，不是刻意推进
 
         Args:
-            user_id: 用户ID
-            character_id: 角色ID
             affection_delta: 好感度变化值
-            happiness_delta: 幸福度变化值
+            happiness_delta: 幸福感变化值
             awakening_delta: 觉醒度变化值
 
         Returns:

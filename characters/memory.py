@@ -16,8 +16,16 @@ from datetime import datetime
 
 import numpy as np
 
-from lightrag import LightRAG, QueryParam
-from lightrag.utils import EmbeddingFunc
+# LightRAG (可选依赖)
+try:
+    from lightrag import LightRAG, QueryParam
+    from lightrag.utils import EmbeddingFunc
+    LIGHTRAG_AVAILABLE = True
+except ImportError:
+    LIGHTRAG_AVAILABLE = False
+    LightRAG = None
+    QueryParam = None
+    EmbeddingFunc = None
 
 from system.config import DATA_DIR
 
@@ -50,7 +58,7 @@ _embedding_wrapper = EmbeddingFunc(
     embedding_dim=768,
     max_token_size=8192,
     func=_embedding_func,
-)
+) if LIGHTRAG_AVAILABLE else None
 
 
 # ===== LLM 函数 =====
@@ -59,8 +67,6 @@ def _get_llm_model_func():
     """获取 LLM 模型函数"""
     async def llm_model_func(prompt, system_prompt="", history_messages=[], **kwargs) -> str:
         """调用 OpenRouter API"""
-        import httpx
-
         if not OPENROUTER_API_KEY:
             logger.warning("[LightRAG Memory] 未配置 OPENROUTER_API_KEY")
             return ""
@@ -78,22 +84,23 @@ def _get_llm_model_func():
         messages.append({"role": "user", "content": prompt})
 
         try:
-            async with httpx.AsyncClient(timeout=60) as client:
-                resp = await client.post(
-                    f"{OPENROUTER_API_BASE}/chat/completions",
-                    headers=headers,
-                    json={
-                        "model": "openrouter/free",
-                        "messages": messages,
-                        "max_tokens": 500,
-                        "temperature": 0.3,
-                    }
-                )
-                if resp.status_code == 200:
-                    return resp.json()['choices'][0]['message']['content']
-                else:
-                    logger.warning(f"[LightRAG Memory] API error: {resp.status_code}")
-                    return ""
+            from characters.ai_client import _get_http_client
+            client = _get_http_client()
+            resp = await client.post(
+                f"{OPENROUTER_API_BASE}/chat/completions",
+                headers=headers,
+                json={
+                    "model": "openrouter/free",
+                    "messages": messages,
+                    "max_tokens": 500,
+                    "temperature": 0.3,
+                }
+            )
+            if resp.status_code == 200:
+                return resp.json()['choices'][0]['message']['content']
+            else:
+                logger.warning(f"[LightRAG Memory] API error: {resp.status_code}")
+                return ""
         except Exception as e:
             logger.error(f"[LightRAG Memory] LLM 调用失败: {e}")
             return ""
@@ -108,7 +115,7 @@ class MemoryManager:
 
     def __init__(self, character_id: str = 'chayewoon'):
         self.character_id = character_id
-        self.rag: Optional[LightRAG] = None
+        self.rag = None
         self._initialized = False
         self._lightrag_dir = os.path.join(DATA_DIR, 'lightrag_memory', character_id)
 
@@ -116,6 +123,10 @@ class MemoryManager:
         """异步初始化 LightRAG"""
         if self._initialized:
             return True
+
+        if not LIGHTRAG_AVAILABLE:
+            logger.warning("[LightRAG Memory] lightrag 未安装，语义记忆不可用")
+            return False
 
         try:
             # 确保目录存在

@@ -44,3 +44,7 @@ static/tts/
 # Temp
 /tmp/
 *.tmp
+
+# Database schema/data (runtime DB excluded)
+database/data/*.db
+database/data/*.db-journal

@@ -57,20 +57,15 @@ DEFAULT_CONFIG = {
 # 临时占位，等 init_config() 调用后再加载
 TELEGRAM_TOKEN = ""
 YOUR_CHAT_ID = 0
+CHAT_TOPIC_THREAD_ID = int(os.environ.get("CHAT_TOPIC_THREAD_ID", "0"))
 AI_API_BASE = "https://openrouter.ai/api/v1"
 AI_API_KEY = ""
 
 # Redis 配置 (v1.7 Phase 7 - 短期记忆)
 REDIS_URL = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
 AI_MODELS = [
-    "deepseek/deepseek-chat-v3-0324:free",
-    "google/gemini-2.0-flash-exp:free",
-    "nousresearch/hermes-4-405b:free",
-    "google/gemma-4-31b-it:free",
-    "tencent/hy3-preview:free",
-    "nvidia/nemotron-3-super-120b-a12b:free",
-    "aion-labs/aion-rp-llama-3.1-8b:free",
-    "openrouter/free",
+    "sensenova-6.7-flash-lite",
+    "deepseek-v4-flash",
 ]
 AI_MODEL = os.environ.get("AI_MODEL", AI_MODELS[0])
 
@@ -138,18 +133,30 @@ RELAY_API_KEY = os.environ.get("RELAY_API_KEY", "")
 # ============================================================
 # 用户目录工具函数
 # ============================================================
+# 用户目录工具函数
+# ============================================================
+import re as _re
+
+def _validate_id(value, name="id"):
+    """Validate that an ID contains only safe characters (alphanumeric, underscores, hyphens)."""
+    s = str(value)
+    if not _re.fullmatch(r'[A-Za-z0-9_-]+', s):
+        raise ValueError(f"Invalid {name}: must be alphanumeric/underscores/hyphens only, got {s!r}")
+    return s
 
 def get_user_dir(user_id):
     """获取用户专属数据目录"""
-    user_dir = os.path.join(DATA_DIR, f"user_{user_id}")
+    safe_id = _validate_id(user_id, "user_id")
+    user_dir = os.path.join(DATA_DIR, f"user_{safe_id}")
     os.makedirs(user_dir, exist_ok=True)
     return user_dir
-
 def get_user_selfie_dir(user_id, character_id=None):
     """获取用户+角色专属自拍目录"""
-    base = get_user_dir(user_id)
+    safe_id = _validate_id(user_id, "user_id")
+    base = get_user_dir(safe_id)
     if character_id:
-        d = os.path.join(base, "selfies", character_id)
+        safe_cid = _validate_id(character_id, "character_id")
+        d = os.path.join(base, "selfies", safe_cid)
     else:
         d = os.path.join(base, "selfies", "_shared")
     os.makedirs(d, exist_ok=True)
@@ -270,7 +277,7 @@ MEMORY_WARNING_THRESHOLD = float(os.environ.get("MEMORY_WARNING_THRESHOLD", "85"
 MEMORY_CRITICAL_THRESHOLD = float(os.environ.get("MEMORY_CRITICAL_THRESHOLD", "95"))  # %
 
 # 上下文长度限制（防止 KV Cache 溢出）
-MAX_CONTEXT_TOKENS = int(os.environ.get("MAX_CONTEXT_TOKENS", "1024"))
+MAX_CONTEXT_TOKENS = int(os.environ.get("MAX_CONTEXT_TOKENS", "4096"))
 
 # OpenRouter API 配置
 OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY", "")
@@ -292,6 +299,9 @@ COMPETE_MODELS = [
 # API 重试配置
 API_MAX_RETRIES = int(os.environ.get("API_MAX_RETRIES", "3"))
 API_RETRY_DELAY = float(os.environ.get("API_RETRY_DELAY", "1.0"))  # 秒
+
+# 默认 fallback 系统提示词（当角色加载失败时使用）
+FALLBACK_SYSTEM_PROMPT = "你是车如云，一个傲娇但内心温柔的角色。用简洁自然的中文回复。"
 
 # ============================================================
 # 初始化配置

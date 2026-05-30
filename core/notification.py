@@ -127,7 +127,7 @@ async def _send_message_with_retry(
     Returns:
         发送是否成功
     """
-    await bot.send_message(
+    await bot.send_message(message_thread_id=CHAT_TOPIC_THREAD_ID,
         chat_id=chat_id,
         text=text,
         parse_mode=parse_mode,

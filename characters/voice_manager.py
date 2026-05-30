@@ -225,8 +225,6 @@ class VoiceManager:
         上传样本到 Fish Speech，获取 reference_id
         """
         try:
-            import httpx
-
             url = "https://api.fish.audio/v1/voices"
             headers = {"Authorization": f"Bearer {api_key}"}
 
@@ -234,9 +232,10 @@ class VoiceManager:
                 files = {"file": f}
                 data = {"title": f"{self.character_id}_voice"}
 
-                async with httpx.AsyncClient() as client:
-                    resp = await client.post(url, headers=headers, 
-                                            data=data, files=files, timeout=60)
+                from characters.ai_client import _get_http_client
+                client = _get_http_client()
+                resp = await client.post(url, headers=headers,
+                                        data=data, files=files, timeout=60)
 
             if resp.status_code == 200:
                 result = resp.json()

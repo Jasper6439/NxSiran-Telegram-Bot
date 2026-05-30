@@ -17,6 +17,7 @@ from packages.web.skills_state import (
     is_skill_enabled_for_character,
     set_skill_for_character,
 )
+logger = logging.getLogger(__name__)
 
 
 async def api_skills_list(request):
@@ -39,7 +40,8 @@ async def api_skills_list(request):
 
         return web.json_response({'success': True, 'skills': skills_list})
     except Exception as e:
-        return web.json_response({'success': False, 'error': str(e)})
+        logger.error(f"{type(e).__name__}: {e}")
+        return web.json_response({'success': False, 'error': 'Skill operation failed'})
 
 
 async def api_skill_toggle(request):
@@ -63,7 +65,8 @@ async def api_skill_toggle(request):
 
         return web.json_response({'success': True})
     except Exception as e:
-        return web.json_response({'success': False, 'error': str(e)})
+        logger.error(f"{type(e).__name__}: {e}")
+        return web.json_response({'success': False, 'error': 'Skill operation failed'})
 
 
 async def api_skill_install(request):
@@ -77,6 +80,11 @@ async def api_skill_install(request):
 
         if not skill_name:
             return web.json_response({'success': False, 'error': '缺少 skill_name 参数'})
+
+        # Validate skill_name to prevent subprocess injection
+        import re
+        if not re.match(r'^[a-zA-Z0-9][a-zA-Z0-9\-]{0,63}$', skill_name):
+            return web.json_response({'success': False, 'error': '无效的 skill_name（仅允许字母数字和连字符，最大64字符）'})
 
         # 执行 clawhub install
         logging.info(f"[skills-manager] 正在安装 skill: {skill_name}")
@@ -128,12 +136,16 @@ async def api_skill_install(request):
     except subprocess.TimeoutExpired:
         return web.json_response({'success': False, 'error': '安装超时（60秒）'})
     except Exception as e:
-        return web.json_response({'success': False, 'error': str(e)})
+        logger.error(f"{type(e).__name__}: {e}")
+        return web.json_response({'success': False, 'error': 'Skill operation failed'})
 
 
 async def api_skill_uninstall(request):
     """[Skill: skills-manager] 卸载 skill（从注册表移除，不删除代码）"""
     try:
+        if not is_admin_user(request):
+            return web.json_response({'success': False, 'error': '仅管理员可卸载技能'})
+
         data = await request.json()
         skill_id = data.get('skill_id', '')
 
@@ -155,7 +167,8 @@ async def api_skill_uninstall(request):
             'message': f'Skill "{skill_id}" 已卸载（代码文件保留）',
         })
     except Exception as e:
-        return web.json_response({'success': False, 'error': str(e)})
+        logger.error(f"{type(e).__name__}: {e}")
+        return web.json_response({'success': False, 'error': 'Skill operation failed'})
 
 
 async def api_quota_status(request):
@@ -165,9 +178,10 @@ async def api_quota_status(request):
         if not user_id:
             user_id = validate_api_token(request)
         if not user_id:
-            user_id = load_config().get('your_chat_id', 0)
+            if os.environ.get('DEBUG'):
+                user_id = load_config().get('your_chat_id', 0)
         if not user_id:
-            user_id = 1
+            return web.json_response({'success': False, 'error': '未登录'}, status=401)
 
         usage = load_quota_usage()
         status = check_quota_status(usage)
@@ -226,4 +240,5 @@ async def api_quota_status(request):
             'shutdown': usage.get('shutdown_triggered', False),
         })
     except Exception as e:
-        return web.json_response({'success': False, 'error': str(e)})
+        logger.error(f"{type(e).__name__}: {e}")
+        return web.json_response({'success': False, 'error': 'Skill operation failed'})

@@ -14,7 +14,8 @@ import asyncio
 from datetime import datetime
 from typing import Optional, Callable
 
-import httpx
+
+from characters.ai_client import _get_http_client
 
 # ============================================================
 # Core imports (from bot.py's import block)
@@ -58,6 +59,9 @@ from system.config import MAX_CONTEXT_TOKENS
 def _build_system_prompt(use_memory: bool = True, emotion: str = "") -> str:
     """构建系统提示词。
 
+    v1.9.5: 统一入口，所有 prompt 构建逻辑由 CharacterBase.get_system_prompt() 处理。
+    此函数只负责收集动态上下文并传入。
+
     Args:
         use_memory: 是否使用记忆
         emotion: 情绪状态
@@ -65,60 +69,88 @@ def _build_system_prompt(use_memory: bool = True, emotion: str = "") -> str:
     Returns:
         完整的系统提示词
     """
-    now = datetime.now(get_default_tz())
-    weekdays = ['星期一','星期二','星期三','星期四','星期五','星期六','星期日']
-    period = '凌晨' if now.hour < 6 else '上午' if now.hour < 12 else '下午' if now.hour < 18 else '晚上'
-    time_info = f"当前时间：{now.strftime('%Y年%m月%d日 %H:%M')}，{period}，{weekdays[now.weekday()]}（韩国时间）"
-
-    # [角色系统] 使用蒸馏角色的系统提示词
     character = get_current_character()
-    if character:
-        system_content = character.get_system_prompt({'user_name': '学长'})
-    else:
-        system_content = ""
-    system_content += f"\n\n【实时信息】{time_info}"
+    if not character:
+        return ""
 
-    # [Skill: 亲密度系统] 注入关系状态
-    stats = load_stats()
-    stats["memories_count"] = len(load_json(get_user_memory_file(YOUR_CHAT_ID or 1), []))
-    stats["selfies_sent"] = stats.get("selfies_sent", 0)
-    stats["photos_received"] = stats.get("photos_received", 0)
-    intimacy_ctx = get_intimacy_context(stats)
-    system_content += intimacy_ctx
+    # 收集动态上下文
+    context = {'user_name': '学长'}
 
-    # [Skill: 增强记忆] 注入分类记忆
+    # 亲密度上下文
+    try:
+        stats = load_stats()
+        stats["memories_count"] = len(load_json(get_user_memory_file(YOUR_CHAT_ID or 1), []))
+        stats["selfies_sent"] = stats.get("selfies_sent", 0)
+        stats["photos_received"] = stats.get("photos_received", 0)
+        intimacy_ctx = get_intimacy_context(stats)
+        if intimacy_ctx:
+            context['intimacy'] = intimacy_ctx
+    except Exception:
+        pass
+
+    # 长期记忆
     if use_memory:
-        memory = get_long_term_memory()
-        if memory:
-            system_content += f"\n\n【你对学长的记忆】\n{memory}"
+        try:
+            memory = get_long_term_memory()
+            if memory:
+                context['long_term_memory'] = memory
+        except Exception:
+            pass
 
-    # [Skill: semantic-memory] 注入语义记忆
-    semantic_ctx = get_semantic_memory_context()
-    if semantic_ctx:
-        system_content += f"\n\n【你记住的关于学长的重要信息（语义记忆）】\n{semantic_ctx}"
+    # 语义记忆
+    try:
+        semantic_ctx = get_semantic_memory_context()
+        if semantic_ctx:
+            context['semantic_memory'] = semantic_ctx
+    except Exception:
+        pass
 
-    # [Skill: semantic-memory] 添加记忆提取提示
-    system_content += "\n\n【记忆规则】如果学长提到了重要的个人信息（如生日、喜好、家人、工作、住址、重要约定等），请在回复末尾用 [MEMORY:关键词:具体内容] 标记。例如：如果学长说「我生日是3月15日」，你回复末尾加上 [MEMORY:学长的生日:3月15日]。只标记真正重要的信息，不要滥用。标记格式严格为 [MEMORY:key:value]，不要加多余空格。"
+    # 统一构建
+    system_content = character.get_system_prompt(context)
 
-    # [Skill: 情绪识别] 注入情绪反应指引
+    # 附加：亲密度（格式化到 prompt 末尾）
+    if 'intimacy' in context:
+        system_content += context['intimacy']
+
+    # 附加：长期记忆
+    if 'long_term_memory' in context:
+        system_content += f"\n\n【你对学长的记忆】\n{context['long_term_memory']}"
+
+    # 附加：语义记忆
+    if 'semantic_memory' in context:
+        system_content += f"\n\n【你记住的关于学长的重要信息（语义记忆）】\n{context['semantic_memory']}"
+
+    # 附加：记忆提取提示
+    system_content += "\n\n【记忆规则】如果学长提到了重要的个人信息（如生日、喜好、家人、工作、住址、重要约定等），请在回复末尾用 [MEMORY:关键词:具体内容] 标记。只标记真正重要的信息，不要滥用。"
+
+    # 附加：情绪反应指引
     if emotion and emotion in EMOTION_RESPONSE_GUIDE:
         system_content += f"\n\n【当前情绪感知】{EMOTION_RESPONSE_GUIDE[emotion]}"
 
-    # [Skill: 纪念日] 检查是否有即将到来的纪念日
-    upcoming = get_upcoming_anniversary(3)
-    if upcoming:
-        ann_info = "，".join([f"{a['name']}还有{a['days_until']}天" for a in upcoming])
-        system_content += f"\n\n【即将到来的纪念日】{ann_info}。如果合适的话，可以提起这件事。"
+    # 附加：纪念日
+    try:
+        upcoming = get_upcoming_anniversary(3)
+        if upcoming:
+            ann_info = "，".join([f"{a['name']}还有{a['days_until']}天" for a in upcoming])
+            system_content += f"\n\n【即将到来的纪念日】{ann_info}。如果合适的话，可以提起这件事。"
+    except Exception:
+        pass
 
-    # [Skill: 微信聊天记录导入] 注入已了解的人际关系
-    imported_relationships = get_all_imported_relationships()
-    if imported_relationships:
-        system_content += f"\n\n【你了解学长的人际关系（从聊天记录分析得出）】{imported_relationships}\n\n在对话中，你可以自然地提及这些人，表现出你对学长生活的了解。比如当学长提到相关话题时，你可以说「你妈妈不是...」或「上次你提到...」"
+    # 附加：导入的人际关系
+    try:
+        imported_relationships = get_all_imported_relationships()
+        if imported_relationships:
+            system_content += f"\n\n【你了解学长的人际关系（从聊天记录分析得出）】{imported_relationships}\n\n在对话中，你可以自然地提及这些人，表现出你对学长生活的了解。"
+    except Exception:
+        pass
 
-    # [Skill: 视频分析] 注入从视频中学到的角色特点
-    video_context = get_video_analysis_context()
-    if video_context:
-        system_content += f"\n\n{video_context}\n\n请尽量模仿上述说话风格和口头禅，让角色更加真实。"
+    # 附加：视频分析
+    try:
+        video_context = get_video_analysis_context()
+        if video_context:
+            system_content += f"\n\n{video_context}\n\n请尽量模仿上述说话风格和口头禅，让角色更加真实。"
+    except Exception:
+        pass
 
     return system_content
 
@@ -286,30 +318,30 @@ async def summarize_and_save_memory(chat_id: int):
 请直接输出记忆内容，每条一行，不要加序号或其他格式："""
 
     try:
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            response = await client.post(
-                f"{AI_API_BASE}/chat/completions",
-                headers={
-                    "Authorization": f"Bearer {AI_API_KEY}",
-                    "Content-Type": "application/json",
-                },
-                json={
-                    "model": AI_MODEL,
-                    "messages": [
-                        {"role": "system", "content": "你是记忆提取助手，只提取关键信息，保持简洁。"},
-                        {"role": "user", "content": prompt}
-                    ],
-                    "max_tokens": 100,
-                    "temperature": 0.3,
-                },
-            )
-            data = response.json()
-            content = data["choices"][0]["message"]["content"].strip()
+        client = _get_http_client()
+        response = await client.post(
+            f"{AI_API_BASE}/chat/completions",
+            headers={
+                "Authorization": f"Bearer {AI_API_KEY}",
+                "Content-Type": "application/json",
+            },
+            json={
+                "model": AI_MODEL,
+                "messages": [
+                    {"role": "system", "content": "你是记忆提取助手，只提取关键信息，保持简洁。"},
+                    {"role": "user", "content": prompt}
+                ],
+                "max_tokens": 100,
+                "temperature": 0.3,
+            },
+        )
+        data = response.json()
+        content = data["choices"][0]["message"]["content"].strip()
 
-            if content and content != "无":
-                for line in content.split("\n"):
-                    line = line.strip().lstrip("-•· ").strip()
-                    if line and len(line) > 3:
-                        save_memory_entry(line)
+        if content and content != "无":
+            for line in content.split("\n"):
+                line = line.strip().lstrip("-•· ").strip()
+                if line and len(line) > 3:
+                    save_memory_entry(line)
     except Exception as e:
         logging.error(f"记忆提取失败: {e}")

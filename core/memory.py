@@ -10,7 +10,13 @@ import json
 import logging
 from typing import List, Dict, Optional
 
-import redis
+# Redis (可选依赖)
+try:
+    import redis
+    REDIS_AVAILABLE = True
+except ImportError:
+    redis = None
+    REDIS_AVAILABLE = False
 
 from system.config import REDIS_URL
 
@@ -43,7 +49,12 @@ class ChatMemory:
             redis_url: Redis 连接 URL，默认从 config 读取
         """
         self.redis_url = redis_url or REDIS_URL
-        self._redis: Optional[redis.Redis] = None
+        self._redis = None
+        # 内存回退（Redis 不可用时使用）— 必须在 early return 之前初始化
+        self._memory_fallback: Dict[int, List[Dict]] = {}
+
+        if not REDIS_AVAILABLE:
+            return
 
         if self.redis_url:
             try:
@@ -61,9 +72,6 @@ class ChatMemory:
                 self._redis = None
         else:
             logger.warning("[ChatMemory] 未配置 REDIS_URL，将使用内存回退")
-
-        # 内存回退（Redis 不可用时使用）
-        self._memory_fallback: Dict[int, List[Dict]] = {}
 
     def _get_key(self, user_id: int) -> str:
         """生成 Redis key。"""

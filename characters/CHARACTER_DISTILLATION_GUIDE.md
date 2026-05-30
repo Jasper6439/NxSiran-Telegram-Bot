@@ -764,3 +764,97 @@ python tools/version_manager.py --action cleanup --slug {character_id}
 ```bash
 python tools/create_character.py --list
 ```
+
+---
+
+## 附录 A：v1.9.5 三层分离架构
+
+### 文件结构
+
+每个角色拥有独立目录：
+
+```
+characters/<id>/
+├── config.json          # 角色配置（不可变）
+├── persona.md           # 不可变层：Layer 0-5 原作设定
+├── persona_mutable.md   # 可变层：corrections、学习偏好、进化状态
+├── exemplars.md         # 不可变层：原作示例对话（few-shot prompting）
+├── world.md             # 动态层：角色与游戏世界的特有关联
+├── memories.md          # 可变层：共同记忆
+└── <id>.py              # 角色实现（继承 CharacterBase，override hook 方法）
+```
+
+### 三层分离
+
+| 层级 | 文件 | 可被进化修改 | 说明 |
+|------|------|:----------:|------|
+| IMMUTABLE | persona.md, exemplars.md, config.json | ❌ | 原作设定，受 `IMMUTABLE_FILES` 保护 |
+| MUTABLE | persona_mutable.md, memories.md | ✅ | 系统自动维护 |
+| DYNAMIC | world.md, data/world/*.md, soul.md | 🔄 | 按需注入 |
+
+### Hook 方法体系
+
+子类通过 override hook 方法提供角色特有内容，通用逻辑由 `CharacterBase` 处理：
+
+| Hook 方法 | 用途 | 必须 override |
+|-----------|------|:-------------:|
+| `get_character_identity()` | 核心身份信息 | ✅ |
+| `get_character_personality()` | 核心性格规则 | ✅ |
+| `get_speaking_style_rules()` | 说话风格 | ✅ |
+| `get_ooc_rules()` | OOC 防护规则 | ✅ |
+| `get_emotion_patterns()` | 情绪反应模式 | ✅ |
+| `get_world_building()` | 叙事世界观 | ⚠️ 小说角色需要 |
+| `get_awakening_awareness()` | 觉醒状态感知 | ⚠️ 有觉醒系统的角色 |
+| `get_layer_behavior()` | 世界层级行为 | ⚠️ 有多层级的角色 |
+| `format_response()` | 回复格式化 | ✅ |
+| `get_random_selfie_caption()` | 自拍配文 | ✅ |
+
+### Prompt 构建流程
+
+```
+CharacterBase.get_system_prompt(context)
+├── get_world_building()          ← 子类 override
+├── get_awakening_awareness()     ← 子类 override
+├── get_layer_behavior()          ← 子类 override
+├── _get_world_context()          ← 基类（共享游戏世界 + 角色特有）
+├── get_character_identity()      ← 子类 override
+├── get_character_personality()   ← 子类 override
+├── get_speaking_style_rules()    ← 子类 override
+├── get_ooc_rules()               ← 子类 override
+├── get_emotion_patterns()        ← 子类 override
+├── _get_persona_section()        ← 基类（persona.md 原文）
+├── _get_exemplars_section()      ← 基类（exemplars.md 原文）
+├── _get_mutable_section()        ← 基类（corrections + 偏好）
+├── _get_soul_section()           ← 基类（用户画像 + 行为适配）
+├── _get_memories_section()       ← 基类（共同记忆）
+└── _get_time_context()           ← 基类（时间信息）
+```
+
+### 不可变文件保护
+
+`character_learning.py` 和 `evolution_service.py` 中有 `IMMUTABLE_FILES` 列表：
+- 写入 `persona.md`、`exemplars.md`、`config.json` 会被拒绝并记录 warning
+- 进化系统的偏好学习写入 `persona_mutable.md`，不碰不可变文件
+
+### 共享游戏世界
+
+```
+data/world/                        ← 所有角色共用
+├── locations.md                   ← 场景地图
+├── systems.md                     ← 日常系统
+├── environment.md                 ← 环境感知
+└── interactions.md                ← 联动规则
+
+characters/<id>/world.md           ← 角色与世界的特有关联
+```
+
+---
+
+## 附录 B：其他角色类型蒸馏
+
+| 角色类型 | 专用指南 |
+|----------|---------|
+| **影视角色**（电影/电视剧/动画） | [FILM_TV_DISTILLATION.md](FILM_TV_DISTILLATION.md) |
+| **游戏角色**（RPG/Galgame/乙游） | 适配 Layer 1 世界观 + 游戏机制联动 |
+| **真人角色**（明星/公众人物） | 需要真实聊天记录，参考 ex-skill 框架 |
+| **原创角色**（用户自创） | 无原作，Layer 0-5 由用户手动定义 |

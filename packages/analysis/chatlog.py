@@ -324,43 +324,44 @@ async def analyze_chatlog_with_ai(parsed_log: dict, chat_partner: str = "妈妈"
 
     try:
         import httpx
-        async with httpx.AsyncClient(timeout=60.0) as client:
-            response = await client.post(
-                f"{AI_API_BASE}/chat/completions",
-                headers={"Authorization": f"Bearer {AI_API_KEY}", "Content-Type": "application/json"},
-                json={
-                    "model": AI_MODELS[1],  # 使用较稳定的模型
-                    "messages": [{"role": "user", "content": analysis_prompt}],
-                    "max_tokens": 1500,
-                    "temperature": 0.5,
-                },
-            )
+        from characters.ai_client import _get_http_client
+        client = _get_http_client()
+        response = await client.post(
+            f"{AI_API_BASE}/chat/completions",
+            headers={"Authorization": f"Bearer {AI_API_KEY}", "Content-Type": "application/json"},
+            json={
+                "model": AI_MODELS[1],  # 使用较稳定的模型
+                "messages": [{"role": "user", "content": analysis_prompt}],
+                "max_tokens": 1500,
+                "temperature": 0.5,
+            },
+        )
+        
+        if response.status_code == 200:
+            result = response.json()
+            content = result['choices'][0]['message']['content']
             
-            if response.status_code == 200:
-                result = response.json()
-                content = result['choices'][0]['message']['content']
-                
-                # 提取JSON
-                try:
-                    # 尝试直接解析
-                    analysis = json.loads(content)
-                except Exception:
-                    # 尝试从文本中提取JSON
-                    json_match = re.search(r'\{[\s\S]*\}', content)
-                    if json_match:
-                        analysis = json.loads(json_match.group())
-                    else:
-                        analysis = {"raw_analysis": content}
-                
-                return {
-                    'success': True,
-                    'analysis': analysis,
-                    'message_count': parsed_log['total_count'],
-                    'date_range': parsed_log['date_range'],
-                    'extra_stats': extra_stats  # 包含详细统计
-                }
-            else:
-                return {'success': False, 'error': f'API错误: {response.status_code}'}
+            # 提取JSON
+            try:
+                # 尝试直接解析
+                analysis = json.loads(content)
+            except Exception:
+                # 尝试从文本中提取JSON
+                json_match = re.search(r'\{[\s\S]*\}', content)
+                if json_match:
+                    analysis = json.loads(json_match.group())
+                else:
+                    analysis = {"raw_analysis": content}
+            
+            return {
+                'success': True,
+                'analysis': analysis,
+                'message_count': parsed_log['total_count'],
+                'date_range': parsed_log['date_range'],
+                'extra_stats': extra_stats  # 包含详细统计
+            }
+        else:
+            return {'success': False, 'error': f'API错误: {response.status_code}'}
                 
     except Exception as e:
         logging.error(f"分析聊天记录失败: {e}")

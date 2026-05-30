@@ -2,7 +2,8 @@ import asyncio
 import logging
 import re
 
-import httpx
+
+from characters.ai_client import _get_http_client
 from telegram import Update
 from telegram.ext import ContextTypes
 
@@ -10,8 +11,8 @@ from system.config import GEMINI_API_KEY
 
 
 def _get_call_ai():
-    """Lazy import for bot.call_ai (the high-level AI function with character/memory/emotion integration)."""
-    from bot import call_ai
+    """Lazy import for call_ai (the high-level AI function with character/memory/emotion integration)."""
+    from characters.ai_core import call_ai
     return call_ai
 
 
@@ -63,29 +64,28 @@ async def call_gemini(prompt: str, image_data: str = None, model: str = "gemini-
         parts.append({"text": prompt})
 
         url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={GEMINI_API_KEY}"
-
-        async with httpx.AsyncClient(timeout=60.0) as client:
-            response = await client.post(
-                url,
-                headers={"Content-Type": "application/json"},
-                json={
-                    "contents": [{"parts": parts}],
-                    "generationConfig": {
-                        "temperature": 0.85,
-                        "maxOutputTokens": 1024,
-                    }
-                },
-            )
-            if response.status_code != 200:
-                logging.warning(f"Gemini API返回 {response.status_code}: {response.text[:200]}")
-                return None
-
-            data = response.json()
-            if "candidates" in data and data["candidates"]:
-                content = data["candidates"][0].get("content", {})
-                text = content.get("parts", [{}])[0].get("text", "")
-                return text.strip() if text else None
+        client = _get_http_client()
+        response = await client.post(
+            url,
+            headers={"Content-Type": "application/json"},
+            json={
+                "contents": [{"parts": parts}],
+                "generationConfig": {
+                    "temperature": 0.85,
+                    "maxOutputTokens": 1024,
+                }
+            },
+        )
+        if response.status_code != 200:
+            logging.warning(f"Gemini API返回 {response.status_code}: {response.text[:200]}")
             return None
+
+        data = response.json()
+        if "candidates" in data and data["candidates"]:
+            content = data["candidates"][0].get("content", {})
+            text = content.get("parts", [{}])[0].get("text", "")
+            return text.strip() if text else None
+        return None
     except Exception as e:
         logging.error(f"Gemini API调用失败: {e}")
         return None
@@ -93,25 +93,25 @@ async def call_gemini(prompt: str, image_data: str = None, model: str = "gemini-
 
 async def web_search(query: str, max_results: int = 3) -> str:
     try:
-        async with httpx.AsyncClient(timeout=15.0) as client:
-            response = await client.get(
-                "https://lite.duckduckgo.com/lite/",
-                params={"q": query},
-                headers={"User-Agent": "Mozilla/5.0"},
-                follow_redirects=True,
-            )
-            if response.status_code != 200:
-                return ""
-            text = response.text
-            results = []
-            snippets = re.findall(r'<td[^>]*class="result-snippet"[^>]*>(.*?)</td>', text, re.DOTALL)
-            for i in range(min(max_results, len(snippets))):
-                clean = re.sub(r'<[^>]+>', '', snippets[i]).strip()
-                if clean and len(clean) > 10:
-                    results.append(clean)
-            if results:
-                return "\n".join([f"[{i+1}] {r}" for i, r in enumerate(results)])
+        client = _get_http_client()
+        response = await client.get(
+            "https://lite.duckduckgo.com/lite/",
+            params={"q": query},
+            headers={"User-Agent": "Mozilla/5.0"},
+            follow_redirects=True,
+        )
+        if response.status_code != 200:
             return ""
+        text = response.text
+        results = []
+        snippets = re.findall(r'<td[^>]*class="result-snippet"[^>]*>(.*?)</td>', text, re.DOTALL)
+        for i in range(min(max_results, len(snippets))):
+            clean = re.sub(r'<[^>]+>', '', snippets[i]).strip()
+            if clean and len(clean) > 10:
+                results.append(clean)
+        if results:
+            return "\n".join([f"[{i+1}] {r}" for i, r in enumerate(results)])
+        return ""
     except Exception as e:
         logging.error(f"搜索失败: {e}")
         return ""

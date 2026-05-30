@@ -9,6 +9,7 @@ import json
 import logging
 import os
 import secrets
+import threading
 from datetime import datetime, timedelta
 
 from system.config import USERS_FILE, load_config, get_default_tz
@@ -17,6 +18,10 @@ from system.config import USERS_FILE, load_config, get_default_tz
 # ============================================================
 # 用户会话存储（内存，重启后失效）
 # ============================================================
+
+_users_lock = threading.Lock()
+_CACHE_MAX = 1000
+_CACHE_TRIM = 500
 
 USER_SESSIONS = {}  # {token: {"user_id": chat_id, "username": xxx, "created": timestamp}}
 
@@ -125,6 +130,15 @@ def _save_users_dict(users_dict):
     save_users({"_version": USER_DATA_VERSION, "users": users_dict})
 
 
+def _evict_cache(cache: dict):
+    """Trim in-memory cache dict when it exceeds _CACHE_MAX entries."""
+    if len(cache) > _CACHE_MAX:
+        # Remove oldest entries by insertion order
+        to_remove = list(cache.keys())[:_CACHE_TRIM]
+        for k in to_remove:
+            cache.pop(k, None)
+
+
 # ============================================================
 # 密码哈希
 # ============================================================
@@ -169,38 +183,39 @@ def register_user(username, password, chat_id):
     except ValueError:
         return False, "Chat ID 必须是数字"
 
-    users = _get_users_dict()
+    with _users_lock:
+        users = _get_users_dict()
 
-    # 检查 chat_id 是否已注册
-    if chat_id_str in users:
-        return False, "该 Telegram 账号已注册，请直接登录"
+        # 检查 chat_id 是否已注册
+        if chat_id_str in users:
+            return False, "该 Telegram 账号已注册，请直接登录"
 
-    # 检查用户名是否已被使用
-    for u in users.values():
-        if u.get("username", "").lower() == username.lower():
-            return False, "用户名已被使用"
+        # 检查用户名是否已被使用
+        for u in users.values():
+            if u.get("username", "").lower() == username.lower():
+                return False, "用户名已被使用"
 
-    # 检查是否为管理员
-    config = load_config()
-    role = "admin" if username == config.get("admin_username", "") else "user"
+        # 检查是否为管理员
+        config = load_config()
+        role = "admin" if username == config.get("admin_username", "") else "user"
 
-    # 创建用户
-    now = datetime.now(get_default_tz()).isoformat()
-    users[chat_id_str] = {
-        "username": username,
-        "password_hash": hash_password(password),
-        "display_name": username.capitalize(),
-        "role": role,
-        "created_at": now,
-        "last_login": None,
-        "login_count": 0,
-        "preferences": {
-            "language": "zh-CN",
-            "theme": "auto"
+        # 创建用户
+        now = datetime.now(get_default_tz()).isoformat()
+        users[chat_id_str] = {
+            "username": username,
+            "password_hash": hash_password(password),
+            "display_name": username.capitalize(),
+            "role": role,
+            "created_at": now,
+            "last_login": None,
+            "login_count": 0,
+            "preferences": {
+                "language": "zh-CN",
+                "theme": "auto"
+            }
         }
-    }
 
-    _save_users_dict(users)
+        _save_users_dict(users)
     logging.info(f"[用户系统] 新用户注册: {username} (chat_id: {chat_id_str}, role: {role})")
     return True, "注册成功"
 
@@ -215,39 +230,40 @@ def validate_user(username, password):
 
     返回: (success: bool, user_data: dict or None)
     """
-    users = _get_users_dict()
+    with _users_lock:
+        users = _get_users_dict()
 
-    # 查找用户（支持用户名或 chat_id）
-    user_key = None
-    user_data = None
+        # 查找用户（支持用户名或 chat_id）
+        user_key = None
+        user_data = None
 
-    # 先尝试用 chat_id 查找
-    if username.isdigit():
-        if username in users:
-            user_key = username
-            user_data = users[username]
+        # 先尝试用 chat_id 查找
+        if username.isdigit():
+            if username in users:
+                user_key = username
+                user_data = users[username]
 
-    # 再尝试用用户名查找
-    if not user_data:
-        for cid, u in users.items():
-            if u.get("username", "").lower() == username.lower():
-                user_key = cid
-                user_data = u
-                break
+        # 再尝试用用户名查找
+        if not user_data:
+            for cid, u in users.items():
+                if u.get("username", "").lower() == username.lower():
+                    user_key = cid
+                    user_data = u
+                    break
 
-    if not user_data:
-        return False, None
+        if not user_data:
+            return False, None
 
-    # 验证密码
-    if not _verify_password(password, user_data["password_hash"]):
-        return False, None
+        # 验证密码
+        if not _verify_password(password, user_data["password_hash"]):
+            return False, None
 
-    # 更新登录信息
-    now = datetime.now(get_default_tz()).isoformat()
-    user_data["last_login"] = now
-    user_data["login_count"] = user_data.get("login_count", 0) + 1
-    users[user_key] = user_data
-    _save_users_dict(users)
+        # 更新登录信息
+        now = datetime.now(get_default_tz()).isoformat()
+        user_data["last_login"] = now
+        user_data["login_count"] = user_data.get("login_count", 0) + 1
+        users[user_key] = user_data
+        _save_users_dict(users)
 
     # 添加 chat_id 到返回数据（chat_id 是字典的 key）
     user_data["chat_id"] = user_key
@@ -299,6 +315,7 @@ def generate_session_token(username, user_id):
         "user_id": user_id,  # 支持 UUID 字符串或数字
         "created": time.time()
     }
+    _evict_cache(USER_SESSIONS)
     _save_sessions()
     return token
 
@@ -362,6 +379,7 @@ def generate_api_token(user_id):
     """生成 API 认证令牌"""
     token = secrets.token_hex(32)
     API_TOKENS[token] = {"user_id": user_id, "created": time.time()}
+    _evict_cache(API_TOKENS)
     return token
 
 def validate_api_token(request):
@@ -450,20 +468,21 @@ def bind_character_chat_id(user_id, character_id, chat_id):
     except ValueError:
         return False, "Chat ID 必须是数字"
 
-    users = _get_users_dict()
-    user = users.get(str(user_id))
-    if not user:
-        return False, "用户不存在"
+    with _users_lock:
+        users = _get_users_dict()
+        user = users.get(str(user_id))
+        if not user:
+            return False, "用户不存在"
 
-    if "character_bindings" not in user:
-        user["character_bindings"] = {}
+        if "character_bindings" not in user:
+            user["character_bindings"] = {}
 
-    user["character_bindings"][character_id] = {
-        "chat_id": chat_id_str,
-        "bound_at": datetime.now(get_default_tz()).isoformat()
-    }
-    users[str(user_id)] = user
-    _save_users_dict(users)
+        user["character_bindings"][character_id] = {
+            "chat_id": chat_id_str,
+            "bound_at": datetime.now(get_default_tz()).isoformat()
+        }
+        users[str(user_id)] = user
+        _save_users_dict(users)
     logging.info(f"[角色绑定] {user_id} -> {character_id} ({chat_id_str})")
     return True, "绑定成功"
 
@@ -479,25 +498,26 @@ def bind_character_bot_token(user_id, character_id, bot_token):
     if ':' not in bot_token:
         return False, "Bot Token 格式不正确"
 
-    users = _get_users_dict()
-    user = users.get(str(user_id))
-    if not user:
-        return False, "用户不存在"
+    with _users_lock:
+        users = _get_users_dict()
+        user = users.get(str(user_id))
+        if not user:
+            return False, "用户不存在"
 
-    # 检查用户是否已绑定 telegram_chat_id
-    telegram_chat_id = user.get('telegram_chat_id')
-    if not telegram_chat_id:
-        return False, "请先在设置页绑定您的 Telegram Chat ID"
+        # 检查用户是否已绑定 telegram_chat_id
+        telegram_chat_id = user.get('telegram_chat_id')
+        if not telegram_chat_id:
+            return False, "请先在设置页绑定您的 Telegram Chat ID"
 
-    if "character_bindings" not in user:
-        user["character_bindings"] = {}
+        if "character_bindings" not in user:
+            user["character_bindings"] = {}
 
-    user["character_bindings"][character_id] = {
-        "bot_token": bot_token,
-        "bound_at": datetime.now(get_default_tz()).isoformat()
-    }
-    users[str(user_id)] = user
-    _save_users_dict(users)
+        user["character_bindings"][character_id] = {
+            "bot_token": bot_token,
+            "bound_at": datetime.now(get_default_tz()).isoformat()
+        }
+        users[str(user_id)] = user
+        _save_users_dict(users)
     logging.info(f"[角色绑定] {user_id} -> {character_id} (bot_token: {bot_token[:10]}...)")
     return True, f"绑定成功！角色 {character_id} 的消息将通过该 Bot 发送到您的 Telegram"
 

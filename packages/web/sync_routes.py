@@ -17,6 +17,7 @@ from characters.chat_history import (
 )
 from database import get_db
 from api.deps import get_current_user
+logger = logging.getLogger(__name__)
 
 
 async def api_messages_history(request):
@@ -27,7 +28,8 @@ async def api_messages_history(request):
         if not user_id:
             user_id = validate_api_token(request)
         if not user_id:
-            user_id = load_config().get('your_chat_id', 0)
+            if os.environ.get('DEBUG'):
+                user_id = load_config().get('your_chat_id', 0)
         if not user_id:
             return web.json_response({
                 'messages': [],
@@ -55,7 +57,8 @@ async def api_messages_history(request):
         })
     except Exception as e:
         logging.error(f"[消息历史] 获取失败: {e}")
-        return web.json_response({'error': str(e)}, status=500)
+        logger.error(f"{type(e).__name__}: {e}")
+        return web.json_response({'error': 'Sync error'}, status=500)
 
 
 async def api_messages_sync(request):
@@ -65,7 +68,8 @@ async def api_messages_sync(request):
         if not user_id:
             user_id = validate_api_token(request)
         if not user_id:
-            user_id = load_config().get('your_chat_id', 0)
+            if os.environ.get('DEBUG'):
+                user_id = load_config().get('your_chat_id', 0)
         if not user_id:
             return web.json_response({'messages': [], 'total_count': 0, 'linked': False})
 
@@ -94,7 +98,8 @@ async def api_messages_sync(request):
         })
     except Exception as e:
         logging.error(f"[消息同步] 同步失败: {e}")
-        return web.json_response({'error': str(e)}, status=500)
+        logger.error(f"{type(e).__name__}: {e}")
+        return web.json_response({'error': 'Sync error'}, status=500)
 
 
 async def api_link_telegram(request):
@@ -129,7 +134,8 @@ async def api_link_telegram(request):
         })
     except Exception as e:
         logging.error(f"[关联Telegram] 失败: {e}")
-        return web.json_response({'error': str(e)}, status=500)
+        logger.error(f"{type(e).__name__}: {e}")
+        return web.json_response({'error': 'Sync error'}, status=500)
 
 
 async def api_get_linked_telegram(request):
@@ -147,7 +153,8 @@ async def api_get_linked_telegram(request):
             'linked': user and bool(user.get('telegram_id'))
         })
     except Exception as e:
-        return web.json_response({'error': str(e)}, status=500)
+        logger.error(f"{type(e).__name__}: {e}")
+        return web.json_response({'error': 'Sync error'}, status=500)
 
 
 async def api_send_message(request):
@@ -196,7 +203,8 @@ async def api_send_message(request):
         })
     except Exception as e:
         logging.error(f"[发送消息] 失败: {e}")
-        return web.json_response({'error': str(e)}, status=500)
+        logger.error(f"{type(e).__name__}: {e}")
+        return web.json_response({'error': 'Sync error'}, status=500)
 
 
 async def generate_ai_reply(telegram_id: int, user_message: str):

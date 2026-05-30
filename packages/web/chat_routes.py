@@ -11,13 +11,17 @@ from datetime import datetime
 
 from aiohttp import web
 
-from system.config import *
-from system.auth import *
-from characters.memory_legacy import *
-from characters.emotion import *
-from characters.stats import *
-from characters.image_gen import *
-from characters.chat_history import *
+from system.config import (
+    CHAT_TOPIC_THREAD_ID,
+    get_default_tz, load_config, load_json,
+    get_user_memory_file, get_user_selfie_dir, get_user_dir,
+)
+from system.auth import validate_session_token, validate_api_token
+from characters.emotion import calculate_intimacy
+from system.prompts import analyze_dialogue_patterns, get_relationship_advice
+from characters.stats import load_stats
+from characters.image_gen import generate_face_from_user_photos
+from characters.chat_history import load_chat_history, save_chat_history
 
 # AI client - use the same alias as bot.py
 from characters.ai_client import call_ai as call_ai
@@ -37,9 +41,10 @@ async def api_chat(request):
         if not user_id:
             user_id = validate_api_token(request)  # 兼容旧 token
         if not user_id:
-            user_id = load_config().get('your_chat_id', 0)
+            if os.environ.get('DEBUG'):
+                user_id = load_config().get('your_chat_id', 0)
         if not user_id:
-            user_id = 1
+            return web.json_response({'error': 'Unauthorized'}, status=401)
 
         # 获取用户显示名（默认"学长"，与角色台词一致）
         user_name = '学长'
@@ -68,7 +73,8 @@ async def api_chat(request):
             logging.warning(f"[WebChat] 加载蒸馏角色失败，使用默认: {e}")
 
         if not system_prompt:
-            system_prompt = "你是车如云，一个傲娇但内心温柔的角色。用简洁自然的中文回复。"
+            from system.config import FALLBACK_SYSTEM_PROMPT
+            system_prompt = FALLBACK_SYSTEM_PROMPT
 
         # 使用共享的聊天记录
         history = load_chat_history(user_id)
@@ -139,7 +145,8 @@ async def api_chat(request):
                             # 发送AI回复
                             await bot.send_message(
                                 chat_id=telegram_chat_id,
-                                text=response
+                                text=response,
+                                message_thread_id=CHAT_TOPIC_THREAD_ID
                             )
                             logging.info(f"[双向同步] 消息已通过角色 {character_id} 的 Bot 发送到 Telegram: {telegram_chat_id}")
                         except Exception as e:
@@ -156,7 +163,7 @@ async def api_chat(request):
         return web.json_response(result_data)
     except Exception as e:
         logging.error(f"[WebChat] 错误: {e}")
-        return web.json_response({'error': str(e)})
+        return web.json_response({'error': 'Chat error'})
 
 
 async def api_stats(request):
@@ -166,9 +173,10 @@ async def api_stats(request):
         if not user_id:
             user_id = validate_api_token(request)
         if not user_id:
-            user_id = load_config().get('your_chat_id', 0)
+            if os.environ.get('DEBUG'):
+                user_id = load_config().get('your_chat_id', 0)
         if not user_id:
-            user_id = 1
+            return web.json_response({'error': 'Unauthorized'}, status=401)
 
         stats = load_stats(user_id)
         stats["memories_count"] = len(load_json(get_user_memory_file(user_id), []))
@@ -221,4 +229,4 @@ async def api_stats(request):
         })
     except Exception as e:
         logging.error(f"仪表盘API错误: {e}")
-        return web.json_response({'error': str(e)})
+        return web.json_response({'error': 'Chat error'})

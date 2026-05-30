@@ -4,6 +4,6 @@
   "telegram_token": "",
   "chat_id": "",
   "ai_api_key": "",
-  "ai_api_base": "https://openrouter.ai/api/v1",
+  "ai_api_base": "https://token.sensenova.cn/v1",
   "public_url": ""
 }

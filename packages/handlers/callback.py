@@ -3,7 +3,7 @@
 from telegram import Update
 from telegram.ext import ContextTypes
 
-from system.config import *
+from system.config import YOUR_CHAT_ID
 from packages.commands.basic import selfie_cmd, reset, memory_cmd, export_cmd
 from packages.commands.misc import anniversary_cmd, quota_cmd
 

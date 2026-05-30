@@ -127,56 +127,56 @@ async def analyze_video_transcript(transcript: str, video_type: str = "剧集") 
 只返回JSON。"""
     
     try:
-        import httpx
-        async with httpx.AsyncClient(timeout=60.0) as client:
-            resp = await client.post(
-                f"{AI_API_BASE}/chat/completions",
-                headers={"Authorization": f"Bearer {AI_API_KEY}", "Content-Type": "application/json"},
-                json={
-                    "model": AI_MODELS[1],
-                    "messages": [{"role": "user", "content": prompt}],
-                    "max_tokens": 1500,
-                    "temperature": 0.3,
-                },
-            )
-            if resp.status_code == 200:
-                content = resp.json()['choices'][0]['message']['content']
+        from characters.ai_client import _get_http_client
+        client = _get_http_client()
+        resp = await client.post(
+            f"{AI_API_BASE}/chat/completions",
+            headers={"Authorization": f"Bearer {AI_API_KEY}", "Content-Type": "application/json"},
+            json={
+                "model": AI_MODELS[1],
+                "messages": [{"role": "user", "content": prompt}],
+                "max_tokens": 1500,
+                "temperature": 0.3,
+            },
+        )
+        if resp.status_code == 200:
+            content = resp.json()['choices'][0]['message']['content']
+            try:
+                analysis = json.loads(content)
+            except Exception:
+                jm = re.search(r'\{[\s\S]*\}', content)
+                analysis = json.loads(jm.group()) if jm else {"raw": content}
+
+            return {'success': True, 'analysis': analysis}
+        elif resp.status_code == 429:
+            # Rate limited, try next model
+            for fallback_model in AI_MODELS:
+                if fallback_model == AI_MODELS[1]:
+                    continue
                 try:
-                    analysis = json.loads(content)
+                    resp2 = await client.post(
+                        f"{AI_API_BASE}/chat/completions",
+                        headers={"Authorization": f"Bearer {AI_API_KEY}", "Content-Type": "application/json"},
+                        json={
+                            "model": fallback_model,
+                            "messages": [{"role": "user", "content": prompt}],
+                            "max_tokens": 1500,
+                            "temperature": 0.3,
+                        },
+                    )
+                    if resp2.status_code == 200:
+                        content = resp2.json()['choices'][0]['message']['content']
+                        try:
+                            analysis = json.loads(content)
+                        except Exception:
+                            jm = re.search(r'\{[\s\S]*\}', content)
+                            analysis = json.loads(jm.group()) if jm else {"raw": content}
+                        return {'success': True, 'analysis': analysis}
                 except Exception:
-                    jm = re.search(r'\{[\s\S]*\}', content)
-                    analysis = json.loads(jm.group()) if jm else {"raw": content}
-                
-                return {'success': True, 'analysis': analysis}
-            elif resp.status_code == 429:
-                # Rate limited, try next model
-                for fallback_model in AI_MODELS:
-                    if fallback_model == AI_MODELS[1]:
-                        continue
-                    try:
-                        resp2 = await client.post(
-                            f"{AI_API_BASE}/chat/completions",
-                            headers={"Authorization": f"Bearer {AI_API_KEY}", "Content-Type": "application/json"},
-                            json={
-                                "model": fallback_model,
-                                "messages": [{"role": "user", "content": prompt}],
-                                "max_tokens": 1500,
-                                "temperature": 0.3,
-                            },
-                        )
-                        if resp2.status_code == 200:
-                            content = resp2.json()['choices'][0]['message']['content']
-                            try:
-                                analysis = json.loads(content)
-                            except Exception:
-                                jm = re.search(r'\{[\s\S]*\}', content)
-                                analysis = json.loads(jm.group()) if jm else {"raw": content}
-                            return {'success': True, 'analysis': analysis}
-                    except Exception:
-                        continue
-                return {'success': False, 'error': 'API请求频率超限，请稍后再试（429）'}
-            else:
-                return {'success': False, 'error': f'API错误: {resp.status_code}'}
+                    continue
+            return {'success': False, 'error': 'API请求频率超限，请稍后再试（429）'}
+        else:
+            return {'success': False, 'error': f'API错误: {resp.status_code}'}
     except Exception as e:
         return {'success': False, 'error': str(e)}
 

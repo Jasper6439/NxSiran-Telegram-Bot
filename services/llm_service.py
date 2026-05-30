@@ -20,7 +20,8 @@ import os
 import logging
 from typing import Optional, List, Dict, Any
 
-import httpx
+
+from characters.ai_client import _get_http_client
 
 logger = logging.getLogger(__name__)
 
@@ -60,21 +61,6 @@ class LLMRouterService:
     策略模式：按优先级尝试每个路由，首个成功即返回。
     所有请求使用 httpx 异步 HTTP 客户端。
     """
-
-    def __init__(self):
-        self._client: Optional[httpx.AsyncClient] = None
-
-    def _get_client(self, timeout: float = LLM_TIMEOUT) -> httpx.AsyncClient:
-        """获取或创建 httpx 异步客户端"""
-        if self._client is None or self._client.is_closed:
-            self._client = httpx.AsyncClient(timeout=httpx.Timeout(timeout))
-        return self._client
-
-    async def close(self):
-        """关闭 HTTP 客户端"""
-        if self._client and not self._client.is_closed:
-            await self._client.aclose()
-
     # ============================================================
     # 统一入口
     # ============================================================
@@ -137,7 +123,7 @@ class LLMRouterService:
         if not OPENROUTER_API_KEY:
             raise ValueError("OPENROUTER_API_KEY 未配置")
 
-        client = self._get_client()
+        client = _get_http_client()
         payload = {
             "model": OPENROUTER_MODEL,
             "messages": messages,
@@ -188,7 +174,7 @@ class LLMRouterService:
         if not SILICONFLOW_API_KEY:
             raise ValueError("SILICONFLOW_API_KEY 未配置")
 
-        client = self._get_client()
+        client = _get_http_client()
         payload = {
             "model": SILICONFLOW_MODEL,
             "messages": messages,
@@ -228,7 +214,7 @@ class LLMRouterService:
         if not SENSENOVA_API_KEY:
             raise ValueError("SENSENOVA_API_KEY 未配置")
 
-        client = self._get_client()
+        client = _get_http_client()
         payload = {
             "model": SENSENOVA_MODEL,
             "messages": messages,
@@ -277,7 +263,7 @@ class LLMRouterService:
             raise ValueError("GEMINI_API_KEY 未配置")
 
         # 使用更短的超时，防止阻塞
-        client = self._get_client(timeout=GEMINI_TIMEOUT)
+        client = _get_http_client()
 
         # 转换消息格式：OpenAI → Gemini
         gemini_contents = []

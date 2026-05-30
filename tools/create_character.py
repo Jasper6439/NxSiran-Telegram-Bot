@@ -40,7 +40,6 @@ def create_character(name: str, source: str, character_id: str = None) -> str:
     # 读取模板
     config_template = TEMPLATES_DIR / "config.template.json"
     persona_template = TEMPLATES_DIR / "persona.template.md"
-    code_template = TEMPLATES_DIR / "character.template.py"
     
     # 替换模板中的占位符
     replacements = {
@@ -57,41 +56,53 @@ def create_character(name: str, source: str, character_id: str = None) -> str:
             content = content.replace(old, new)
         (char_dir / "config.json").write_text(content, encoding='utf-8')
     
-    # 创建 persona.md
+    # 创建 persona.md（不可变层）
     if persona_template.exists():
         content = persona_template.read_text(encoding='utf-8')
         for old, new in replacements.items():
             content = content.replace(old, new)
         (char_dir / "persona.md").write_text(content, encoding='utf-8')
-    
-    # 创建角色代码文件
-    if code_template.exists():
-        content = code_template.read_text(encoding='utf-8')
+
+    # 创建 persona_mutable.md（可变层）
+    mutable_template = TEMPLATES_DIR / "persona_mutable.template.md"
+    if mutable_template.exists():
+        content = mutable_template.read_text(encoding='utf-8')
         for old, new in replacements.items():
             content = content.replace(old, new)
-        (char_dir / f"{character_id}.py").write_text(content, encoding='utf-8')
-    
+        (char_dir / "persona_mutable.md").write_text(content, encoding='utf-8')
+
+    # 创建 exemplars.md（示例对话）
+    exemplars_template = TEMPLATES_DIR / "exemplars.template.md"
+    if exemplars_template.exists():
+        content = exemplars_template.read_text(encoding='utf-8')
+        for old, new in replacements.items():
+            content = content.replace(old, new)
+        (char_dir / "exemplars.md").write_text(content, encoding='utf-8')
+
     # 创建空的 memories.md
     (char_dir / "memories.md").write_text(
         f"# {name} — 共同记忆\n\n> 此文件由系统自动生成，记录与玩家的共同经历\n\n",
         encoding='utf-8'
     )
-    
+
     return f"""✅ 角色创建成功！
 
 角色目录: {char_dir}
 
 创建的文件:
-├── config.json      # 角色配置
-├── persona.md       # 详细人设
-├── memories.md      # 共同记忆
-└── {character_id}.py # 角色实现
+├── config.json          # 角色配置
+├── persona.md           # 详细人设（不可变层：Layer 0-5）
+├── persona_mutable.md   # 可变状态（corrections + 偏好 + 进化）
+├── exemplars.md         # 示例对话（few-shot prompting）
+├── memories.md          # 共同记忆
+└── {character_id}.py    # 角色实现
 
 下一步:
 1. 编辑 config.json 填写角色配置
-2. 编辑 persona.md 按 6 层架构填写人设
-3. 编辑 {character_id}.py 实现角色逻辑
-4. 参考 CHARACTER_DISTILLATION_GUIDE.md 进行完善
+2. 编辑 persona.md 按 Layer 0-5 架构填写人设（不可变层）
+3. 编辑 exemplars.md 从原作中提取 10-20 组示例对话
+4. 编辑 {character_id}.py 实现角色逻辑
+5. 参考 CHARACTER_DISTILLATION_GUIDE.md 进行完善
 """
 
 

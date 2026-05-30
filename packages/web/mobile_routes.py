@@ -55,7 +55,8 @@ async def api_mobile_dpad_move(request):
 
     except Exception as e:
         logger.error(f"[Mobile] 方向键移动失败: {e}")
-        return web.json_response({'success': False, 'error': str(e)})
+        logger.error(f"{type(e).__name__}: {e}")
+        return web.json_response({'success': False, 'error': 'Operation failed'})
 
 
 async def api_mobile_tap_interact(request):
@@ -123,7 +124,8 @@ async def api_mobile_tap_interact(request):
 
     except Exception as e:
         logger.error(f"[Mobile] 点击交互失败: {e}")
-        return web.json_response({'success': False, 'error': str(e)})
+        logger.error(f"{type(e).__name__}: {e}")
+        return web.json_response({'success': False, 'error': 'Operation failed'})
 
 
 async def api_mobile_swipe(request):
@@ -171,7 +173,8 @@ async def api_mobile_swipe(request):
 
     except Exception as e:
         logger.error(f"[Mobile] 滑动处理失败: {e}")
-        return web.json_response({'success': False, 'error': str(e)})
+        logger.error(f"{type(e).__name__}: {e}")
+        return web.json_response({'success': False, 'error': 'Operation failed'})
 
 
 async def api_mobile_config(request):
@@ -208,4 +211,5 @@ async def api_mobile_config(request):
 
     except Exception as e:
         logger.error(f"[Mobile] 获取配置失败: {e}")
-        return web.json_response({'success': False, 'error': str(e)})
+        logger.error(f"{type(e).__name__}: {e}")
+        return web.json_response({'success': False, 'error': 'Operation failed'})

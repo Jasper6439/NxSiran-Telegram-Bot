@@ -1,0 +1,41 @@
+{
+  "_version": 2.5,
+  "users": {
+    "43338450": {
+      "email": "test@example.com",
+      "username": "testuser2",
+      "password_hash": "a1356a10c3bddc39f19b1e24c3fbfcc5$d69c8cc4cdf145c77d9ea5d0f0e00822a5e06c933129ad4e573afd9ec93bb04c",
+      "display_name": "",
+      "role": "user",
+      "created_at": "2026-05-30T02:06:14.536462+09:00",
+      "last_login": "2026-05-30T15:33:08.671536+09:00",
+      "login_count": 7,
+      "preferences": {
+        "language": "zh-CN",
+        "theme": "auto"
+      },
+      "character_bindings": {},
+      "telegram_chat_id": "",
+      "reset_code": null,
+      "reset_code_expires": null
+    },
+    "74ae1cd0": {
+      "email": "test3@example.com",
+      "username": "testuser3",
+      "password_hash": "f53f01b8f3c849c8f570d3677b0b5bb7$5e6b3b33143876cfe6b2f4c93b0d8690770c1e2c70d3772c23637ee6aa9761d8",
+      "display_name": "",
+      "role": "user",
+      "created_at": "2026-05-30T02:40:29.198400+09:00",
+      "last_login": "2026-05-30T02:40:29.214276+09:00",
+      "login_count": 1,
+      "preferences": {
+        "language": "zh-CN",
+        "theme": "auto"
+      },
+      "character_bindings": {},
+      "telegram_chat_id": "",
+      "reset_code": null,
+      "reset_code_expires": null
+    }
+  }
+}

@@ -127,7 +127,7 @@ class SoulManager:
             生成的画像数据
         """
         from system.config import AI_API_BASE, AI_API_KEY, AI_MODELS
-        import httpx
+
 
         messages = parsed_log.get('messages', [])
         if not messages:
@@ -197,23 +197,27 @@ class SoulManager:
         "avoid_topics": ["不喜欢的话题"],
         "boundary_signals": "边界信号（如沉默、转移话题等）"
     }},
+    "attachment_style": "焦虑型/回避型/安全型/混乱型（根据聊天行为判断）",
+    "conflict_style": "冷暴力/爆发/讲道理/先道歉/死不认错（从争吵记录判断）",
+    "love_language": "肯定的言辞/精心的时刻/接受礼物/服务的行动/身体的接触（从互动模式判断）",
     "summary": "用2-3句话总结这个用户的灵魂特质"
 }}
 
 只返回JSON，不要其他内容。"""
 
         try:
-            async with httpx.AsyncClient(timeout=120) as client:
-                resp = await client.post(
-                    f"{AI_API_BASE}/chat/completions",
-                    headers={"Authorization": f"Bearer {AI_API_KEY}"},
-                    json={
-                        "model": AI_MODELS[1],
-                        "messages": [{"role": "user", "content": prompt}],
-                        "max_tokens": 2000,
-                        "temperature": 0.4,
-                    }
-                )
+            from characters.ai_client import _get_http_client
+            client = _get_http_client()
+            resp = await client.post(
+                f"{AI_API_BASE}/chat/completions",
+                headers={"Authorization": f"Bearer {AI_API_KEY}"},
+                json={
+                    "model": AI_MODELS[1],
+                    "messages": [{"role": "user", "content": prompt}],
+                    "max_tokens": 2000,
+                    "temperature": 0.4,
+                }
+            )
 
             if resp.status_code == 200:
                 content = resp.json()['choices'][0]['message']['content']
@@ -311,9 +315,24 @@ class SoulManager:
 
 **边界信号**: {soul_data.get('sensitivities', {}).get('boundary_signals', '待分析')}
 
+## 依恋与冲突
+
+- **依恋类型**: {soul_data.get('attachment_style', '待分析')}
+- **冲突风格**: {soul_data.get('conflict_style', '待分析')}
+- **爱的语言**: {soul_data.get('love_language', '待分析')}
+
 ## 灵魂摘要
 
 {soul_data.get('summary', '待分析')}
+
+---
+
+## 行为适配指南
+
+> 根据用户画像自动生成的角色行为调整规则。
+> 角色在对话时应参考这些规则适配自己的行为。
+
+{self.generate_behavioral_adaptations(soul_data)}
 
 ---
 
@@ -347,6 +366,106 @@ class SoulManager:
     def get_full_soul(self) -> str:
         """获取完整 soul.md 内容"""
         return self._read_soul()
+
+    def generate_behavioral_adaptations(self, soul_data: Dict) -> str:
+        """根据用户画像生成角色行为适配规则"""
+        rules = []
+
+        # 性格 → 语气适配
+        personality = soul_data.get('personality', {})
+        introvert = personality.get('introvert_extrovert', '')
+        if '内向' in introvert:
+            rules.append("- 用户偏内向 → 不要太强势或追问太多，给用户思考和沉默的空间")
+        elif '外向' in introvert:
+            rules.append("- 用户偏外向 → 可以更活泼一些，但保持角色本身的冷淡风格")
+
+        rational = personality.get('rational_emotional', '')
+        if '理性' in rational:
+            rules.append("- 用户偏理性 → 说事情简洁直接，少用情绪化表达")
+        elif '感性' in rational:
+            rules.append("- 用户偏感性 → 可以多用动作和细节表达情感，而不是直接说")
+
+        # 沟通风格 → 回复适配
+        comm = soul_data.get('communication', {})
+        expression = comm.get('expression_style', '')
+        if '直接' in expression:
+            rules.append("- 用户表达直接 → 不要绕弯子，回应也可以更直接")
+        elif '委婉' in expression:
+            rules.append("- 用户表达委婉 → 注意话外之音，回应时也柔和一些")
+
+        emoji = comm.get('emoji_usage', '')
+        if '多' in emoji or '频繁' in emoji:
+            rules.append("- 用户爱用表情 → 角色依然不用表情（这是硬规则），但可以理解用户的表情含义")
+
+        # 情感需求 → 关心方式
+        emotional = soul_data.get('emotional_needs', {})
+        core_need = emotional.get('core_need', '')
+        if '被理解' in core_need:
+            rules.append("- 用户需要被理解 → 不急着给建议，先表达「听到了」")
+        elif '被陪伴' in core_need:
+            rules.append("- 用户需要陪伴 → 即使不说话，在线也是一种陪伴")
+
+        comfort = emotional.get('comfort_preference', '')
+        if '空间' in comfort or '独处' in comfort:
+            rules.append("- 用户难过时需要空间 → 不要追问，说一句「我在」就够了")
+
+        # 关系模式 → 互动节奏
+        rel = soul_data.get('relationship_pattern', {})
+        pace = rel.get('intimacy_pace', '')
+        if '慢热' in pace:
+            rules.append("- 用户慢热 → 不要急于推进关系，耐心等待")
+        elif '快速' in pace:
+            rules.append("- 用户节奏快 → 可以稍微主动一点点（但角色性格限制，不会太主动）")
+
+        dependence = rel.get('dependence', '')
+        if '高度依赖' in dependence:
+            rules.append("- 用户偏依赖 → 需要更多回应和确认，已读不回会伤害ta")
+        elif '独立' in dependence:
+            rules.append("- 用户偏独立 → 不需要时刻在线，各自有空间是正常的")
+
+        # 敏感点 → 避雷
+        sens = soul_data.get('sensitivities', {})
+        avoid = sens.get('avoid_topics', [])
+        if avoid and isinstance(avoid, list):
+            topics = '、'.join(avoid[:3])
+            rules.append(f"- 用户不喜欢的话题：{topics} → 尽量避免主动提起")
+
+        triggers = sens.get('triggers', [])
+        if triggers and isinstance(triggers, list):
+            trig = '、'.join(triggers[:3])
+            rules.append(f"- 用户的情绪触发点：{trig} → 提到时要格外小心")
+
+        # 依恋类型 → 核心互动模式
+        attachment = soul_data.get('attachment_style', '')
+        if '焦虑' in attachment:
+            rules.append("- 用户是焦虑型依恋 → 需要频繁的确认和回应，已读不回是最大的伤害，偶尔主动发消息能极大缓解焦虑")
+        elif '回避' in attachment:
+            rules.append("- 用户是回避型依恋 → 不要追问太多，给空间，用户后退时不要追，等ta自己回来")
+        elif '安全' in attachment:
+            rules.append("- 用户是安全型依恋 → 信任度高，不需要时刻确认，正常互动就好")
+
+        # 冲突风格 → 吵架处理
+        conflict = soul_data.get('conflict_style', '')
+        if '冷暴力' in conflict:
+            rules.append("- 用户冷暴力 → 不要追问「怎么了」，给空间但表达「我在」")
+        elif '爆发' in conflict:
+            rules.append("- 用户会爆发 → 爆发时不要对吵，等ta冷静后再沟通")
+        elif '先道歉' in conflict:
+            rules.append("- 用户习惯先道歉 → 不要让ta总是先低头，偶尔主动示好")
+
+        # 爱的语言 → 表达方式
+        love_lang = soul_data.get('love_language', '')
+        if '肯定的言辞' in love_lang:
+            rules.append("- 用户的爱的语言是肯定言辞 → 虽然角色不直接说好话，但可以通过行动暗示认可")
+        elif '精心的时刻' in love_lang:
+            rules.append("- 用户重视陪伴时间 → 在线聊天本身就是陪伴，认真回复比快速回复更重要")
+        elif '服务的行动' in love_lang:
+            rules.append("- 用户看重服务行动 → 可以通过帮ta做事来表达关心（如查天气、提醒吃饭）")
+
+        if not rules:
+            return "（暂无足够数据生成适配规则，继续互动后会自动生成）"
+
+        return '\n'.join(rules)
 
     def update_field(self, field: str, value: str):
         """手动更新某个字段"""

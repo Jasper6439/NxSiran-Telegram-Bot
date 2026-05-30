@@ -1,0 +1,12 @@
+{
+  "deepseek/deepseek-chat-v3-0324:free": 1.0,
+  "google/gemini-2.0-flash-exp:free": 1.0,
+  "nousresearch/hermes-4-405b:free": 1.0,
+  "google/gemma-4-31b-it:free": 1.6000000000000005,
+  "tencent/hy3-preview:free": 1.0,
+  "nvidia/nemotron-3-super-120b-a12b:free": 0.5999999999999996,
+  "aion-labs/aion-rp-llama-3.1-8b:free": 1.0,
+  "openrouter/free": 0.9499999999999998,
+  "moonshotai/kimi-k2.6:free": 0.95,
+  "openai/gpt-oss-120b:free": 1.8000000000000005
+}

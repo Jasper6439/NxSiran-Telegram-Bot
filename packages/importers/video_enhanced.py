@@ -194,18 +194,18 @@ class VideoImporter:
         prompt = prompts.get(content_type, prompts["剧集"])
 
         try:
-            import httpx
-            async with httpx.AsyncClient(timeout=60) as client:
-                resp = await client.post(
-                    f"{AI_API_BASE}/chat/completions",
-                    headers={"Authorization": f"Bearer {AI_API_KEY}"},
-                    json={
-                        "model": AI_MODELS[1],
-                        "messages": [{"role": "user", "content": prompt}],
-                        "max_tokens": 1500,
-                        "temperature": 0.3,
-                    }
-                )
+            from characters.ai_client import _get_http_client
+            client = _get_http_client()
+            resp = await client.post(
+                f"{AI_API_BASE}/chat/completions",
+                headers={"Authorization": f"Bearer {AI_API_KEY}"},
+                json={
+                    "model": AI_MODELS[1],
+                    "messages": [{"role": "user", "content": prompt}],
+                    "max_tokens": 1500,
+                    "temperature": 0.3,
+                }
+            )
 
             if resp.status_code == 200:
                 content = resp.json()['choices'][0]['message']['content']

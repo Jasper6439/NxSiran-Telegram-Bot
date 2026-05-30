@@ -19,6 +19,7 @@ from system.config import (
 from system.auth import (
     validate_session_token, validate_api_token, validate_session_token_from_token,
 )
+logger = logging.getLogger(__name__)
 
 
 async def api_upload_selfies(request):
@@ -28,9 +29,10 @@ async def api_upload_selfies(request):
         if not user_id:
             user_id = validate_api_token(request)
         if not user_id:
-            user_id = load_config().get('your_chat_id', 0)
+            if os.environ.get('DEBUG'):
+                user_id = load_config().get('your_chat_id', 0)
         if not user_id:
-            user_id = 1
+            return web.json_response({'success': False, 'error': '未登录'}, status=401)
 
         data = await request.json()
         photos = data.get('photos', [])
@@ -77,7 +79,8 @@ async def api_upload_selfies(request):
         })
     except Exception as e:
         logging.error(f"上传自拍API错误: {e}")
-        return web.json_response({'success': False, 'error': str(e)})
+        logger.error(f"{type(e).__name__}: {e}")
+        return web.json_response({'success': False, 'error': 'Media operation failed'})
 
 
 async def api_generate_face(request):
@@ -104,7 +107,8 @@ async def api_generate_face(request):
 
     except Exception as e:
         logging.error(f"[Web换脸] 错误: {e}")
-        return web.json_response({'success': False, 'error': str(e)})
+        logger.error(f"{type(e).__name__}: {e}")
+        return web.json_response({'success': False, 'error': 'Media operation failed'})
 
 
 async def api_get_selfies(request):
@@ -114,9 +118,10 @@ async def api_get_selfies(request):
         if not user_id:
             user_id = validate_api_token(request)
         if not user_id:
-            user_id = load_config().get('your_chat_id', 0)
+            if os.environ.get('DEBUG'):
+                user_id = load_config().get('your_chat_id', 0)
         if not user_id:
-            user_id = 1
+            return web.json_response({'success': False, 'error': '未登录'}, status=401)
 
         character_id = request.query.get('character_id')
 
@@ -143,7 +148,8 @@ async def api_get_selfies(request):
         })
     except Exception as e:
         logging.error(f"获取自拍列表API错误: {e}")
-        return web.json_response({'success': False, 'error': str(e)})
+        logger.error(f"{type(e).__name__}: {e}")
+        return web.json_response({'success': False, 'error': 'Media operation failed'})
 
 
 async def api_delete_selfie(request):
@@ -153,9 +159,10 @@ async def api_delete_selfie(request):
         if not user_id:
             user_id = validate_api_token(request)
         if not user_id:
-            user_id = load_config().get('your_chat_id', 0)
+            if os.environ.get('DEBUG'):
+                user_id = load_config().get('your_chat_id', 0)
         if not user_id:
-            user_id = 1
+            return web.json_response({'success': False, 'error': '未登录'}, status=401)
 
         data = await request.json()
         filename = data.get('filename', '')
@@ -172,12 +179,19 @@ async def api_delete_selfie(request):
             return web.json_response({'success': False, 'error': '文件不存在'})
     except Exception as e:
         logging.error(f"删除自拍API错误: {e}")
-        return web.json_response({'success': False, 'error': str(e)})
+        logger.error(f"{type(e).__name__}: {e}")
+        return web.json_response({'success': False, 'error': 'Media operation failed'})
 
 
 async def api_delete_user_photo(request):
     """Mini App删除用户照片API"""
     try:
+        user_id = validate_session_token(request)
+        if not user_id:
+            user_id = validate_api_token(request)
+        if not user_id:
+            return web.json_response({'success': False, 'error': '未登录'}, status=401)
+
         data = await request.json()
         filename = data.get('filename', '')
 
@@ -192,7 +206,8 @@ async def api_delete_user_photo(request):
             return web.json_response({'success': False, 'error': '文件不存在'})
     except Exception as e:
         logging.error(f"删除用户照片API错误: {e}")
-        return web.json_response({'success': False, 'error': str(e)})
+        logger.error(f"{type(e).__name__}: {e}")
+        return web.json_response({'success': False, 'error': 'Media operation failed'})
 
 
 async def api_user_photos(request):
@@ -209,7 +224,8 @@ async def api_user_photos(request):
         return web.json_response({'success': True, 'photos': photos, 'count': len(photos)})
     except Exception as e:
         logging.error(f"获取用户照片API错误: {e}")
-        return web.json_response({'success': False, 'error': str(e)})
+        logger.error(f"{type(e).__name__}: {e}")
+        return web.json_response({'success': False, 'error': 'Media operation failed'})
 
 
 async def serve_uploaded_file(request):
@@ -338,9 +354,10 @@ async def api_upload_voice_sample(request):
         if not user_id:
             user_id = validate_api_token(request)
         if not user_id:
-            user_id = load_config().get('your_chat_id', 0)
+            if os.environ.get('DEBUG'):
+                user_id = load_config().get('your_chat_id', 0)
         if not user_id:
-            user_id = 1
+            return web.json_response({'success': False, 'error': '未登录'}, status=401)
 
         # 获取上传的文件
         reader = await request.multipart()
@@ -384,7 +401,8 @@ async def api_upload_voice_sample(request):
 
     except Exception as e:
         logging.error(f"上传声音语料API错误: {e}")
-        return web.json_response({'success': False, 'error': str(e)})
+        logger.error(f"{type(e).__name__}: {e}")
+        return web.json_response({'success': False, 'error': 'Media operation failed'})
 
 
 async def api_get_voice_samples(request):
@@ -424,7 +442,8 @@ async def api_get_voice_samples(request):
 
     except Exception as e:
         logging.error(f"获取声音语料状态API错误: {e}")
-        return web.json_response({'success': False, 'error': str(e)})
+        logger.error(f"{type(e).__name__}: {e}")
+        return web.json_response({'success': False, 'error': 'Media operation failed'})
 
 
 async def api_delete_voice_sample(request):
@@ -446,7 +465,8 @@ async def api_delete_voice_sample(request):
 
     except Exception as e:
         logging.error(f"删除声音语料API错误: {e}")
-        return web.json_response({'success': False, 'error': str(e)})
+        logger.error(f"{type(e).__name__}: {e}")
+        return web.json_response({'success': False, 'error': 'Media operation failed'})
 
 
 async def api_start_voice_training(request):
@@ -504,4 +524,5 @@ async def api_start_voice_training(request):
 
     except Exception as e:
         logging.error(f"启动声音训练API错误: {e}")
-        return web.json_response({'success': False, 'error': str(e)})
+        logger.error(f"{type(e).__name__}: {e}")
+        return web.json_response({'success': False, 'error': 'Media operation failed'})
